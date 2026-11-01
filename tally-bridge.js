@@ -2,6 +2,7 @@ const http = require('http');
 
 const bridgePort = Number(process.env.TALLY_BRIDGE_PORT || 9100);
 const tallyUrl = process.env.TALLY_URL || 'http://127.0.0.1:9000';
+const bridgeToken = process.env.TALLY_BRIDGE_TOKEN || '';
 
 function xmlEscape(value = '') {
   return String(value).replace(/[<>&'"]/g, ch => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[ch]));
@@ -28,6 +29,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   if (req.url === '/health' && req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ bridge: 'online', tallyUrl })); return; }
   if (req.url === '/create-invoice' && req.method === 'POST') {
+    if (!bridgeToken || req.headers.authorization !== `Bearer ${bridgeToken}`) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'Bridge authentication required' })); return; }
     let raw = ''; req.on('data', chunk => { raw += chunk; }); req.on('end', async () => {
       try { const invoice = JSON.parse(raw || '{}'); if (!invoice.customer || !invoice.amount) throw new Error('customer and amount are required'); const result = await postToTally(invoiceXml(invoice)); res.writeHead(result.status === 200 ? 200 : 502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: result.status === 200, tallyStatus: result.status, response: result.body.slice(0, 2000) })); }
       catch (error) { res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: error.message })); }

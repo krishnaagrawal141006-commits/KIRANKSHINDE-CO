@@ -1637,6 +1637,18 @@ img {
   border-bottom: 1px solid #e6e9ee;
 }
 
+.team-directory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.team-empty-state { grid-column: 1 / -1; padding: 36px; border: 1px dashed #cbd5e1; border-radius: 10px; text-align: center; color: #64748b; }
+.team-empty-state i { color: var(--accent-gold-dark); font-size: 1.5rem; }
+.team-member-card { display: flex; gap: 15px; align-items: center; padding: 18px; border: 1px solid #e3e8ef; border-radius: 10px; background: #fff; box-shadow: 0 8px 22px rgba(15,23,42,.05); }
+.team-member-photo { width: 70px; height: 70px; display: grid; place-items: center; overflow: hidden; flex: 0 0 70px; border-radius: 50%; background: #eef2f7; color: #8190a1; font-size: 1.5rem; }
+.team-member-photo img { width: 100%; height: 100%; object-fit: cover; }
+.team-member-card h3 { margin: 5px 0 2px; font-size: 1.05rem; color: #15263a; }
+.team-member-card p { margin: 0; color: #64748b; font-size: .88rem; }
+.team-member-card small { color: #94a3b8; }
+.team-member-status { font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #15803d; }
+.team-former { opacity: .72; }
+
 .tax-updates-heading {
   display: flex;
   align-items: flex-end;

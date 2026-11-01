@@ -6,6 +6,7 @@ const AdminCRM = {
   init() {
     const savedLeads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
     this.state.leads = savedLeads;
+    this.state.employees = JSON.parse(localStorage.getItem('ks_team') || '[]');
     this.renderAll();
     this.setupTabNavigation();
     this.setupModals();
@@ -16,6 +17,10 @@ const AdminCRM = {
         this.renderMetrics();
         this.renderLeadsTable();
       }
+      if (event.key === 'ks_team') {
+        this.state.employees = JSON.parse(event.newValue || '[]');
+        this.renderEmployeesTable();
+      }
     });
   },
 
@@ -24,6 +29,7 @@ const AdminCRM = {
     this.renderMetrics();
     this.renderClientsTable();
     this.renderLeadsTable();
+    this.renderEmployeesTable();
     this.renderKanbanBoard();
     this.renderInvoicesTable();
     this.renderArticlesTable();
@@ -49,6 +55,18 @@ const AdminCRM = {
 
     const docPendingBadge = document.getElementById('docPendingBadge');
     if (docPendingBadge) docPendingBadge.innerText = `${this.state.pendingDocs.length} Pending`;
+  },
+
+  renderEmployeesTable() {
+    const tbody = document.getElementById('employeesTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = (this.state.employees || []).map((employee, index) => `<tr><td><strong>${employee.name}</strong></td><td>${employee.designation}</td><td>${employee.phone || ''}</td><td><span class="status-pill ${employee.status === 'Former' ? 'status-overdue' : 'status-completed'}">${employee.status}</span></td><td><button class="action-icon-btn" onclick="AdminCRM.deleteEmployee(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('');
+  },
+
+  deleteEmployee(index) {
+    this.state.employees.splice(index, 1);
+    localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
+    this.renderEmployeesTable();
   },
 
   renderClientsTable() {
@@ -644,6 +662,21 @@ const AdminCRM = {
 
   // 8. Modal Handlers
   setupModals() {
+    const employeeForm = document.getElementById('employeeForm');
+    if (employeeForm) employeeForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      this.state.employees.push({
+        name: document.getElementById('employeeName').value.trim(),
+        designation: document.getElementById('employeeDesignation').value.trim(),
+        phone: document.getElementById('employeePhone').value.trim(),
+        photo: document.getElementById('employeePhoto').value.trim(),
+        status: document.getElementById('employeeStatus').value
+      });
+      localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
+      employeeForm.reset();
+      this.renderEmployeesTable();
+    });
+
     const modalOverlay = document.getElementById('clientModal');
     const openBtn = document.getElementById('openAddClientBtn');
     const closeBtn = document.getElementById('closeClientModalBtn');

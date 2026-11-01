@@ -68,6 +68,11 @@
         <span class="nav-counter" id="leadCounterBadge">3 New</span>
       </button>
 
+      <button class="nav-tab-btn" data-target="tab-employees">
+        <i class="fa-solid fa-users-gear"></i>
+        <span>Employees & Team</span>
+      </button>
+
     </div>
 
     <div class="sidebar-footer">
@@ -222,6 +227,22 @@
       </section>
 
       <!-- ================= 3. CLIENTS MASTER VIEW ================= -->
+      <section class="tab-content" id="tab-employees">
+        <div class="admin-card">
+          <div class="admin-card-header"><div><h3>Employees & Public Team Directory</h3><p style="font-size:.84rem;color:#64748b;margin-top:4px">Publish active and former team profiles to the website.</p></div><a class="btn-admin btn-admin-outline" href="../employee/index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Employee Portal</a></div>
+          <form id="employeeForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">
+            <input id="employeeName" class="form-input-admin" placeholder="Employee name" required>
+            <input id="employeeDesignation" class="form-input-admin" placeholder="Designation" required>
+            <input id="employeePhone" class="form-input-admin" placeholder="Phone">
+            <input id="employeePhoto" class="form-input-admin" placeholder="Photo URL (optional)">
+            <select id="employeeStatus" class="form-input-admin"><option>Active</option><option>Former</option></select>
+            <button class="btn-admin btn-admin-primary" type="submit"><i class="fa-solid fa-plus"></i> Add Employee</button>
+          </form>
+          <div class="table-responsive"><table class="admin-table"><thead><tr><th>Name</th><th>Designation</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead><tbody id="employeesTableBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- ================= 4. CLIENTS MASTER VIEW ================= -->
       <section class="tab-content" id="tab-clients">
         <div class="admin-card">
           <div class="admin-card-header">

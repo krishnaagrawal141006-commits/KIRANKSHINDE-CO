@@ -1,5 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+  const publicTeamGrid = document.getElementById('publicTeamGrid');
+  if (publicTeamGrid) {
+    const team = JSON.parse(localStorage.getItem('ks_team') || '[]');
+    const active = team.filter(member => member.status !== 'Former');
+    const former = team.filter(member => member.status === 'Former');
+    const renderMember = member => `<article class="team-member-card ${member.status === 'Former' ? 'team-former' : ''}">
+      <div class="team-member-photo">${member.photo ? `<img src="${member.photo}" alt="${member.name}">` : '<i class="fa-solid fa-user"></i>'}</div>
+      <div><span class="team-member-status">${member.status || 'Active'}</span><h3>${member.name}</h3><p>${member.designation}</p><small>${member.phone || ''}</small></div>
+    </article>`;
+    const cards = [...active, ...former].map(renderMember).join('');
+    if (cards) publicTeamGrid.innerHTML = cards;
+  }
+
 
   // 2. Scroll Progress Bar
   const progressBar = document.createElement('div');

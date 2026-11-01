@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & CRM Portal | Kiran K. Shinde & Co., Chartered Accountants</title>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-icon">KS</div>
+      <div class="sidebar-logo-text">
+        <h3>Kiran K. Shinde & Co.</h3>
+        <span>CA Firm Admin & CRM</span>
+      </div>
+    </div>
+
+    <div class="sidebar-menu">
+      <span class="menu-label">Practice Control</span>
+      <button class="nav-tab-btn active" data-target="tab-dashboard">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Command Center</span>
+      </button>
+
+      <button class="nav-tab-btn" data-target="tab-clients">
+        <i class="fa-solid fa-address-book"></i>
+        <span>Client Directory (350+)</span>
+      </button>
+
+      <span class="menu-label">Workflow & Tasks</span>
+      <button class="nav-tab-btn" data-target="tab-compliance">
+        <i class="fa-solid fa-clipboard-check"></i>
+        <span>Compliance & Tasks</span>
+        <span class="nav-counter" id="taskCounterBadge">5 Active</span>
+      </button>
+
+      <button class="nav-tab-btn" data-target="tab-documents">
+        <i class="fa-solid fa-file-arrow-up"></i>
+        <span>Docs & Reminders</span>
+        <span class="nav-counter" style="background: #ef4444;" id="docPendingBadge">3 Pending</span>
+      </button>
+
+      <span class="menu-label">Billing & Integrations</span>
+      <button class="nav-tab-btn" data-target="tab-invoices">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>Consolidated Billing</span>
+      </button>
+
+      <button class="nav-tab-btn" data-target="tab-tally-sync">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Tally Prime & Stack Sync</span>
+      </button>
+
+      <button class="nav-tab-btn" data-target="tab-calendar">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Google Calendar Sync</span>
+      </button>
+
+      <span class="menu-label">Team & Inquiries</span>
+      <button class="nav-tab-btn" data-target="tab-leads">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Web Inquiries</span>
+        <span class="nav-counter" id="leadCounterBadge">3 New</span>
+      </button>
+
+      <button class="nav-tab-btn" data-target="tab-articles">
+        <i class="fa-solid fa-user-group"></i>
+        <span>Staff & Workload</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="admin-avatar">CA</div>
+      <div class="admin-info">
+        <h5>CA Kiran Shinde</h5>
+        <p>Proprietor (FCA)</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    <!-- Admin Topbar -->
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <button class="mobile-admin-toggle" id="mobileSidebarToggle" aria-label="Toggle sidebar">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-title">
+          <h2 id="adminCurrentPageTitle">Dashboard</h2>
+        </div>
+      </div>
+
+      <div class="topbar-right" style="display: flex; gap: 10px;">
+        <a href="../portal/upload.html" target="_blank" class="website-link-btn" style="background: #2563eb; color: #fff;">
+          <i class="fa-solid fa-file-arrow-up"></i> Client Upload Desk
+        </a>
+        <a href="../index.html" target="_blank" class="website-link-btn">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View Live CA Website
+        </a>
+      </div>
+    </header>
+
+    <!-- Content Workspace -->
+    <main class="content-area">
+
+      <!-- ================= 1. DASHBOARD VIEW ================= -->
+      <section class="tab-content active" id="tab-dashboard">
+        <!-- Overview Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>Active Clients</span>
+              <h3 id="metricActiveClients">5</h3>
+            </div>
+            <div class="metric-icon-box icon-blue">
+              <i class="fa-solid fa-users"></i>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>Pending Compliance Tasks</span>
+              <h3 id="metricPendingTasks">4</h3>
+            </div>
+            <div class="metric-icon-box icon-amber">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>Website Leads</span>
+              <h3 id="metricNewLeads">3</h3>
+            </div>
+            <div class="metric-icon-box icon-purple">
+              <i class="fa-solid fa-user-plus"></i>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>This Month's Billings</span>
+              <h3>₹ 92,500</h3>
+            </div>
+            <div class="metric-icon-box icon-green">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Due Dates Banner -->
+        <div class="admin-card" style="border-left: 4px solid var(--admin-accent-gold);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <h4 style="font-size: 1.05rem; color: #0f172a;"><i class="fa-solid fa-calendar-day" style="color: var(--admin-accent-gold); margin-right: 8px;"></i> Critical Statutory Tax Due Dates (October 2026)</h4>
+              <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">• 20 Oct: GSTR-3B Filing for Sept • 22 Oct: Monthly Bank Concurrent Audit • 31 Oct: Tarapur MIDC Audit Reviews</p>
+            </div>
+            <button class="btn-admin btn-admin-gold" onclick="document.querySelector('[data-target=\'tab-compliance\']').click();">
+              Open Compliance Board &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Tasks Table -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3>Recent Active Compliance Tasks</h3>
+            <span style="font-size: 0.82rem; color: #64748b;">Live status from Compliance Board</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Client Name</th>
+                  <th>Task Title</th>
+                  <th>Due Date</th>
+                  <th>Assigned Staff</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="dashRecentTasksBody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. LEADS & INQUIRIES VIEW ================= -->
+      <section class="tab-content" id="tab-leads">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>Website Consultation Requests & Inquiries</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Inquiries received from the main website consultation form.</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Lead ID</th>
+                  <th>Client / Contact</th>
+                  <th>Phone Number</th>
+                  <th>Entity Type</th>
+                  <th>Service Required</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="leadsTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. CLIENTS MASTER VIEW ================= -->
+      <section class="tab-content" id="tab-clients">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>Client Master Directory</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Companies, MIDC manufacturing units, traders & individual clients.</p>
+            </div>
+            <div class="header-action-group">
+              <button class="btn-admin btn-admin-primary" id="openAddClientBtn">
+                <i class="fa-solid fa-plus"></i> Add New Client
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Client ID</th>
+                  <th>Firm / Client Name</th>
+                  <th>PAN</th>
+                  <th>GSTIN</th>
+                  <th>Assigned Staff</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="clientsTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. COMPLIANCE KANBAN BOARD ================= -->
+      <section class="tab-content" id="tab-compliance">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>CA Compliance & Tax Filing Board</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Manage client workflows from preparation to final verification and portal filing.</p>
+            </div>
+          </div>
+
+          <div class="kanban-board">
+            <!-- Stage 1: To Do -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <h4><i class="fa-regular fa-circle" style="color: #64748b;"></i> Documents Received / To Do</h4>
+              </div>
+              <div id="kanban-todo"></div>
+            </div>
+
+            <!-- Stage 2: In Progress -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <h4><i class="fa-solid fa-circle-notch" style="color: #2563eb;"></i> In Preparation / Audit</h4>
+              </div>
+              <div id="kanban-in-progress"></div>
+            </div>
+
+            <!-- Stage 3: In Review by CA Sir -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <h4><i class="fa-solid fa-glasses" style="color: #d97706;"></i> In CA Sir Review</h4>
+              </div>
+              <div id="kanban-in-review"></div>
+            </div>
+
+            <!-- Stage 4: Filed / Completed -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <h4><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Filed & Ack Generated</h4>
+              </div>
+              <div id="kanban-completed"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. INVOICES & FEES VIEW ================= -->
+      <section class="tab-content" id="tab-invoices">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>Fee Invoices & Payment Ledger</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Track client billings, payments received, and pending balances.</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Client Name</th>
+                  <th>Service Rendered</th>
+                  <th>Fee Amount</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="invoicesTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 6. ARTICLES / STAFF VIEW ================= -->
+      <section class="tab-content" id="tab-articles">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>Articleship Trainees & Staff Management</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Delegated work assignments, active load & month-to-date filing stats.</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Staff ID</th>
+                  <th>Name</th>
+                  <th>Designation / Qualification</th>
+                  <th>Active Assigned</th>
+                  <th>Filed This Month</th>
+                  <th>Contact</th>
+                  <th>WhatsApp</th>
+                </tr>
+              </thead>
+              <tbody id="articlesTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 7. DOCUMENTS & REMINDERS (Spectrum Style) ================= -->
+      <section class="tab-content" id="tab-documents">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>Pending Client Documents & Automated Follow-Up Engine</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Track bank statements, invoices, and sales registers pending from clients with 1-click WhatsApp/Email pings.</p>
+            </div>
+            <div class="header-action-group">
+              <button class="btn-admin btn-admin-primary" id="openAddDocFollowupBtn">
+                <i class="fa-solid fa-plus"></i> Request New Document
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Client / Unit</th>
+                  <th>Document Pending</th>
+                  <th>Compliance Period</th>
+                  <th>Last Follow-Up</th>
+                  <th>Next Scheduled Ping</th>
+                  <th>Status</th>
+                  <th>1-Click Actions</th>
+                </tr>
+              </thead>
+              <tbody id="documentsTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 8. TALLY PRIME & STACK SYNC HUB ================= -->
+      <section class="tab-content" id="tab-tally-sync">
+        <div class="admin-card" style="border-left: 4px solid #10b981; margin-bottom: 25px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <h4 style="font-size: 1.1rem; color: #0f172a;"><i class="fa-solid fa-server" style="color: #10b981; margin-right: 8px;"></i> Central Software Stack Integration Control</h4>
+              <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Connects Tally Prime, KDK, Spectrum, Winman, Occomotion AI, and OneDrive into a single unified data pipeline.</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-admin btn-admin-gold" onclick="AdminCRM.testTallyPort9000()">
+                <i class="fa-solid fa-network-wired"></i> Test Tally Port 9000 Connection
+              </button>
+              <button class="btn-admin btn-admin-primary" onclick="AdminCRM.runFullStackSync()">
+                <i class="fa-solid fa-rotate"></i> Run Full Stack Sync Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>Tally Prime XML Sync</span>
+              <h3 style="color: #10b981;">Connected</h3>
+              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">Port 9000 XML / ODBC Ready</p>
+            </div>
+            <div class="metric-icon-box icon-green">
+              <i class="fa-solid fa-database"></i>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>Occomotion AI (Bank OCR)</span>
+              <h3 style="color: #2563eb;">Active</h3>
+              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">42 Statements Processed</p>
+            </div>
+            <div class="metric-icon-box icon-blue">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>KDK / Spectrum Bridge</span>
+              <h3 style="color: #d97706;">Syncing</h3>
+              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">Returns ACK Auto-Import</p>
+            </div>
+            <div class="metric-icon-box icon-amber">
+              <i class="fa-solid fa-file-shield"></i>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>OneDrive Cloud Backup</span>
+              <h3 style="color: #8b5cf6;">Synced</h3>
+              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">350 Client Folders</p>
+            </div>
+            <div class="metric-icon-box icon-purple">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1-Click Client Excel-to-Tally Bulk Importer Module -->
+        <div class="admin-card" style="margin-top: 25px; border-left: 4px solid #2563eb;">
+          <div class="admin-card-header">
+            <div>
+              <h3><i class="fa-solid fa-file-excel" style="color: #16a34a; margin-right: 8px;"></i> 1-Click Client Excel-to-Tally Auto-Importer &amp; Poster</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Upload client sales registers, purchase sheets or bank statement Excels (500+ invoices) to automatically create ledgers and post vouchers directly into Tally Prime.</p>
+            </div>
+            <span class="status-pill status-completed"><i class="fa-solid fa-bolt"></i> Port 9000 Engine Active</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; align-items: start;">
+            <!-- Drop & Upload Zone -->
+            <div style="border: 2px dashed #cbd5e1; border-radius: 10px; padding: 25px; text-align: center; background: #f8fafc; cursor: pointer;" id="tallyExcelDropZone" onclick="document.getElementById('tallyExcelFileInput').click()">
+              <input type="file" id="tallyExcelFileInput" style="display: none;" accept=".xlsx,.xls,.csv" onchange="AdminCRM.handleTallyExcelUpload(event)">
+              <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.2rem; color: #2563eb; margin-bottom: 8px;"></i>
+              <h4 style="font-size: 0.95rem; color: #0f172a; font-weight: 700;">Drag &amp; Drop Client Excel (.xlsx) or CSV File Here</h4>
+              <p style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">Supports Sales Invoices, Purchase Sheets &amp; Full Year Financial Workbooks</p>
+              <div style="margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; background: #e2e8f0; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
+                <i class="fa-solid fa-file-circle-check" style="color: #16a34a;"></i> Krishna_Textile_Complete_Accounting_Project.xlsx Pre-Loaded
+              </div>
+            </div>
+
+            <!-- Verification & Live Push Control Panel -->
+            <div style="background: #f1f5f9; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0;">
+              <h4 style="font-size: 0.9rem; color: #0f172a; margin-bottom: 12px;"><i class="fa-solid fa-list-check" style="color: #2563eb; margin-right: 6px;"></i> File Audit &amp; Balance Verification</h4>
+              
+              <div style="font-size: 0.8rem; line-height: 1.8; color: #334155;" id="excelAuditDetails">
+                <div>• File: <strong>Krishna_Textile_Complete_Accounting_Project.xlsx</strong></div>
+                <div>• Invoices Detected: <strong style="color: #16a34a;">500 Sales + 200 Purchases</strong></div>
+                <div>• Total Turnover: <strong>₹ 2,00,00,000 (₹ 2.00 Cr)</strong></div>
+                <div>• Voucher Balance: <span class="status-pill status-completed" style="font-size: 0.7rem; padding: 1px 6px;">DR = CR Balanced</span></div>
+              </div>
+
+              <div style="margin-top: 16px;">
+                <button class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; padding: 10px;" id="btnPushExcelToTally" onclick="AdminCRM.streamExcelToTally()">
+                  <i class="fa-solid fa-play"></i> Inject All 1,416 Invoices into Tally Prime
+                </button>
+              </div>
+
+              <!-- Live Progress Stream Bar -->
+              <div id="tallyStreamProgressBox" style="display: none; margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
+                  <span id="tallyStreamStatusText">Injecting Batch 12/29...</span>
+                  <span id="tallyStreamPercent" style="font-weight: 800; color: #2563eb;">100%</span>
+                </div>
+                <div style="height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                  <div id="tallyStreamProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #2563eb, #10b981); transition: width 0.3s ease;"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive 1-Year Financial Finalization & Tally Push Banner -->
+        <div class="admin-card" style="margin-top: 25px; border-left: 4px solid var(--admin-accent-gold); background: linear-gradient(to right, #ffffff, #fefce8);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge-tag" style="background: #fef08a; color: #854d0e; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;">BENCHMARK DEMO</span>
+                <h4 style="font-size: 1.15rem; color: #0f172a; font-weight: 800;"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--admin-accent-gold); margin-right: 6px;"></i> Krishna Textile Ltd — 1-Year Full Accounting &amp; Balance Sheet Engine</h4>
+              </div>
+              <p style="font-size: 0.84rem; color: #475569; margin-top: 5px;">
+                <strong>500 Sales Invoices (₹1.20 Cr)</strong> + <strong>200 Purchase Invoices (₹80 Lakhs)</strong> = <strong>₹2.00 Crore Combined Turnover</strong>. 
+                Trial Balance (₹2.05 Cr) and Balance Sheet (₹89.82 Lakhs) 100% verified with 0.00 variance.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-admin btn-admin-gold" onclick="AdminCRM.push1YearFinancialsToTally()">
+                <i class="fa-solid fa-bolt"></i> Auto-Post 1-Year Financials to Tally Prime
+              </button>
+              <button class="btn-admin btn-admin-outline" onclick="AdminCRM.viewFinancialSummaryModal()">
+                <i class="fa-solid fa-chart-pie"></i> View Balance Sheet &amp; P&amp;L
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tally XML Voucher Generator / Export Module -->
+        <div class="admin-card" style="margin-top: 25px;">
+          <div class="admin-card-header">
+            <div>
+              <h3>Tally Sales Voucher & XML Importer Generator</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Generate Tally Prime compatible <code>&lt;ENVELOPE&gt;&lt;BODY&gt;&lt;DATA&gt;</code> XML vouchers for approved completed tasks to eliminate double data-entry.</p>
+            </div>
+            <button class="btn-admin btn-admin-gold" onclick="AdminCRM.exportAllApprovedToTally()">
+              <i class="fa-solid fa-download"></i> Export All Approved to Tally XML
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Client Name</th>
+                  <th>Completed & Approved Services</th>
+                  <th>Calculated Fee</th>
+                  <th>Approval Status</th>
+                  <th>Tally Sync Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="tallySyncTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 9. GOOGLE CALENDAR SYNC VIEW ================= -->
+      <section class="tab-content" id="tab-calendar">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div>
+              <h3>Website Appointment Bookings & Google Calendar Sync</h3>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Direct two-way synchronization between client website bookings and CA Kiran Shinde's Google Calendar.</p>
+            </div>
+            <button class="btn-admin btn-admin-primary" onclick="AdminCRM.syncGoogleCalendar()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Google Calendar
+            </button>
+          </div>
+
+          <div style="background: #f1f5f9; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.2rem;"></i>
+              <div>
+                <strong style="color: #0f172a; font-size: 0.9rem;">Connected to: cakiranshinde@gmail.com (Google Calendar API)</strong>
+                <p style="font-size: 0.78rem; color: #64748b;">Timezone: Asia/Kolkata (IST) • Auto-Reminder: 24h & 2h before consultation</p>
+              </div>
+            </div>
+            <span class="status-pill status-completed">Live Connected</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Client / Invitee</th>
+                  <th>Date & Time</th>
+                  <th>Meeting Purpose</th>
+                  <th>Mode</th>
+                  <th>Calendar Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="calendarTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Add New Client Modal Overlay -->
+  <div class="admin-modal-overlay" id="clientModal">
+    <div class="admin-modal">
+      <div class="modal-header">
+        <h3>Add New Client Master</h3>
+        <button class="modal-close-btn" id="closeClientModalBtn">&times;</button>
+      </div>
+
+      <form id="addClientForm">
+        <div class="form-group-admin">
+          <label class="form-label-admin">Firm / Client Name *</label>
+          <input type="text" id="modalClientName" class="form-input-admin" placeholder="e.g. Apex Industrial Pipes Pvt Ltd" required>
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">Entity Classification</label>
+          <select id="modalClientEntity" class="form-input-admin">
+            <option value="Pvt Ltd (MIDC)">Private Limited (Tarapur MIDC)</option>
+            <option value="Partnership / LLP">Partnership / LLP</option>
+            <option value="Proprietorship">Proprietorship Firm</option>
+            <option value="Individual / Professional">Individual / Salaried / Professional</option>
+          </select>
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">Permanent Account Number (PAN) *</label>
+          <input type="text" id="modalClientPan" class="form-input-admin" placeholder="e.g. ABCDE1234F" maxlength="10" required>
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">GST Identification Number (GSTIN)</label>
+          <input type="text" id="modalClientGstin" class="form-input-admin" placeholder="e.g. 27ABCDE1234F1Z5">
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">Phone / Contact</label>
+          <input type="tel" id="modalClientPhone" class="form-input-admin" placeholder="e.g. +91 98200 XXXXX">
+        </div>
+
+        <div style="margin-top: 24px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-admin btn-admin-outline" onclick="document.getElementById('clientModal').classList.remove('active')">Cancel</button>
+          <button type="submit" class="btn-admin btn-admin-primary">Save to Client Master</button>
+        </div>
+      </form>
+    </div>
+  <!-- Add Task Remarks / Audit Notes Modal Overlay -->
+  <div class="admin-modal-overlay" id="remarksModal">
+    <div class="admin-modal">
+      <div class="modal-header">
+        <h3 id="remarksModalTitle">Task Remarks & Audit Progress Log</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('remarksModal').classList.remove('active')">&times;</button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+        <h4 id="remarksClientHeading" style="color: #0f172a; font-size: 0.95rem;">-</h4>
+        <p id="remarksTaskSub" style="color: #64748b; font-size: 0.8rem; margin-top: 2px;">-</p>
+      </div>
+
+      <!-- Activity Timeline History -->
+      <div style="max-height: 180px; overflow-y: auto; margin-bottom: 18px; padding-right: 6px;" id="remarksHistoryList">
+        <!-- Rendered via JS -->
+      </div>
+
+      <form id="addRemarkForm">
+        <input type="hidden" id="currentRemarkTaskId">
+        <div class="form-group-admin">
+          <label class="form-label-admin">Add New Progress Remark / Blocker *</label>
+          <textarea id="modalRemarkText" class="form-input-admin" rows="3" placeholder="e.g. GSTR-2B ITC matched with Books. Minor ₹1,200 supplier invoice mismatch under review..." required></textarea>
+        </div>
+        <div class="form-group-admin">
+          <label class="form-label-admin">Remark Author</label>
+          <select id="modalRemarkAuthor" class="form-input-admin">
+            <option value="CA Kiran Shinde">CA Kiran Shinde (Partner)</option>
+            <option value="Rahul Mehta">Rahul Mehta (Senior Article)</option>
+            <option value="Pooja Sharma">Pooja Sharma (Article Trainee)</option>
+            <option value="Amit Joshi">Amit Joshi (Accountant)</option>
+          </select>
+        </div>
+        <div style="margin-top: 20px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-admin btn-admin-outline" onclick="document.getElementById('remarksModal').classList.remove('active')">Close</button>
+          <button type="submit" class="btn-admin btn-admin-primary"><i class="fa-solid fa-comment-medical"></i> Post Remark</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Document Follow-Up Request Modal -->
+  <div class="admin-modal-overlay" id="docFollowupModal">
+    <div class="admin-modal">
+      <div class="modal-header">
+        <h3>Create Pending Document Follow-Up</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('docFollowupModal').classList.remove('active')">&times;</button>
+      </div>
+
+      <form id="addDocFollowupForm">
+        <div class="form-group-admin">
+          <label class="form-label-admin">Select Client *</label>
+          <select id="docModalClientSelect" class="form-input-admin" required>
+            <!-- Injected via JS -->
+          </select>
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">Document Required *</label>
+          <input type="text" id="docModalDocName" class="form-input-admin" placeholder="e.g. Bank Statements (HDFC Bank - Current A/c) for Oct 2026" required>
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">Compliance Category</label>
+          <select id="docModalPeriod" class="form-input-admin">
+            <option value="GST Monthly Return">GST Monthly Return</option>
+            <option value="Income Tax Audit Sec 44AB">Income Tax Audit Sec 44AB</option>
+            <option value="Quarterly TDS 26Q">Quarterly TDS 26Q</option>
+            <option value="Statutory Annual Audit">Statutory Annual Audit</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 20px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-admin btn-admin-outline" onclick="document.getElementById('docFollowupModal').classList.remove('active')">Cancel</button>
+          <button type="submit" class="btn-admin btn-admin-primary">Schedule Automated Follow-up</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

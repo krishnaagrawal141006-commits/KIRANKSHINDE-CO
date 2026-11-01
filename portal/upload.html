@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Document Upload & Compliance Portal | Kiran K. Shinde & Co.</title>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="upload.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="client-header">
+    <div class="header-container">
+      <div class="brand-box">
+        <div class="brand-seal">KS</div>
+        <div class="brand-info">
+          <h2>Kiran K. Shinde & Co.</h2>
+          <span>Chartered Accountants • Client Digital Upload Desk</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="https://wa.me/917506647791" target="_blank" class="help-btn">
+          <i class="fa-brands fa-whatsapp"></i> CA Office Helpdesk
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="portal-main">
+    <div class="portal-container">
+      
+      <!-- Welcome Banner / Client Identification Card -->
+      <section class="client-auth-card">
+        <div class="auth-icon-badge">
+          <i class="fa-solid fa-file-shield"></i>
+        </div>
+        <div class="auth-details">
+          <span class="auth-tag">Statutory Compliance Season: Oct - Nov 2026</span>
+          <h1 class="portal-title">Secure Client Document Upload Desk</h1>
+          <p class="portal-subtitle">Upload your monthly bank statements, purchase registers, GST invoices, and tax audit documents directly to our secure audit vault.</p>
+        </div>
+
+        <!-- Quick Client Selector / Auto-Detected View -->
+        <div class="client-selector-box">
+          <label for="clientSelect"><i class="fa-solid fa-building-user"></i> Submitting Documents For:</label>
+          <select id="clientSelect" class="styled-select">
+            <option value="CL-101" selected>Tarapur Chemical Synthetics Pvt Ltd (MIDC Plot E-14)</option>
+            <option value="CL-102">Boisar Steel & Fabrication Works (Partnership)</option>
+            <option value="CL-103">Dr. Suresh V. Patil (Hospital & Diagnostic)</option>
+            <option value="CL-104">Khaira Traders & Electricals (Proprietorship)</option>
+            <option value="CL-105">Palghar Polyplast Industries LLP (MIDC Plot M-05)</option>
+            <option value="CL-106">Nova Pharma Intermediates Ltd (Tarapur MIDC)</option>
+            <option value="CL-107">Shree Krishna Agro Packaging (Boisar)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Grid Layout: Left Upload Form & Right Pending Checklist -->
+      <div class="portal-grid">
+        
+        <!-- Left: Upload Interface -->
+        <div class="upload-column">
+          <div class="portal-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-cloud-arrow-up text-gold"></i> Upload New Document</h3>
+              <span class="secure-badge"><i class="fa-solid fa-lock"></i> 256-Bit SSL Encrypted</span>
+            </div>
+
+            <form id="docUploadForm" class="upload-form">
+              <div class="form-group">
+                <label class="form-label">Compliance Category *</label>
+                <select id="docCategory" class="form-input" required>
+                  <option value="GST Returns">Monthly GST Filing (GSTR-1 / GSTR-3B)</option>
+                  <option value="Bank Statements">Bank Account Statements (Current / CC / OD)</option>
+                  <option value="Tax Audit">Income Tax Audit Sec 44AB / 3CD Supporting</option>
+                  <option value="TDS & Challan">Quarterly TDS 26Q / 24Q Deductions</option>
+                  <option value="Annual Accounts">Audited Financials / Depreciation Schedule</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Compliance Period *</label>
+                <input type="text" id="docPeriod" class="form-input" value="October 2026 / FY 2026-27" required>
+              </div>
+
+              <!-- Drag & Drop Zone -->
+              <div class="drop-zone" id="dropZone">
+                <input type="file" id="fileInput" class="file-input-hidden" accept=".pdf,.xlsx,.xls,.csv,.zip,.jpg,.png" multiple>
+                <div class="drop-content">
+                  <div class="drop-icon">
+                    <i class="fa-solid fa-folder-open"></i>
+                  </div>
+                  <h4>Drag & Drop Files Here or <span class="browse-link">Browse Files</span></h4>
+                  <p class="drop-note">Supported: PDF, Excel (.xlsx, .csv), Scanned Images (Up to 50MB)</p>
+                </div>
+              </div>
+
+              <!-- Selected Files Queue Display -->
+              <div class="selected-files-list" id="selectedFilesList" style="display: none;">
+                <!-- Files injected via JS -->
+              </div>
+
+              <div class="form-group" style="margin-top: 15px;">
+                <label class="form-label">Special Notes / Remarks for CA Kiran Shinde's Team</label>
+                <textarea id="docNotes" class="form-input" rows="2" placeholder="e.g. Includes bank statement for newly opened SBI account and September purchase register..."></textarea>
+              </div>
+
+              <button type="submit" class="btn-upload-submit" id="submitUploadBtn">
+                <i class="fa-solid fa-shield-halved"></i> Upload to CA Office Cloud Vault
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right: Pending Documents Checklist & Live Status -->
+        <div class="checklist-column">
+          <div class="portal-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-list-check text-blue"></i> Required Documents Checklist</h3>
+              <span class="status-summary" id="pendingSummaryBadge">2 Pending</span>
+            </div>
+
+            <div class="checklist-info">
+              <p>Below are documents currently requested by Kiran K. Shinde & Co. for timely filing and avoiding statutory penalties.</p>
+            </div>
+
+            <div class="checklist-items" id="checklistContainer">
+              <!-- Checklist injected via JS based on selected client -->
+            </div>
+
+            <!-- Instant WhatsApp Confirmation Banner -->
+            <div class="instant-wa-box">
+              <div class="wa-box-content">
+                <i class="fa-brands fa-whatsapp text-green"></i>
+                <div>
+                  <strong>Instant WhatsApp Acknowledgement</strong>
+                  <p>A digital upload receipt is automatically sent to your registered mobile number upon submission.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- OneDrive Sync Assurance -->
+            <div class="onedrive-assurance">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Directly backed up to <strong>OneDrive / Clients / [Company] / FY26-27</strong></span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Success Modal Overlay -->
+      <div class="upload-success-modal" id="successModal">
+        <div class="modal-card">
+          <div class="modal-icon-success">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h3>Documents Received Successfully!</h3>
+          <p id="successClientName">Tarapur Chemical Synthetics Pvt Ltd</p>
+          <div class="receipt-box" id="uploadReceiptBox">
+            <!-- Receipt details injected via JS -->
+          </div>
+          <div class="modal-actions">
+            <button class="btn-primary" onclick="document.getElementById('successModal').classList.remove('active')">Upload More Documents</button>
+            <a href="../admin/index.html" class="btn-outline">Open Admin CRM</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="client-footer">
+    <div class="container">
+      <p>© 2026 Kiran K. Shinde & Co., Chartered Accountants (ICAI Regd. Estd 2009). All Rights Reserved.</p>
+      <p style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">Boisar West, Opp. Railway Station, Palghar District, Maharashtra 401501</p>
+    </div>
+  </footer>
+
+  <script src="upload.js"></script>
+</body>
+</html>

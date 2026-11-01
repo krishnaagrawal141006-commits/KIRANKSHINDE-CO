@@ -303,6 +303,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const leads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
+      leads.unshift({
+        id: `WEB-${Date.now()}`,
+        name,
+        phone,
+        entity: businessType,
+        service,
+        notes,
+        date: new Date().toLocaleString('en-IN'),
+        status: 'New',
+        source: 'Website consultation form'
+      });
+      localStorage.setItem('ks_leads', JSON.stringify(leads));
+
       const formattedMessage = `Hello CA Kiran K. Shinde & Co.,%0A%0A*New Website Consultation Request:*%0A• *Client Name:* ${encodeURIComponent(name)}%0A• *Phone:* ${encodeURIComponent(phone)}%0A• *Entity Type:* ${encodeURIComponent(businessType)}%0A• *Service Required:* ${encodeURIComponent(service)}%0A• *Details/Requirement:* ${encodeURIComponent(notes || 'Consultation required')}%0A%0APlease let me know your available appointment slot.`;
 
       const whatsappUrl = `https://wa.me/917506647791?text=${formattedMessage}`;

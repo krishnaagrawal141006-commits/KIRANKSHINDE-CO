@@ -1,136 +1,22 @@
 // CA Firm CRM & Admin Panel State Management
 const AdminCRM = {
   // 1. Initial State Data with realistic Indian CA Firm Data
-  state: {
-    // 350+ Client Directory sample covering Tarapur MIDC, Boisar, Palghar, LLPs, Proprietors
-    clients: [
-      { id: 'CL-101', name: 'Tarapur Chemical Synthetics Pvt Ltd', entity: 'Pvt Ltd (MIDC)', pan: 'AABCT1234F', gstin: '27AABCT1234F1Z5', phone: '+91 98221 44550', status: 'Active', assignedTo: 'Rahul Mehta', midcPlot: 'Plot E-14, Tarapur MIDC', services: ['Monthly GST', 'Tax Audit Sec 44AB', 'TDS 26Q'] },
-      { id: 'CL-102', name: 'Boisar Steel & Fabrication Works', entity: 'Partnership', pan: 'AAAFB5678K', gstin: '27AAAFB5678K1Z2', phone: '+91 98902 33441', status: 'Active', assignedTo: 'Pooja Sharma', midcPlot: 'Plot L-28, Tarapur MIDC', services: ['Monthly GST', 'Statutory Audit', 'ITR-5'] },
-      { id: 'CL-103', name: 'Dr. Suresh V. Patil (Hospital & Diagnostic)', entity: 'Individual / Professional', pan: 'ABCPP9012L', gstin: 'Unregistered', phone: '+91 94220 88712', status: 'Active', assignedTo: 'Rahul Mehta', midcPlot: 'Boisar West', services: ['ITR-3 44ADA', 'Advance Tax'] },
-      { id: 'CL-104', name: 'Khaira Traders & Electricals', entity: 'Proprietorship', pan: 'AJEPK3456M', gstin: '27AJEPK3456M1Z8', phone: '+91 98601 22998', status: 'Active', assignedTo: 'Amit Joshi', midcPlot: 'Palghar Road', services: ['Quarterly GST', 'ITR-3'] },
-      { id: 'CL-105', name: 'Palghar Polyplast Industries LLP', entity: 'LLP (MIDC)', pan: 'AABCP7890N', gstin: '27AABCP7890N1Z4', status: 'Active', phone: '+91 98210 55667', assignedTo: 'Pooja Sharma', midcPlot: 'Plot M-05, Tarapur MIDC', services: ['Monthly GST', 'Statutory Audit', 'TDS 26Q'] },
-      { id: 'CL-106', name: 'Nova Pharma Intermediates Ltd', entity: 'Pvt Ltd (MIDC)', pan: 'AABCN9988G', gstin: '27AABCN9988G1Z1', phone: '+91 98201 11223', status: 'Active', assignedTo: 'CA Kiran Shinde', midcPlot: 'Plot G-12, Tarapur MIDC', services: ['Transfer Pricing', 'Tax Audit', 'GSTR-9C'] },
-      { id: 'CL-107', name: 'Shree Krishna Agro Packaging', entity: 'Proprietorship', pan: 'ARPPK1122D', gstin: '27ARPPK1122D1Z9', phone: '+91 97632 99881', status: 'Active', assignedTo: 'Amit Joshi', midcPlot: 'Navapur Road, Boisar', services: ['Monthly GST', 'ITR-4 Presumptive'] }
-    ],
-
-    leads: [
-      { id: 'LD-201', name: 'Anand K. More', phone: '+91 98200 44512', entity: 'Industrial (Tarapur MIDC)', service: 'Statutory & Tax Audit', date: '16 Oct 2026', status: 'New' },
-      { id: 'LD-202', name: 'Sunita Deshmukh', phone: '+91 97654 33210', entity: 'Salaried Professional', service: 'Income Tax Return (ITR)', date: '15 Oct 2026', status: 'Contacted' },
-      { id: 'LD-203', name: 'Apex Polymers LLP', phone: '+91 99700 88231', entity: 'MSME', service: 'GST Compliance & Reconciliation', date: '14 Oct 2026', status: 'Appointment Fixed' }
-    ],
-
-    // Tasks with Stage, Billable status, and Staff Remarks / Activity History
-    tasks: [
-      {
-        id: 'TK-301',
-        client: 'Tarapur Chemical Synthetics Pvt Ltd',
-        tag: 'tag-gst',
-        taskName: 'GSTR-3B Monthly Filing (Sept 2026)',
-        dueDate: '20 Oct 2026',
-        stage: 'todo',
-        assigned: 'Rahul Mehta',
-        billable: true,
-        fee: 2500,
-        remarks: [
-          { author: 'Rahul Mehta', time: '14 Oct 2026 11:30 AM', note: 'Purchase register received from client accountant. Reconciling with 2B.' },
-          { author: 'CA Kiran Shinde', time: '15 Oct 2026 04:15 PM', note: 'Ensure RCM liability under section 9(3) on freight transport is checked.' }
-        ]
-      },
-      {
-        id: 'TK-302',
-        client: 'Boisar Steel & Fabrication Works',
-        tag: 'tag-audit',
-        taskName: 'Statutory & Tax Audit Sec 44AB',
-        dueDate: '24 Oct 2026',
-        stage: 'in-review',
-        assigned: 'CA Kiran Shinde',
-        billable: true,
-        fee: 15000,
-        remarks: [
-          { author: 'Pooja Sharma', time: '12 Oct 2026 02:45 PM', note: 'Depreciation schedule as per IT Act vs Companies Act prepared.' },
-          { author: 'CA Kiran Shinde', time: '16 Oct 2026 10:00 AM', note: 'Checking Form 3CD Clause 34 (TDS compliance). Need clarification on 194C.' }
-        ]
-      },
-      {
-        id: 'TK-303',
-        client: 'Dr. Suresh V. Patil (Hospital)',
-        tag: 'tag-itr',
-        taskName: 'ITR-3 Computation & 44ADA Verification',
-        dueDate: '18 Oct 2026',
-        stage: 'completed',
-        assigned: 'Pooja Sharma',
-        billable: true,
-        fee: 4500,
-        tallySynced: true,
-        remarks: [
-          { author: 'Pooja Sharma', time: '11 Oct 2026 05:00 PM', note: 'Form 26AS & AIS matched with bank deposit interests.' },
-          { author: 'CA Kiran Shinde', time: '13 Oct 2026 01:15 PM', note: 'Approved computation. Return successfully uploaded on e-filing portal.' }
-        ]
-      },
-      {
-        id: 'TK-304',
-        client: 'State Bank Boisar Branch',
-        tag: 'tag-bank',
-        taskName: 'Concurrent Bank Audit Monthly Report',
-        dueDate: '22 Oct 2026',
-        stage: 'in-progress',
-        assigned: 'CA Kiran Shinde',
-        billable: true,
-        fee: 12000,
-        remarks: [
-          { author: 'CA Kiran Shinde', time: '15 Oct 2026 03:00 PM', note: 'NPA classification verification and stock inspection conducted.' }
-        ]
-      },
-      {
-        id: 'TK-305',
-        client: 'Palghar Polyplast Industries LLP',
-        tag: 'tag-gst',
-        taskName: 'GSTR-9 & 9C Annual Reconciliation',
-        dueDate: '30 Oct 2026',
-        stage: 'todo',
-        assigned: 'Amit Joshi',
-        billable: true,
-        fee: 8000,
-        remarks: [
-          { author: 'Amit Joshi', time: '16 Oct 2026 09:30 AM', note: 'Awaiting FY audited balance sheet and turnover bifurcations.' }
-        ]
-      }
-    ],
-
-    // Automated Document Follow-Up System
-    pendingDocs: [
-      { id: 'DOC-1', client: 'Tarapur Chemical Synthetics', doc: 'Bank Statement (SBI Current A/c - Sept 2026)', category: 'GST & Tally Entry', lastPing: '14 Oct 2026', nextPing: '18 Oct 2026', status: 'Pending Client', phone: '+91 98221 44550' },
-      { id: 'DOC-2', client: 'Boisar Steel & Fabrication', doc: 'MSME Udhyam Registration Copy & 43B(h) payment proof', category: 'Tax Audit 44AB', lastPing: '13 Oct 2026', nextPing: '17 Oct 2026', status: 'Pending Client', phone: '+91 98902 33441' },
-      { id: 'DOC-3', client: 'Palghar Polyplast Industries', doc: 'Credit Note Register & Sales Ledger XML', category: 'GSTR-9C Annual', lastPing: '12 Oct 2026', nextPing: '19 Oct 2026', status: 'Overdue (3 Days)', phone: '+91 98210 55667' }
-    ],
-
-    // Consolidated Invoices with Tally Prime XML generation logic
-    invoices: [
-      { id: 'INV-401', client: 'Tarapur Chemical Synthetics', service: 'Annual Statutory Audit & GST', amount: '₹ 45,000', date: '05 Oct 2026', status: 'Paid', method: 'NEFT Transfer', tallySynced: true },
-      { id: 'INV-402', client: 'Boisar Steel & Fabrication Works', service: 'Tax Audit (44AB) & ITR', amount: '₹ 28,000', date: '08 Oct 2026', status: 'Pending', method: 'UPI / GPay', tallySynced: false },
-      { id: 'INV-403', client: 'Dr. Suresh V. Patil', service: 'Personal ITR & Financial Statement', amount: '₹ 7,500', date: '12 Oct 2026', status: 'Paid', method: 'Google Pay', tallySynced: true },
-      { id: 'INV-404', client: 'Khaira Traders & Electricals', service: 'Quarterly GST & TDS Filing', amount: '₹ 12,000', date: '14 Oct 2026', status: 'Pending', method: 'Bank Transfer', tallySynced: false }
-    ],
-
-    // Google Calendar Sync Bookings
-    calendarBookings: [
-      { id: 'GCAL-901', client: 'Anand K. More (MIDC)', dateTime: '26 Oct 2026, 03:30 PM', purpose: 'Discussion on MIDC Factory Expansion & Project Finance', mode: 'In-Person (Boisar Office)', status: 'Google Calendar Synced' },
-      { id: 'GCAL-902', client: 'Apex Polymers LLP', dateTime: '27 Oct 2026, 11:00 AM', purpose: 'Sec 43B(h) MSME 45-Day Payment Audit Review', mode: 'Google Meet', status: 'Google Calendar Synced' },
-      { id: 'GCAL-903', client: 'Dr. Suresh V. Patil', dateTime: '28 Oct 2026, 05:00 PM', purpose: 'Capital Gains & Property Reinvestment Planning', mode: 'In-Person (Boisar Office)', status: 'Google Calendar Synced' }
-    ],
-
-    articles: [
-      { id: 'ST-01', name: 'Rahul Mehta', role: 'Senior Article Assistant (Final CA)', activeTasks: 4, completedThisMonth: 12, phone: '+91 98111 22334' },
-      { id: 'ST-02', name: 'Pooja Sharma', role: 'Article Trainee (Inter CA)', activeTasks: 3, completedThisMonth: 9, phone: '+91 98222 33445' },
-      { id: 'ST-03', name: 'Amit Joshi', role: 'Semi-Qualified Accountant', activeTasks: 3, completedThisMonth: 15, phone: '+91 98333 44556' }
-    ]
-  },
+  state: { clients: [], leads: [], tasks: [], pendingDocs: [], invoices: [], calendarBookings: [], articles: [] },
 
   init() {
+    const savedLeads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
+    this.state.leads = savedLeads;
     this.renderAll();
     this.setupTabNavigation();
     this.setupModals();
     this.setupMobileMenu();
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'ks_leads') {
+        this.state.leads = JSON.parse(event.newValue || '[]');
+        this.renderMetrics();
+        this.renderLeadsTable();
+      }
+    });
   },
 
   // 2. Render UI
@@ -868,3 +754,4 @@ const AdminCRM = {
 document.addEventListener('DOMContentLoaded', () => {
   AdminCRM.init();
 });
+

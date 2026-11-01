@@ -3,45 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. Client Checklists Database
   const clientChecklists = {
-    'CL-101': {
-      name: 'Tarapur Chemical Synthetics Pvt Ltd',
-      pan: 'AABCT1234F',
-      items: [
-        { id: 'CHK-1', title: 'HDFC & SBI Current Bank Statements (Sept 2026)', category: 'GST & Tally Entry', status: 'pending', deadline: '20 Oct 2026' },
-        { id: 'CHK-2', title: 'GSTR-2B Mismatch Reconciliation Proof', category: 'Monthly GST', status: 'pending', deadline: '18 Oct 2026' },
-        { id: 'CHK-3', title: 'Director Remuneration & TDS 192/194J Challans', category: 'TDS 26Q', status: 'verified', deadline: '07 Oct 2026' }
-      ]
-    },
-    'CL-102': {
-      name: 'Boisar Steel & Fabrication Works',
-      pan: 'AAAFB5678K',
-      items: [
-        { id: 'CHK-4', title: 'MSME Udhyam Registration & 43B(h) Payment Proof', category: 'Tax Audit 44AB', status: 'pending', deadline: '24 Oct 2026' },
-        { id: 'CHK-5', title: 'Bank OD Statement with Interest Certificate', category: 'Audit Finalization', status: 'verified', deadline: '12 Oct 2026' }
-      ]
-    },
-    'CL-103': {
-      name: 'Dr. Suresh V. Patil (Hospital & Diagnostic)',
-      pan: 'ABCPP9012L',
-      items: [
-        { id: 'CHK-6', title: 'Form 26AS & AIS Verification Acknowledgement', category: 'ITR-3 / 44ADA', status: 'verified', deadline: '15 Oct 2026' },
-        { id: 'CHK-7', title: 'Medical Equipment Purchase GST Tax Invoices', category: 'Depreciation Audit', status: 'pending', deadline: '28 Oct 2026' }
-      ]
-    },
-    'CL-104': {
-      name: 'Khaira Traders & Electricals',
-      pan: 'AJEPK3456M',
-      items: [
-        { id: 'CHK-8', title: 'Quarterly Sales & Purchase B2B Register (Excel)', category: 'Quarterly GST', status: 'pending', deadline: '22 Oct 2026' }
-      ]
-    },
-    'CL-105': {
-      name: 'Palghar Polyplast Industries LLP',
-      pan: 'AABCP7890N',
-      items: [
-        { id: 'CHK-9', title: 'Audited Financial Statements signed by Designated Partners', category: 'Statutory Audit', status: 'pending', deadline: '30 Oct 2026' },
-        { id: 'CHK-10', title: 'Credit Note Register for Tarapur MIDC dispatches', category: 'GST Reconciliation', status: 'pending', deadline: '25 Oct 2026' }
-      ]
+    'new-submission': {
+      name: 'New portal submission',
+      items: [{ id: 'GEN-1', title: 'Documents received for review', category: 'General', status: 'pending', deadline: 'To be confirmed' }]
     }
   };
 
@@ -159,16 +123,38 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
 
       const clientId = clientSelect.value;
-      const clientName = clientSelect.options[clientSelect.selectedIndex].text.split('(')[0].trim();
+      const clientName = document.getElementById('portalName').value.trim();
+      const portalPhone = document.getElementById('portalPhone').value.trim();
+      const portalEmail = document.getElementById('portalEmail').value.trim();
       const category = document.getElementById('docCategory').value;
       const period = document.getElementById('docPeriod').value;
       const fileCount = queuedFiles.length > 0 ? queuedFiles.length : 1;
       const firstFileName = queuedFiles.length > 0 ? queuedFiles[0].name : `${category.replace(/\s+/g, '_')}_Document.pdf`;
+      const now = new Date();
+      const timeStr = `${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      if (!clientName || !portalPhone) {
+        alert('Please enter your name and phone number.');
+        return;
+      }
+
+      const submissions = JSON.parse(localStorage.getItem('ks_leads') || '[]');
+      submissions.unshift({
+        id: `PORTAL-${Date.now()}`,
+        name: clientName,
+        phone: portalPhone,
+        email: portalEmail,
+        entity: 'Document portal submission',
+        service: category,
+        notes: `${period} • ${fileCount} file(s) • ${firstFileName}`,
+        date: timeStr,
+        status: 'New',
+        source: 'Document upload portal'
+      });
+      localStorage.setItem('ks_leads', JSON.stringify(submissions));
 
       // Generate Receipt
       const receiptId = `RCPT-${Math.floor(100000 + Math.random() * 900000)}`;
-      const now = new Date();
-      const timeStr = `${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
       // Update Client Checklist in memory to mark pending items as received
       const clientData = clientChecklists[clientId];
@@ -202,3 +188,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+

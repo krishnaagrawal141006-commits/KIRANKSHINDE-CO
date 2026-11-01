@@ -56,11 +56,6 @@
         <span>Consolidated Billing</span>
       </button>
 
-      <button class="nav-tab-btn" data-target="tab-tally-sync">
-        <i class="fa-solid fa-arrows-rotate"></i>
-        <span>Tally Prime & Stack Sync</span>
-      </button>
-
       <button class="nav-tab-btn" data-target="tab-calendar">
         <i class="fa-solid fa-calendar-check"></i>
         <span>Google Calendar Sync</span>
@@ -73,10 +68,6 @@
         <span class="nav-counter" id="leadCounterBadge">3 New</span>
       </button>
 
-      <button class="nav-tab-btn" data-target="tab-articles">
-        <i class="fa-solid fa-user-group"></i>
-        <span>Staff & Workload</span>
-      </button>
     </div>
 
     <div class="sidebar-footer">
@@ -341,40 +332,7 @@
             </table>
           </div>
         </div>
-      </section>
-
-      <!-- ================= 6. ARTICLES / STAFF VIEW ================= -->
-      <section class="tab-content" id="tab-articles">
-        <div class="admin-card">
-          <div class="admin-card-header">
-            <div>
-              <h3>Articleship Trainees & Staff Management</h3>
-              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Delegated work assignments, active load & month-to-date filing stats.</p>
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Staff ID</th>
-                  <th>Name</th>
-                  <th>Designation / Qualification</th>
-                  <th>Active Assigned</th>
-                  <th>Filed This Month</th>
-                  <th>Contact</th>
-                  <th>WhatsApp</th>
-                </tr>
-              </thead>
-              <tbody id="articlesTableBody">
-                <!-- Injected via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= 7. DOCUMENTS & REMINDERS (Spectrum Style) ================= -->
+      </section>`n`n      <!-- ================= 6. DOCUMENTS & REMINDERS (Spectrum Style) ================= -->
       <section class="tab-content" id="tab-documents">
         <div class="admin-card">
           <div class="admin-card-header">
@@ -408,184 +366,7 @@
             </table>
           </div>
         </div>
-      </section>
-
-      <!-- ================= 8. TALLY PRIME & STACK SYNC HUB ================= -->
-      <section class="tab-content" id="tab-tally-sync">
-        <div class="admin-card" style="border-left: 4px solid #10b981; margin-bottom: 25px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <div>
-              <h4 style="font-size: 1.1rem; color: #0f172a;"><i class="fa-solid fa-server" style="color: #10b981; margin-right: 8px;"></i> Central Software Stack Integration Control</h4>
-              <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Connects Tally Prime, KDK, Spectrum, Winman, Occomotion AI, and OneDrive into a single unified data pipeline.</p>
-            </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="btn-admin btn-admin-gold" onclick="AdminCRM.testTallyPort9000()">
-                <i class="fa-solid fa-network-wired"></i> Test Tally Port 9000 Connection
-              </button>
-              <button class="btn-admin btn-admin-primary" onclick="AdminCRM.runFullStackSync()">
-                <i class="fa-solid fa-rotate"></i> Run Full Stack Sync Now
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-          <div class="metric-card">
-            <div class="metric-data">
-              <span>Tally Prime XML Sync</span>
-              <h3 style="color: #10b981;">Connected</h3>
-              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">Port 9000 XML / ODBC Ready</p>
-            </div>
-            <div class="metric-icon-box icon-green">
-              <i class="fa-solid fa-database"></i>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-data">
-              <span>Occomotion AI (Bank OCR)</span>
-              <h3 style="color: #2563eb;">Active</h3>
-              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">42 Statements Processed</p>
-            </div>
-            <div class="metric-icon-box icon-blue">
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-data">
-              <span>KDK / Spectrum Bridge</span>
-              <h3 style="color: #d97706;">Syncing</h3>
-              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">Returns ACK Auto-Import</p>
-            </div>
-            <div class="metric-icon-box icon-amber">
-              <i class="fa-solid fa-file-shield"></i>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-data">
-              <span>OneDrive Cloud Backup</span>
-              <h3 style="color: #8b5cf6;">Synced</h3>
-              <p style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">350 Client Folders</p>
-            </div>
-            <div class="metric-icon-box icon-purple">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- 1-Click Client Excel-to-Tally Bulk Importer Module -->
-        <div class="admin-card" style="margin-top: 25px; border-left: 4px solid #2563eb;">
-          <div class="admin-card-header">
-            <div>
-              <h3><i class="fa-solid fa-file-excel" style="color: #16a34a; margin-right: 8px;"></i> 1-Click Client Excel-to-Tally Auto-Importer &amp; Poster</h3>
-              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Upload client sales registers, purchase sheets or bank statement Excels (500+ invoices) to automatically create ledgers and post vouchers directly into Tally Prime.</p>
-            </div>
-            <span class="status-pill status-completed"><i class="fa-solid fa-bolt"></i> Port 9000 Engine Active</span>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; align-items: start;">
-            <!-- Drop & Upload Zone -->
-            <div style="border: 2px dashed #cbd5e1; border-radius: 10px; padding: 25px; text-align: center; background: #f8fafc; cursor: pointer;" id="tallyExcelDropZone" onclick="document.getElementById('tallyExcelFileInput').click()">
-              <input type="file" id="tallyExcelFileInput" style="display: none;" accept=".xlsx,.xls,.csv" onchange="AdminCRM.handleTallyExcelUpload(event)">
-              <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.2rem; color: #2563eb; margin-bottom: 8px;"></i>
-              <h4 style="font-size: 0.95rem; color: #0f172a; font-weight: 700;">Drag &amp; Drop Client Excel (.xlsx) or CSV File Here</h4>
-              <p style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">Supports Sales Invoices, Purchase Sheets &amp; Full Year Financial Workbooks</p>
-              <div style="margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; background: #e2e8f0; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
-                <i class="fa-solid fa-file-circle-check" style="color: #16a34a;"></i> Krishna_Textile_Complete_Accounting_Project.xlsx Pre-Loaded
-              </div>
-            </div>
-
-            <!-- Verification & Live Push Control Panel -->
-            <div style="background: #f1f5f9; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0;">
-              <h4 style="font-size: 0.9rem; color: #0f172a; margin-bottom: 12px;"><i class="fa-solid fa-list-check" style="color: #2563eb; margin-right: 6px;"></i> File Audit &amp; Balance Verification</h4>
-              
-              <div style="font-size: 0.8rem; line-height: 1.8; color: #334155;" id="excelAuditDetails">
-                <div>• File: <strong>Krishna_Textile_Complete_Accounting_Project.xlsx</strong></div>
-                <div>• Invoices Detected: <strong style="color: #16a34a;">500 Sales + 200 Purchases</strong></div>
-                <div>• Total Turnover: <strong>₹ 2,00,00,000 (₹ 2.00 Cr)</strong></div>
-                <div>• Voucher Balance: <span class="status-pill status-completed" style="font-size: 0.7rem; padding: 1px 6px;">DR = CR Balanced</span></div>
-              </div>
-
-              <div style="margin-top: 16px;">
-                <button class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; padding: 10px;" id="btnPushExcelToTally" onclick="AdminCRM.streamExcelToTally()">
-                  <i class="fa-solid fa-play"></i> Inject All 1,416 Invoices into Tally Prime
-                </button>
-              </div>
-
-              <!-- Live Progress Stream Bar -->
-              <div id="tallyStreamProgressBox" style="display: none; margin-top: 12px;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
-                  <span id="tallyStreamStatusText">Injecting Batch 12/29...</span>
-                  <span id="tallyStreamPercent" style="font-weight: 800; color: #2563eb;">100%</span>
-                </div>
-                <div style="height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
-                  <div id="tallyStreamProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #2563eb, #10b981); transition: width 0.3s ease;"></div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        <!-- Interactive 1-Year Financial Finalization & Tally Push Banner -->
-        <div class="admin-card" style="margin-top: 25px; border-left: 4px solid var(--admin-accent-gold); background: linear-gradient(to right, #ffffff, #fefce8);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge-tag" style="background: #fef08a; color: #854d0e; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;">BENCHMARK DEMO</span>
-                <h4 style="font-size: 1.15rem; color: #0f172a; font-weight: 800;"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--admin-accent-gold); margin-right: 6px;"></i> Krishna Textile Ltd — 1-Year Full Accounting &amp; Balance Sheet Engine</h4>
-              </div>
-              <p style="font-size: 0.84rem; color: #475569; margin-top: 5px;">
-                <strong>500 Sales Invoices (₹1.20 Cr)</strong> + <strong>200 Purchase Invoices (₹80 Lakhs)</strong> = <strong>₹2.00 Crore Combined Turnover</strong>. 
-                Trial Balance (₹2.05 Cr) and Balance Sheet (₹89.82 Lakhs) 100% verified with 0.00 variance.
-              </p>
-            </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="btn-admin btn-admin-gold" onclick="AdminCRM.push1YearFinancialsToTally()">
-                <i class="fa-solid fa-bolt"></i> Auto-Post 1-Year Financials to Tally Prime
-              </button>
-              <button class="btn-admin btn-admin-outline" onclick="AdminCRM.viewFinancialSummaryModal()">
-                <i class="fa-solid fa-chart-pie"></i> View Balance Sheet &amp; P&amp;L
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tally XML Voucher Generator / Export Module -->
-        <div class="admin-card" style="margin-top: 25px;">
-          <div class="admin-card-header">
-            <div>
-              <h3>Tally Sales Voucher & XML Importer Generator</h3>
-              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Generate Tally Prime compatible <code>&lt;ENVELOPE&gt;&lt;BODY&gt;&lt;DATA&gt;</code> XML vouchers for approved completed tasks to eliminate double data-entry.</p>
-            </div>
-            <button class="btn-admin btn-admin-gold" onclick="AdminCRM.exportAllApprovedToTally()">
-              <i class="fa-solid fa-download"></i> Export All Approved to Tally XML
-            </button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Client Name</th>
-                  <th>Completed & Approved Services</th>
-                  <th>Calculated Fee</th>
-                  <th>Approval Status</th>
-                  <th>Tally Sync Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="tallySyncTableBody">
-                <!-- Injected via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= 9. GOOGLE CALENDAR SYNC VIEW ================= -->
+      </section>`n`n      <!-- ================= 8. GOOGLE CALENDAR SYNC VIEW ================= -->
       <section class="tab-content" id="tab-calendar">
         <div class="admin-card">
           <div class="admin-card-header">
@@ -706,9 +487,7 @@
           <label class="form-label-admin">Remark Author</label>
           <select id="modalRemarkAuthor" class="form-input-admin">
             <option value="CA Kiran Shinde">CA Kiran Shinde (Partner)</option>
-            <option value="Rahul Mehta">Rahul Mehta (Senior Article)</option>
-            <option value="Pooja Sharma">Pooja Sharma (Article Trainee)</option>
-            <option value="Amit Joshi">Amit Joshi (Accountant)</option>
+            <option value="CA Team">CA Team</option>
           </select>
         </div>
         <div style="margin-top: 20px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
@@ -761,3 +540,5 @@
   <script src="admin.js"></script>
 </body>
 </html>
+
+

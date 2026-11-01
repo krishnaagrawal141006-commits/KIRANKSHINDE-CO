@@ -48,17 +48,14 @@
           <p class="portal-subtitle">Upload your monthly bank statements, purchase registers, GST invoices, and tax audit documents directly to our secure audit vault.</p>
         </div>
 
-        <!-- Quick Client Selector / Auto-Detected View -->
+        <!-- Submitter Details -->
         <div class="client-selector-box">
-          <label for="clientSelect"><i class="fa-solid fa-building-user"></i> Submitting Documents For:</label>
+          <label for="portalName"><i class="fa-solid fa-user"></i> Your Details</label>
+          <input id="portalName" class="styled-select" type="text" placeholder="Full name / business name" required>
+          <input id="portalPhone" class="styled-select" type="tel" placeholder="Phone / WhatsApp number" required>
+          <input id="portalEmail" class="styled-select" type="email" placeholder="Email address (optional)">
           <select id="clientSelect" class="styled-select">
-            <option value="CL-101" selected>Tarapur Chemical Synthetics Pvt Ltd (MIDC Plot E-14)</option>
-            <option value="CL-102">Boisar Steel & Fabrication Works (Partnership)</option>
-            <option value="CL-103">Dr. Suresh V. Patil (Hospital & Diagnostic)</option>
-            <option value="CL-104">Khaira Traders & Electricals (Proprietorship)</option>
-            <option value="CL-105">Palghar Polyplast Industries LLP (MIDC Plot M-05)</option>
-            <option value="CL-106">Nova Pharma Intermediates Ltd (Tarapur MIDC)</option>
-            <option value="CL-107">Shree Krishna Agro Packaging (Boisar)</option>
+            <option value="new-submission" selected>New portal submission</option>
           </select>
         </div>
       </section>
@@ -165,7 +162,7 @@
             <i class="fa-solid fa-circle-check"></i>
           </div>
           <h3>Documents Received Successfully!</h3>
-          <p id="successClientName">Tarapur Chemical Synthetics Pvt Ltd</p>
+          <p id="successClientName">Your submission</p>
           <div class="receipt-box" id="uploadReceiptBox">
             <!-- Receipt details injected via JS -->
           </div>

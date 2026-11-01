@@ -662,6 +662,34 @@ const AdminCRM = {
 
   // 8. Modal Handlers
   setupModals() {
+    const employeePhotoFile = document.getElementById('employeePhotoFile');
+    const employeePhoto = document.getElementById('employeePhoto');
+    const employeePhotoStatus = document.getElementById('employeePhotoStatus');
+    if (employeePhotoFile) employeePhotoFile.addEventListener('change', async () => {
+      const file = employeePhotoFile.files[0];
+      if (!file) return;
+      const cloudName = window.CLOUDINARY_CLOUD_NAME || '';
+      const uploadPreset = window.CLOUDINARY_UPLOAD_PRESET || '';
+      if (!cloudName || !uploadPreset) {
+        employeePhotoStatus.textContent = 'Set Cloudinary cloud name and unsigned preset first';
+        employeePhotoStatus.style.color = '#b45309';
+        return;
+      }
+      employeePhotoStatus.textContent = 'Uploading photo...';
+      const body = new FormData(); body.append('file', file); body.append('upload_preset', uploadPreset);
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body });
+        if (!response.ok) throw new Error('Upload failed');
+        const result = await response.json();
+        employeePhoto.value = result.secure_url;
+        employeePhotoStatus.textContent = 'Photo uploaded to Cloudinary';
+        employeePhotoStatus.style.color = '#15803d';
+      } catch (error) {
+        employeePhotoStatus.textContent = 'Cloudinary upload failed';
+        employeePhotoStatus.style.color = '#b91c1c';
+      }
+    });
+
     const employeeForm = document.getElementById('employeeForm');
     if (employeeForm) employeeForm.addEventListener('submit', (event) => {
       event.preventDefault();

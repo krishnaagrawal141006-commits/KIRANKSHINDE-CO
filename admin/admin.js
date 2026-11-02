@@ -441,6 +441,11 @@ const AdminCRM = {
       const file = input.files[0]; if (!file) return;
       if (!task.files) task.files = []; task.files.push(file.name);
       task.stage = task.stage === 'todo' ? 'in-progress' : task.stage;
+      if (location.hostname === 'localhost' && task.clientId && file.size <= 18 * 1024 * 1024) {
+        const folder = task.stage === 'in-review' ? 'ca-review' : task.stage === 'completed' ? 'final' : task.stage === 'in-progress' ? 'working' : 'received';
+        const dataBase64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
+        await fetch('/api/local-storage/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: task.clientId, folder, fileName: file.name, dataBase64 }) });
+      }
       this.persistWorkflow(); this.renderKanbanBoard();
       alert(`${file.name} added to ${task.client}. Local file copy is available from the Documents section when running localhost.`);
     }; input.click();

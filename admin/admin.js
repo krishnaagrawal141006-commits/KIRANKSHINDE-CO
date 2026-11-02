@@ -11,7 +11,9 @@ const AdminCRM = {
     this.state.tasks = JSON.parse(localStorage.getItem('ks_tasks') || '[]');
     this.state.pendingDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
     const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
-    this.state.employees = savedTeam.length ? savedTeam : (window.DEFAULT_TEAM || []);
+    const defaults = window.DEFAULT_TEAM || [];
+    const savedNames = new Set(savedTeam.map(employee => employee.name));
+    this.state.employees = [...defaults.filter(employee => !savedNames.has(employee.name)), ...savedTeam];
     this.renderAll();
     this.setupTabNavigation();
     this.setupModals();
@@ -74,13 +76,27 @@ const AdminCRM = {
   renderEmployeesTable() {
     const tbody = document.getElementById('employeesTableBody');
     if (!tbody) return;
-    tbody.innerHTML = (this.state.employees || []).map((employee, index) => `<tr><td><strong>${employee.name}</strong><br><small>${employee.designation || ''}</small></td><td>${employee.email || 'Not set'}<br><small>${employee.loginId || ''}</small></td><td>${employee.role || 'employee'}</td><td><small>${(employee.permissions || []).join(', ') || 'None'}</small></td><td><span class="status-pill ${employee.status === 'Former' ? 'status-overdue' : 'status-completed'}">${employee.status}</span></td><td><button class="action-icon-btn" onclick="AdminCRM.deleteEmployee(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('');
+    tbody.innerHTML = (this.state.employees || []).map((employee, index) => { const workCount = this.state.tasks.filter(task => task.assigned === employee.name && task.stage !== 'completed').length; return `<tr><td><strong>${employee.name}</strong><br><small>${employee.designation || ''}</small></td><td>${employee.email || 'Not set'}<br><small>Login: ${employee.loginId || 'Not set'}</small><br><small style="color:#b45309">Password: never displayed</small></td><td>${employee.role || 'employee'}</td><td><small>${(employee.permissions || []).join(', ') || 'None'}</small></td><td><strong>${workCount}</strong> active</td><td><strong>₹${Number(employee.incentive || 0).toLocaleString('en-IN')}</strong><br><button class="action-icon-btn" onclick="AdminCRM.setEmployeeIncentive(${index})" title="Set incentive"><i class="fa-solid fa-pen"></i></button></td><td><span class="status-pill ${employee.status === 'Former' ? 'status-overdue' : 'status-completed'}">${employee.status}<br><small>${employee.accountStatus || 'Invite pending'}</small></span></td><td><button class="action-icon-btn" onclick="AdminCRM.resetEmployeeAccess(${index})" title="Invite/reset password"><i class="fa-solid fa-key"></i></button><button class="action-icon-btn" onclick="AdminCRM.deleteEmployee(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }).join('');
   },
 
   deleteEmployee(index) {
     this.state.employees.splice(index, 1);
     localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
     this.renderEmployeesTable();
+  },
+
+  setEmployeeIncentive(index) {
+    const employee = this.state.employees[index]; if (!employee) return;
+    const amount = prompt(`Manual incentive amount for ${employee.name} (₹):`, employee.incentive || 0);
+    if (amount === null || amount === '' || Number.isNaN(Number(amount))) return;
+    employee.incentive = Math.max(0, Number(amount));
+    localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
+    this.renderEmployeesTable();
+  },
+
+  resetEmployeeAccess(index) {
+    const employee = this.state.employees[index]; if (!employee) return;
+    alert(`Invite/reset password for ${employee.name} will be handled by Supabase/Frappe Auth.\n\nNo password is stored or displayed in this admin panel.`);
   },
 
   renderClientsTable() {
@@ -788,7 +804,8 @@ const AdminCRM = {
         status: document.getElementById('employeeStatus').value,
         role: document.getElementById('employeeRole').value,
         permissions: [...document.querySelectorAll('input[name="employeePermission"]:checked')].map(input => input.value),
-        accountStatus: 'Invite pending'
+        accountStatus: 'Invite pending',
+        incentive: Number(document.getElementById('employeeIncentive').value || 0)
       });
       localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
       employeeForm.reset();

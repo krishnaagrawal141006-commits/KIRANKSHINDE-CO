@@ -3,3 +3,4 @@ server-err.log
 node_modules/
 admin/cloudinary-config.js
 integrations/erpnext/
+storage/

@@ -429,9 +429,12 @@ const AdminCRM = {
   assignTask(taskId) {
     const task = this.state.tasks.find(t => t.id === taskId); if (!task) return;
     const active = (this.state.employees || []).filter(e => e.status !== 'Former');
-    const names = active.map(e => e.name).join(', ');
-    const assigned = prompt(`Assign this task to:\n${names}`, task.assigned || '');
-    if (assigned) { task.assigned = assigned; this.persistWorkflow(); this.renderKanbanBoard(); }
+    let modal = document.getElementById('assignTaskModal');
+    if (!modal) { modal = document.createElement('div'); modal.id = 'assignTaskModal'; modal.className = 'admin-modal-overlay'; document.body.appendChild(modal); }
+    modal.innerHTML = `<div class="admin-modal"><div class="modal-header"><h3>Assign Compliance Work</h3><button class="modal-close-btn" onclick="document.getElementById('assignTaskModal').classList.remove('active')">&times;</button></div><p style="color:#64748b;font-size:.85rem">${task.taskName} • ${task.client}</p><label class="form-label-admin" style="display:block;margin-top:16px">Select employee</label><select id="assignEmployeeSelect" class="form-input-admin">${active.map(e => `<option value="${e.name}">${e.name} — ${e.designation || e.role || 'Employee'}</option>`).join('')}</select><div style="margin-top:20px;text-align:right"><button class="btn-admin btn-admin-outline" onclick="document.getElementById('assignTaskModal').classList.remove('active')">Cancel</button> <button id="confirmAssignBtn" class="btn-admin btn-admin-primary">Assign Work</button></div></div>`;
+    const select = modal.querySelector('#assignEmployeeSelect'); if (task.assigned) select.value = task.assigned;
+    modal.querySelector('#confirmAssignBtn').onclick = () => { task.assigned = select.value; this.persistWorkflow(); this.renderKanbanBoard(); modal.classList.remove('active'); };
+    modal.classList.add('active');
   },
 
   uploadTaskFile(taskId) {

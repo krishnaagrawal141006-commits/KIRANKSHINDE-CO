@@ -1,5 +1,6 @@
 // CA Firm CRM & Admin Panel State Management
 const AdminCRM = {
+  editingClientId: null,
   // 1. Initial State Data with realistic Indian CA Firm Data
   state: { clients: [], leads: [], tasks: [], pendingDocs: [], invoices: [], calendarBookings: [], articles: [] },
 
@@ -90,14 +91,16 @@ const AdminCRM = {
       <tr>
         <td><strong>${c.id}</strong></td>
         <td>
-          <strong>${c.name}</strong><br>
+          <button type="button" onclick="AdminCRM.openClientWork('${c.id}')" style="border:0;background:none;padding:0;color:#0f172a;font:inherit;font-weight:700;cursor:pointer;text-align:left;text-decoration:underline;">${c.name}</button><br>
           <span style="font-size: 0.76rem; color: #64748b;">${c.entity} • ${c.midcPlot || 'Palghar'}</span>
         </td>
         <td><code>${c.pan}</code></td>
         <td><code>${c.gstin}</code></td>
         <td>${c.assignedTo}</td>
-        <td><span class="status-pill status-completed">${c.status}</span></td>
+        <td><span class="status-pill ${String(c.status || '').toLowerCase().includes('pending') ? 'status-overdue' : 'status-completed'}">${c.status}</span></td>
         <td>
+          <button class="action-icon-btn" onclick="AdminCRM.editClient('${c.id}')" title="Edit client"><i class="fa-solid fa-pen"></i></button>
+          <button class="action-icon-btn" onclick="AdminCRM.openClientWork('${c.id}')" title="View pending work"><i class="fa-solid fa-list-check"></i></button>
           <a href="https://wa.me/${c.phone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(c.name)}%2C%20from%20CA%20Kiran%20K.%20Shinde%20%26%20Co." target="_blank" class="action-icon-btn whatsapp-icon" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
           <button class="action-icon-btn" onclick="AdminCRM.deleteClient('${c.id}')" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
         </td>
@@ -158,6 +161,8 @@ const AdminCRM = {
             </div>
 
             <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; pt-1 border-top: 1px dashed #e2e8f0;">
+              <button onclick="AdminCRM.assignTask('${t.id}')" style="font-size: 0.73rem; padding: 3px 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 4px; cursor: pointer;">Assign</button>
+              <button onclick="AdminCRM.uploadTaskFile('${t.id}')" style="font-size: 0.73rem; padding: 3px 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 4px; cursor: pointer;">Upload</button>
               <button onclick="AdminCRM.openRemarksModal('${t.id}')" style="font-size: 0.73rem; padding: 3px 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 4px; cursor: pointer;">
                 <i class="fa-regular fa-comment-dots"></i> Remarks (${remarksCount})
               </button>
@@ -192,6 +197,7 @@ const AdminCRM = {
         <td><strong style="color: #2563eb;">${d.nextPing}</strong></td>
         <td><span class="status-pill ${d.status.includes('Overdue') ? 'status-overdue' : 'status-progress'}">${d.status}</span></td>
         <td>
+          <button class="action-icon-btn" onclick="AdminCRM.downloadDocument('${d.id}')" title="Download document"><i class="fa-solid fa-download"></i></button>
           <a href="https://wa.me/${d.phone.replace(/[^0-9]/g, '')}?text=Dear%20Client%2C%20gentle%20reminder%20from%20CA%20Kiran%20K.%20Shinde%20%26%20Co.%20Please%20provide%20${encodeURIComponent(d.doc)}%20for%20${encodeURIComponent(d.category)}." target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Reminder Ping">
             <i class="fa-brands fa-whatsapp"></i> Ping WhatsApp
           </a>
@@ -389,9 +395,64 @@ const AdminCRM = {
   deleteClient(clientId) {
     if (confirm(`Are you sure you want to remove client ${clientId}?`)) {
       this.state.clients = this.state.clients.filter(c => c.id !== clientId);
+      this.state.tasks = this.state.tasks.filter(t => t.clientId !== clientId);
+      this.state.pendingDocs = this.state.pendingDocs.filter(d => d.clientId !== clientId);
+      this.persistWorkflow();
       this.renderClientsTable();
       this.renderMetrics();
     }
+  },
+
+  editClient(clientId) {
+    const client = this.state.clients.find(c => c.id === clientId);
+    if (!client) return;
+    this.editingClientId = clientId;
+    document.getElementById('clientModalTitle').innerText = 'Edit Client Master';
+    document.getElementById('modalClientName').value = client.name || '';
+    document.getElementById('modalClientEntity').value = client.entity || 'Pvt Ltd (MIDC)';
+    document.getElementById('modalClientPan').value = client.pan === 'Pending KYC' ? '' : (client.pan || '');
+    document.getElementById('modalClientGstin').value = client.gstin === 'Pending' ? '' : (client.gstin || '');
+    document.getElementById('modalClientPhone').value = client.phone || '';
+    document.getElementById('clientModal').classList.add('active');
+  },
+
+  openClientWork(clientId) {
+    const client = this.state.clients.find(c => c.id === clientId); if (!client) return;
+    const tasks = this.state.tasks.filter(t => t.clientId === clientId || t.client === client.name);
+    const docs = this.state.pendingDocs.filter(d => d.clientId === clientId || d.client === client.name);
+    let modal = document.getElementById('clientWorkModal');
+    if (!modal) { modal = document.createElement('div'); modal.id = 'clientWorkModal'; modal.className = 'admin-modal-overlay'; document.body.appendChild(modal); }
+    modal.innerHTML = `<div class="admin-modal"><div class="modal-header"><h3>${client.name} — Work & Pending Items</h3><button class="modal-close-btn" onclick="document.getElementById('clientWorkModal').classList.remove('active')">&times;</button></div><p><strong>Status:</strong> ${client.status || 'Active'} &nbsp; <strong>Assigned:</strong> ${client.assignedTo || 'Unassigned'}</p><h4 style="margin-top:18px">Tasks</h4>${tasks.length ? tasks.map(t => `<div style="padding:10px;border:1px solid #e2e8f0;border-radius:7px;margin:6px 0"><strong>${t.taskName}</strong><br><small>Stage: ${t.stage} • Employee: ${t.assigned}</small></div>`).join('') : '<p>No tasks yet.</p>'}<h4 style="margin-top:18px">Documents</h4>${docs.length ? docs.map(d => `<div style="padding:10px;border:1px solid #e2e8f0;border-radius:7px;margin:6px 0"><strong>${d.doc}</strong><br><small>${d.category} • ${d.status}</small></div>`).join('') : '<p>No documents yet.</p>'}<div style="margin-top:18px;text-align:right"><button class="btn-admin btn-admin-outline" onclick="document.getElementById('clientWorkModal').classList.remove('active')">Close</button></div></div>`;
+    modal.classList.add('active');
+  },
+
+  assignTask(taskId) {
+    const task = this.state.tasks.find(t => t.id === taskId); if (!task) return;
+    const active = (this.state.employees || []).filter(e => e.status !== 'Former');
+    const names = active.map(e => e.name).join(', ');
+    const assigned = prompt(`Assign this task to:\n${names}`, task.assigned || '');
+    if (assigned) { task.assigned = assigned; this.persistWorkflow(); this.renderKanbanBoard(); }
+  },
+
+  uploadTaskFile(taskId) {
+    const task = this.state.tasks.find(t => t.id === taskId); if (!task) return;
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.xlsx,.xls,.csv,.jpg,.png';
+    input.onchange = async () => {
+      const file = input.files[0]; if (!file) return;
+      if (!task.files) task.files = []; task.files.push(file.name);
+      task.stage = task.stage === 'todo' ? 'in-progress' : task.stage;
+      this.persistWorkflow(); this.renderKanbanBoard();
+      alert(`${file.name} added to ${task.client}. Local file copy is available from the Documents section when running localhost.`);
+    }; input.click();
+  },
+
+  downloadDocument(docId) {
+    const doc = this.state.pendingDocs.find(d => d.id === docId); if (!doc) return;
+    const fileName = (doc.files && doc.files[0]) || doc.doc;
+    if (location.hostname === 'localhost' && doc.clientId && fileName) {
+      const link = document.createElement('a'); link.href = `/api/local-storage/download?clientId=${encodeURIComponent(doc.clientId)}&folder=received&file=${encodeURIComponent(fileName)}`; link.click(); return;
+    }
+    alert('Document download will be available after cloud storage is connected.');
   },
 
   // Populate Client select in Document Follow-up Modal
@@ -449,6 +510,7 @@ const AdminCRM = {
       note: note
     });
 
+    this.persistWorkflow();
     this.renderKanbanBoard();
     this.openRemarksModal(taskId);
   },
@@ -467,6 +529,7 @@ const AdminCRM = {
     const doc = this.state.pendingDocs.find(d => d.id === docId);
     if (doc) {
       doc.status = 'Received & Verified';
+      this.persistWorkflow();
       this.renderDocumentsTable();
       alert(`Document marked received from ${doc.client}. Ready for Occomotion/Tally entry.`);
     }
@@ -730,7 +793,7 @@ const AdminCRM = {
     const form = document.getElementById('addClientForm');
 
     if (openBtn && modalOverlay) {
-      openBtn.addEventListener('click', () => modalOverlay.classList.add('active'));
+      openBtn.addEventListener('click', () => { this.editingClientId = null; document.getElementById('clientModalTitle').innerText = 'Add New Client Master'; modalOverlay.classList.add('active'); });
     }
     if (closeBtn && modalOverlay) {
       closeBtn.addEventListener('click', () => modalOverlay.classList.remove('active'));
@@ -746,17 +809,15 @@ const AdminCRM = {
 
         if (!name || !pan) return;
 
-        const newId = `CL-${100 + this.state.clients.length + 1}`;
-        AdminCRM.state.clients.push({
-          id: newId,
-          name,
-          entity,
-          pan,
-          gstin,
-          phone: phone || '+91 98000 00000',
-          status: 'Active',
-          assignedTo: 'CA Kiran Shinde'
-        });
+        if (AdminCRM.editingClientId) {
+          const client = AdminCRM.state.clients.find(item => item.id === AdminCRM.editingClientId);
+          if (client) Object.assign(client, { name, entity, pan: pan || 'Pending KYC', gstin, phone: phone || client.phone, status: pan ? 'Active' : 'Pending KYC' });
+        } else {
+          const newId = `CL-${100 + this.state.clients.length + 1}`;
+          AdminCRM.state.clients.push({ id: newId, name, entity, pan: pan || 'Pending KYC', gstin, phone: phone || '+91 98000 00000', status: pan ? 'Active' : 'Pending KYC', assignedTo: 'CA Kiran Shinde' });
+        }
+        AdminCRM.persistWorkflow();
+        AdminCRM.editingClientId = null;
         AdminCRM.persistWorkflow();
 
         form.reset();

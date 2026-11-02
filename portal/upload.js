@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
       workflowClients.unshift({ id: clientIdForWorkflow, name: clientName, entity: 'Portal submission', pan: 'Pending KYC', gstin: 'Pending', phone: portalPhone, status: 'Pending onboarding', assignedTo: 'CA Kiran Shinde' });
       const taskId = `TASK-${Date.now()}`;
       workflowTasks.unshift({ id: taskId, taskName: `${category} — ${period}`, client: clientName, clientId: clientIdForWorkflow, assigned: 'CA Kiran Shinde', stage: 'todo', tag: 'tag-gst', dueDate: 'To be scheduled', fee: 0, remarks: [], source: 'Client upload portal', files: queuedFiles.map(file => file.name) });
-      workflowDocs.unshift({ id: `DOC-${Date.now()}`, client: clientName, clientId: clientIdForWorkflow, doc: firstFileName, category, lastPing: timeStr, nextPing: 'Received', status: 'Received from portal', phone: portalPhone, taskId });
+      workflowDocs.unshift({ id: `DOC-${Date.now()}`, client: clientName, clientId: clientIdForWorkflow, doc: firstFileName, files: queuedFiles.map(file => file.name), category, lastPing: timeStr, nextPing: 'Received', status: 'Received from portal', phone: portalPhone, taskId });
       localStorage.setItem('ks_clients', JSON.stringify(workflowClients));
       localStorage.setItem('ks_tasks', JSON.stringify(workflowTasks));
       localStorage.setItem('ks_pending_docs', JSON.stringify(workflowDocs));

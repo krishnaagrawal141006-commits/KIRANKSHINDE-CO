@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const publicTeamGrid = document.getElementById('publicTeamGrid');
   if (publicTeamGrid) {
-    const team = JSON.parse(localStorage.getItem('ks_team') || '[]');
+    const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
+    const team = savedTeam.length ? savedTeam : (window.DEFAULT_TEAM || []);
     const active = team.filter(member => member.status !== 'Former');
     const former = team.filter(member => member.status === 'Former');
     const renderMember = member => `<article class="team-member-card ${member.status === 'Former' ? 'team-former' : ''}">

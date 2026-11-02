@@ -6,7 +6,8 @@ const AdminCRM = {
   init() {
     const savedLeads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
     this.state.leads = savedLeads;
-    this.state.employees = JSON.parse(localStorage.getItem('ks_team') || '[]');
+    const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
+    this.state.employees = savedTeam.length ? savedTeam : (window.DEFAULT_TEAM || []);
     this.renderAll();
     this.setupTabNavigation();
     this.setupModals();

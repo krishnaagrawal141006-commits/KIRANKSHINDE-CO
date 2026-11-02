@@ -235,14 +235,19 @@
           <form id="employeeForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">
             <input id="employeeName" class="form-input-admin" placeholder="Employee name" required>
             <input id="employeeDesignation" class="form-input-admin" placeholder="Designation" required>
+            <input id="employeeEmail" class="form-input-admin" type="email" placeholder="Work email (e.g. name@cakiran.co.in)">
+            <input id="employeeLoginId" class="form-input-admin" placeholder="Login ID (optional)">
             <input id="employeePhone" class="form-input-admin" placeholder="Phone">
             <input id="employeePhotoFile" class="form-input-admin" type="file" accept="image/jpeg,image/png,image/webp">
             <input id="employeePhoto" type="hidden">
             <span id="employeePhotoStatus" style="font-size:.78rem;color:#64748b;align-self:center">Cloudinary photo upload optional</span>
             <select id="employeeStatus" class="form-input-admin"><option>Active</option><option>Former</option></select>
+            <select id="employeeRole" class="form-input-admin"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
+            <fieldset style="grid-column:1/-1;border:1px solid #e2e8f0;border-radius:8px;padding:10px"><legend style="font-size:.78rem;color:#64748b">Portal permissions</legend><label><input type="checkbox" name="employeePermission" value="clients" checked> Clients</label> <label><input type="checkbox" name="employeePermission" value="tasks" checked> Tasks</label> <label><input type="checkbox" name="employeePermission" value="documents"> Documents</label> <label><input type="checkbox" name="employeePermission" value="calculators"> Calculators</label> <label><input type="checkbox" name="employeePermission" value="team"> Team</label></fieldset>
+            <small style="grid-column:1/-1;color:#64748b">Login password Supabase Auth se create/reset hoga. Password ko website/localStorage me save nahi kiya jayega.</small>
             <button class="btn-admin btn-admin-primary" type="submit"><i class="fa-solid fa-plus"></i> Add Employee</button>
           </form>
-          <div class="table-responsive"><table class="admin-table"><thead><tr><th>Name</th><th>Designation</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead><tbody id="employeesTableBody"></tbody></table></div>
+          <div class="table-responsive"><table class="admin-table"><thead><tr><th>Name</th><th>Work email / Login ID</th><th>Role</th><th>Permissions</th><th>Status</th><th>Action</th></tr></thead><tbody id="employeesTableBody"></tbody></table></div>
         </div>
       </section>
 

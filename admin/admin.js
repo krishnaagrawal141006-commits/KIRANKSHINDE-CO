@@ -61,7 +61,7 @@ const AdminCRM = {
   renderEmployeesTable() {
     const tbody = document.getElementById('employeesTableBody');
     if (!tbody) return;
-    tbody.innerHTML = (this.state.employees || []).map((employee, index) => `<tr><td><strong>${employee.name}</strong></td><td>${employee.designation}</td><td>${employee.phone || ''}</td><td><span class="status-pill ${employee.status === 'Former' ? 'status-overdue' : 'status-completed'}">${employee.status}</span></td><td><button class="action-icon-btn" onclick="AdminCRM.deleteEmployee(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('');
+    tbody.innerHTML = (this.state.employees || []).map((employee, index) => `<tr><td><strong>${employee.name}</strong><br><small>${employee.designation || ''}</small></td><td>${employee.email || 'Not set'}<br><small>${employee.loginId || ''}</small></td><td>${employee.role || 'employee'}</td><td><small>${(employee.permissions || []).join(', ') || 'None'}</small></td><td><span class="status-pill ${employee.status === 'Former' ? 'status-overdue' : 'status-completed'}">${employee.status}</span></td><td><button class="action-icon-btn" onclick="AdminCRM.deleteEmployee(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('');
   },
 
   deleteEmployee(index) {
@@ -697,9 +697,14 @@ const AdminCRM = {
       this.state.employees.push({
         name: document.getElementById('employeeName').value.trim(),
         designation: document.getElementById('employeeDesignation').value.trim(),
+        email: document.getElementById('employeeEmail').value.trim(),
+        loginId: document.getElementById('employeeLoginId').value.trim() || document.getElementById('employeeEmail').value.trim(),
         phone: document.getElementById('employeePhone').value.trim(),
         photo: document.getElementById('employeePhoto').value.trim(),
-        status: document.getElementById('employeeStatus').value
+        status: document.getElementById('employeeStatus').value,
+        role: document.getElementById('employeeRole').value,
+        permissions: [...document.querySelectorAll('input[name="employeePermission"]:checked')].map(input => input.value),
+        accountStatus: 'Invite pending'
       });
       localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
       employeeForm.reset();

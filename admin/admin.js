@@ -6,6 +6,9 @@ const AdminCRM = {
   init() {
     const savedLeads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
     this.state.leads = savedLeads;
+    this.state.clients = JSON.parse(localStorage.getItem('ks_clients') || '[]');
+    this.state.tasks = JSON.parse(localStorage.getItem('ks_tasks') || '[]');
+    this.state.pendingDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
     const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
     this.state.employees = savedTeam.length ? savedTeam : (window.DEFAULT_TEAM || []);
     this.renderAll();
@@ -22,7 +25,16 @@ const AdminCRM = {
         this.state.employees = JSON.parse(event.newValue || '[]');
         this.renderEmployeesTable();
       }
+      if (event.key === 'ks_clients') { this.state.clients = JSON.parse(event.newValue || '[]'); this.renderClientsTable(); this.renderMetrics(); this.populateDocModalClients(); }
+      if (event.key === 'ks_tasks') { this.state.tasks = JSON.parse(event.newValue || '[]'); this.renderKanbanBoard(); this.renderDashboardRecent(); this.renderMetrics(); }
+      if (event.key === 'ks_pending_docs') { this.state.pendingDocs = JSON.parse(event.newValue || '[]'); this.renderDocumentsTable(); this.renderMetrics(); }
     });
+  },
+
+  persistWorkflow() {
+    localStorage.setItem('ks_clients', JSON.stringify(this.state.clients));
+    localStorage.setItem('ks_tasks', JSON.stringify(this.state.tasks));
+    localStorage.setItem('ks_pending_docs', JSON.stringify(this.state.pendingDocs));
   },
 
   // 2. Render UI
@@ -333,6 +345,7 @@ const AdminCRM = {
     const currentIndex = stages.indexOf(task.stage);
     if (currentIndex < stages.length - 1) {
       task.stage = stages[currentIndex + 1];
+      this.persistWorkflow();
       this.renderKanbanBoard();
       this.renderDashboardRecent();
       this.renderMetrics();
@@ -744,6 +757,7 @@ const AdminCRM = {
           status: 'Active',
           assignedTo: 'CA Kiran Shinde'
         });
+        AdminCRM.persistWorkflow();
 
         form.reset();
         modalOverlay.classList.remove('active');

@@ -117,9 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFileList();
   };
 
-  // 4. Form Submit Handler (Simulate Upload & Sync)
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 4. Form Submit Handler (local test storage + workflow sync)
   if (uploadForm) {
-    uploadForm.addEventListener('submit', (e) => {
+    uploadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const clientId = clientSelect.value;
@@ -153,6 +162,31 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       localStorage.setItem('ks_leads', JSON.stringify(submissions));
 
+      // Create a client, document record and first workflow task so the Admin
+      // Compliance Board immediately shows this submission in Documents Received.
+      const workflowClients = JSON.parse(localStorage.getItem('ks_clients') || '[]');
+      const workflowTasks = JSON.parse(localStorage.getItem('ks_tasks') || '[]');
+      const workflowDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
+      const clientIdForWorkflow = `PORTAL-${Date.now()}`;
+      if (location.hostname === 'localhost' && queuedFiles.length) {
+        try {
+          await Promise.all(queuedFiles.map(async file => {
+            if (file.size > 18 * 1024 * 1024) return;
+            const dataBase64 = await readFileAsBase64(file);
+            await fetch('/api/local-storage/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: clientIdForWorkflow, folder: 'received', fileName: file.name, dataBase64 }) });
+          }));
+        } catch (error) {
+          console.warn('Local file copy skipped:', error);
+        }
+      }
+      workflowClients.unshift({ id: clientIdForWorkflow, name: clientName, entity: 'Portal submission', pan: 'Pending KYC', gstin: 'Pending', phone: portalPhone, status: 'Pending onboarding', assignedTo: 'CA Kiran Shinde' });
+      const taskId = `TASK-${Date.now()}`;
+      workflowTasks.unshift({ id: taskId, taskName: `${category} — ${period}`, client: clientName, clientId: clientIdForWorkflow, assigned: 'CA Kiran Shinde', stage: 'todo', tag: 'tag-gst', dueDate: 'To be scheduled', fee: 0, remarks: [], source: 'Client upload portal', files: queuedFiles.map(file => file.name) });
+      workflowDocs.unshift({ id: `DOC-${Date.now()}`, client: clientName, clientId: clientIdForWorkflow, doc: firstFileName, category, lastPing: timeStr, nextPing: 'Received', status: 'Received from portal', phone: portalPhone, taskId });
+      localStorage.setItem('ks_clients', JSON.stringify(workflowClients));
+      localStorage.setItem('ks_tasks', JSON.stringify(workflowTasks));
+      localStorage.setItem('ks_pending_docs', JSON.stringify(workflowDocs));
+
       // Generate Receipt
       const receiptId = `RCPT-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -173,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p><strong>Uploaded At:</strong> ${timeStr}</p>
         <p><strong>Category:</strong> ${category} (${period})</p>
         <p><strong>Files Stored:</strong> ${fileCount} file(s) — <em>${firstFileName}</em></p>
-        <p><strong>Cloud Vault Destination:</strong> <code style="font-size: 0.72rem;">OneDrive/Clients/${clientName.replace(/\s+/g, '_')}/FY2026-27/${category.replace(/\s+/g, '_')}</code></p>
+        <p><strong>Storage:</strong> <code style="font-size: 0.72rem;">${location.hostname === 'localhost' ? `storage/clients/${clientIdForWorkflow}/received/` : 'Configured cloud storage after deployment'}</code></p>
         <p style="color: #16a34a; font-weight: 700; margin-top: 8px;"><i class="fa-solid fa-circle-check"></i> Dispatched to CA Kiran Shinde & Co. Audit Desk</p>
       `;
 

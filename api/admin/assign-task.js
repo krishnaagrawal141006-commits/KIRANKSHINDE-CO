@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
   const clientName = String(body.clientName || body.clientId || 'Client').trim();
 
   // Ensure client exists in public.clients table first so foreign key doesn't fail
-  await fetch(`${url}/rest/v1/clients`, {
+  const clientSync = await fetch(`${url}/rest/v1/clients`, {
     method: 'POST',
     headers: {
       apikey: key,
@@ -31,6 +31,7 @@ module.exports = async function handler(req, res) {
       status: 'Active'
     })
   });
+  if (!clientSync.ok) { const syncError = await clientSync.json().catch(() => ({})); return res.status(clientSync.status).json({ error: syncError.message || 'Client sync failed before task assignment' }); }
 
   const row = {
     id: String(body.taskId),

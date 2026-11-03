@@ -77,6 +77,7 @@ revoke all on public.employees, public.clients, public.compliance_tasks, public.
 grant select on public.employees, public.clients, public.compliance_tasks, public.client_documents to authenticated;
 grant select on public.compliance_tasks to authenticated;
 grant all on table public.compliance_tasks to service_role;
+grant all on table public.clients to service_role;
 grant select on public.compliance_deadlines to anon, authenticated;
 grant all on table public.compliance_deadlines to service_role;
 drop policy if exists "Public can view active compliance deadlines" on public.compliance_deadlines;

@@ -486,6 +486,8 @@ const AdminCRM = {
         <td>${inv.date}</td>
         <td><span class="status-pill ${inv.status === 'Paid' ? 'status-completed' : 'status-pending'}">${inv.status}</span></td>
         <td>
+          <button class="action-icon-btn" onclick="AdminCRM.editInvoice('${inv.id}')" title="Edit invoice"><i class="fa-solid fa-pen"></i></button>
+          <button class="action-icon-btn" onclick="AdminCRM.downloadInvoicePdf('${inv.id}')" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></button>
           ${inv.status === 'Pending' ? `
             <a href="https://wa.me/917506647791?text=Payment%20Reminder%20for%20Invoice%20${inv.id}" target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Fee Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</a>
             <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Mark Paid"><i class="fa-solid fa-circle-check"></i></button>
@@ -494,6 +496,10 @@ const AdminCRM = {
       </tr>
     `).join('');
   },
+
+  async editInvoice(invoiceId) { const inv = this.state.invoices.find(i => i.id === invoiceId); if (!inv) return; const clientName = prompt('Client name:', inv.client); if (clientName === null) return; const service = prompt('Service / description:', inv.service); if (service === null) return; const amount = prompt('Fee amount (₹):', String(inv.amount).replace(/[^0-9.]/g, '')); if (amount === null || isNaN(Number(amount))) return alert('Enter a valid amount.'); const token = await this.adminToken(); if (!token) return; const response = await fetch('/api/admin/invoice', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: invoiceId, clientName, service, amount }) }); const result = await response.json().catch(() => ({})); if (!response.ok) return alert(result.error || 'Invoice update failed'); await this.loadCloudInvoices(); },
+
+  downloadInvoicePdf(invoiceId) { const inv = this.state.invoices.find(i => i.id === invoiceId); if (!inv) return; const popup = window.open('', '_blank', 'width=800,height=900'); if (!popup) return alert('Allow pop-ups to download invoice PDF.'); popup.document.write(`<html><head><title>${inv.id}</title><style>body{font-family:Arial;padding:48px;color:#172235}h1{color:#142840}table{width:100%;border-collapse:collapse;margin-top:30px}td,th{border:1px solid #dbe3ed;padding:14px;text-align:left}button{padding:10px 18px;margin-top:30px}@media print{button{display:none}}</style></head><body><h1>Kiran K. Shinde &amp; Co.</h1><p>Chartered Accountants</p><hr><h2>Invoice ${inv.id}</h2><p><b>Client:</b> ${inv.client}</p><table><tr><th>Service</th><th>Amount</th></tr><tr><td>${inv.service}</td><td>${inv.amount}</td></tr></table><p>Status: ${inv.status}</p><button onclick="window.print()">Print / Save as PDF</button></body></html>`); popup.document.close(); },
 
   renderArticlesTable() {
     const tbody = document.getElementById('articlesTableBody');

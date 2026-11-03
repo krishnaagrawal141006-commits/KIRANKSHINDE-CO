@@ -4,7 +4,8 @@ const AdminCRM = {
   // 1. Initial State Data with realistic Indian CA Firm Data
   state: { clients: [], leads: [], tasks: [], pendingDocs: [], invoices: [], calendarBookings: [], articles: [], deadlines: [] },
 
-  init() {
+  async init() {
+    if (!await this.requireAdminLogin()) return;
     const savedLeads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
     this.state.leads = savedLeads;
     this.state.clients = JSON.parse(localStorage.getItem('ks_clients') || '[]');
@@ -33,6 +34,22 @@ const AdminCRM = {
       if (event.key === 'ks_tasks') { this.state.tasks = JSON.parse(event.newValue || '[]'); this.renderKanbanBoard(); this.renderDashboardRecent(); this.renderMetrics(); }
       if (event.key === 'ks_pending_docs') { this.state.pendingDocs = JSON.parse(event.newValue || '[]'); this.renderDocumentsTable(); this.renderMetrics(); }
     });
+  },
+
+  async requireAdminLogin() {
+    const gate = document.getElementById('adminAuthGate');
+    const form = document.getElementById('adminAuthForm');
+    const client = await window.createSupabaseClient?.();
+    if (!gate || !form || !client) return false;
+    const existing = (await client.auth.getSession()).data.session;
+    if (existing) { gate.style.display = 'none'; return true; }
+    form.addEventListener('submit', async event => {
+      event.preventDefault(); const errorEl = document.getElementById('adminAuthError'); errorEl.textContent = 'Signing in…';
+      const result = await client.auth.signInWithPassword({ email: document.getElementById('adminAuthEmail').value.trim(), password: document.getElementById('adminAuthPassword').value });
+      if (result.error) { errorEl.textContent = result.error.message; return; }
+      gate.style.display = 'none'; window.location.reload();
+    });
+    return false;
   },
 
   persistWorkflow() {

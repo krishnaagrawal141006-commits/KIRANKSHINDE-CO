@@ -15,6 +15,15 @@
 </head>
 <body>
 
+  <div id="adminAuthGate" style="position:fixed;inset:0;z-index:9999;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:20px">
+    <form id="adminAuthForm" style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 20px 60px #0f172a22;padding:30px;max-width:420px;width:100%">
+      <h2 style="margin:0 0 8px;color:#0f172a">Main Admin Login</h2><p style="color:#64748b;margin:0 0 20px">Only the CA/Main Admin can access this panel.</p>
+      <input id="adminAuthEmail" class="form-input-admin" type="email" placeholder="Admin email" required style="width:100%;margin-bottom:10px">
+      <input id="adminAuthPassword" class="form-input-admin" type="password" placeholder="Password" required style="width:100%;margin-bottom:14px">
+      <button class="btn-admin btn-admin-primary" type="submit" style="width:100%">Sign in to Admin Panel</button><p id="adminAuthError" style="color:#b91c1c;font-size:.84rem;margin:12px 0 0"></p>
+    </form>
+  </div>
+
   <!-- Sidebar Navigation -->
   <aside class="sidebar" id="adminSidebar">
     <div class="sidebar-header">

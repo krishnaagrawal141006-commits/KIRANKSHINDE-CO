@@ -42,7 +42,7 @@ const AdminCRM = {
     const client = await window.createSupabaseClient?.();
     if (!gate || !form || !client) return false;
     const existing = (await client.auth.getSession()).data.session;
-    if (existing) { gate.style.display = 'none'; return true; }
+    if (existing) { gate.style.display = 'none'; this.setupAdminLogout(client); return true; }
     form.addEventListener('submit', async event => {
       event.preventDefault(); const errorEl = document.getElementById('adminAuthError'); errorEl.textContent = 'Signing in…';
       const result = await client.auth.signInWithPassword({ email: document.getElementById('adminAuthEmail').value.trim(), password: document.getElementById('adminAuthPassword').value });
@@ -50,6 +50,11 @@ const AdminCRM = {
       gate.style.display = 'none'; window.location.reload();
     });
     return false;
+  },
+
+  setupAdminLogout(client) {
+    const button = document.getElementById('adminLogoutBtn');
+    if (button) button.onclick = async () => { await client.auth.signOut(); window.location.reload(); };
   },
 
   persistWorkflow() {

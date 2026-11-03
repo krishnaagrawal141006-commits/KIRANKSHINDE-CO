@@ -37,6 +37,11 @@
         <span>Client Directory (350+)</span>
       </button>
 
+      <button class="nav-tab-btn" data-target="tab-deadlines">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span>Deadline Updates</span>
+      </button>
+
       <span class="menu-label">Workflow & Tasks</span>
       <button class="nav-tab-btn" data-target="tab-compliance">
         <i class="fa-solid fa-clipboard-check"></i>
@@ -286,6 +291,14 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. COMPLIANCE KANBAN BOARD ================= -->
+      <section class="tab-content" id="tab-deadlines">
+        <div class="admin-card">
+          <div class="admin-card-header"><div><h3>Statutory Deadline Updates</h3><p style="font-size:.84rem;color:#64748b;margin-top:4px">Edit dates and official notes here. The public website updates from this panel.</p></div></div>
+          <div class="table-responsive"><table class="admin-table"><thead><tr><th>Compliance</th><th>Due date</th><th>Public label</th><th>Active</th><th>Action</th></tr></thead><tbody id="deadlinesTableBody"><tr><td colspan="5">Loading deadlines…</td></tr></tbody></table></div>
         </div>
       </section>
 

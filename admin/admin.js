@@ -2,7 +2,7 @@
 const AdminCRM = {
   editingClientId: null,
   // 1. Initial State Data with realistic Indian CA Firm Data
-  state: { clients: [], leads: [], tasks: [], pendingDocs: [], invoices: [], calendarBookings: [], articles: [] },
+  state: { clients: [], leads: [], tasks: [], pendingDocs: [], invoices: [], calendarBookings: [], articles: [], deadlines: [] },
 
   init() {
     const savedLeads = JSON.parse(localStorage.getItem('ks_leads') || '[]');
@@ -10,6 +10,7 @@ const AdminCRM = {
     this.state.clients = JSON.parse(localStorage.getItem('ks_clients') || '[]');
     this.state.tasks = JSON.parse(localStorage.getItem('ks_tasks') || '[]');
     this.state.pendingDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
+    this.loadDeadlines();
     const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
     const defaults = window.DEFAULT_TEAM || [];
     const savedNames = new Set(savedTeam.map(employee => employee.name));
@@ -54,6 +55,37 @@ const AdminCRM = {
     this.renderCalendarTable();
     this.renderDashboardRecent();
     this.populateDocModalClients();
+  },
+
+  async loadDeadlines() {
+    const client = await window.createSupabaseClient?.();
+    if (!client) return this.renderDeadlinesTable();
+    const { data } = await client.from('compliance_deadlines').select('*').order('id');
+    this.state.deadlines = data || [];
+    this.renderDeadlinesTable();
+  },
+
+  renderDeadlinesTable() {
+    const body = document.getElementById('deadlinesTableBody');
+    if (!body) return;
+    body.innerHTML = this.state.deadlines.length ? this.state.deadlines.map((row, index) => `<tr><td><strong>${row.title}</strong><br><small>${row.category_label}</small></td><td><input class="form-input-admin" type="date" id="deadlineDate${index}" value="${row.due_date || ''}"></td><td><input class="form-input-admin" id="deadlineLabel${index}" value="${row.due_date_label || ''}"></td><td><input type="checkbox" id="deadlineActive${index}" ${row.is_active ? 'checked' : ''}></td><td><button class="btn-admin btn-admin-primary" onclick="AdminCRM.saveDeadline(${index})">Save</button></td></tr>`).join('') : '<tr><td colspan="5">No deadlines found. Run the schema SQL first.</td></tr>';
+  },
+
+  async saveDeadline(index) {
+    const row = this.state.deadlines[index]; if (!row) return;
+    const client = await window.createSupabaseClient?.(); if (!client) return alert('Supabase configuration missing.');
+    let session = (await client.auth.getSession()).data.session;
+    if (!session) {
+      const email = prompt('Main Admin email:'); const password = prompt('Main Admin password:');
+      if (!email || !password) return;
+      const login = await client.auth.signInWithPassword({ email: email.trim(), password });
+      if (login.error) return alert(`Main Admin login failed: ${login.error.message}`);
+      session = login.data.session;
+    }
+    const response = await fetch('/api/admin/update-deadline', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ id: row.id, due_date: document.getElementById(`deadlineDate${index}`).value, due_date_label: document.getElementById(`deadlineLabel${index}`).value, is_active: document.getElementById(`deadlineActive${index}`).checked, title: row.title, description: row.description }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return alert(result.error || 'Deadline save failed');
+    alert('Deadline updated. Public website will refresh from Supabase.'); this.loadDeadlines();
   },
 
   renderMetrics() {
@@ -792,13 +824,33 @@ const AdminCRM = {
     });
 
     const employeeForm = document.getElementById('employeeForm');
-    if (employeeForm) employeeForm.addEventListener('submit', (event) => {
+    if (employeeForm) employeeForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+      const email = document.getElementById('employeeEmail').value.trim();
+      const password = document.getElementById('employeePassword').value;
+      if (!email || password.length < 8) { alert('Employee email and a password of at least 8 characters are required.'); return; }
+      const supabaseClient = await window.createSupabaseClient?.();
+      if (!supabaseClient) { alert('Supabase configuration missing.'); return; }
+      let session = (await supabaseClient.auth.getSession()).data.session;
+      if (!session) {
+        const adminEmail = prompt('Main Admin email:');
+        const adminPassword = prompt('Main Admin password:');
+        if (!adminEmail || !adminPassword) return;
+        const login = await supabaseClient.auth.signInWithPassword({ email: adminEmail.trim(), password: adminPassword });
+        if (login.error) { alert(`Main Admin login failed: ${login.error.message}`); return; }
+        session = login.data.session;
+      }
+      const createResponse = await fetch('/api/admin/create-employee', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ name: document.getElementById('employeeName').value.trim(), email, password, role: document.getElementById('employeeRole').value })
+      });
+      const createResult = await createResponse.json().catch(() => ({}));
+      if (!createResponse.ok) { alert(createResult.error || 'Employee account could not be created.'); return; }
       this.state.employees.push({
         name: document.getElementById('employeeName').value.trim(),
         designation: document.getElementById('employeeDesignation').value.trim(),
-        email: document.getElementById('employeeEmail').value.trim(),
-        loginId: document.getElementById('employeeLoginId').value.trim() || document.getElementById('employeeEmail').value.trim(),
+        email,
+        loginId: document.getElementById('employeeLoginId').value.trim() || email,
         phone: document.getElementById('employeePhone').value.trim(),
         photo: document.getElementById('employeePhoto').value.trim(),
         status: document.getElementById('employeeStatus').value,
@@ -810,6 +862,7 @@ const AdminCRM = {
       localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
       employeeForm.reset();
       this.renderEmployeesTable();
+      alert('Employee account created successfully. Employee can now login with the given email and password.');
     });
 
     const modalOverlay = document.getElementById('clientModal');

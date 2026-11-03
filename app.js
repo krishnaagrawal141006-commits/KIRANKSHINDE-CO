@@ -587,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
   calculateTax();
 
   // ================= 15. Dynamic Statutory Compliance Radar =================
-  const complianceData = [
+  let complianceData = [
     {
       id: 'gstr1',
       category: 'gst',
@@ -673,19 +673,18 @@ document.addEventListener('DOMContentLoaded', () => {
       let daysLeft = 0;
       let displayDate = '';
 
-      if (item.freq === 'monthly') {
-        if (currentDay <= item.dueDay) {
-          daysLeft = item.dueDay - currentDay;
-          displayDate = `${item.dueDay}th ${currentMonth}`;
-        } else {
-          // Next month
-          daysLeft = (30 - currentDay) + item.dueDay;
-          const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, item.dueDay);
-          displayDate = `${item.dueDay}th ${nextMonthDate.toLocaleString('default', { month: 'short' })}`;
-        }
+      if (item.freq === 'monthly' && item.dueDay) {
+        let due = new Date(now.getFullYear(), now.getMonth(), item.dueDay);
+        if (due < now) due = new Date(now.getFullYear(), now.getMonth() + 1, item.dueDay);
+        daysLeft = Math.max(0, Math.ceil((due - now) / 86400000));
+        displayDate = `${item.dueDay}th ${due.toLocaleString('default', { month: 'short' })}`;
+      } else if (item.dueDate) {
+        const due = new Date(`${item.dueDate}T23:59:59`);
+        daysLeft = Math.max(0, Math.ceil((due - now) / 86400000));
+        displayDate = item.dueDateStr || due.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
       } else {
         daysLeft = item.fixedDays || 15;
-        displayDate = item.dueDateStr;
+        displayDate = item.dueDateStr || 'Date to be updated';
       }
 
       const isUrgent = daysLeft <= 5;
@@ -712,6 +711,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   renderComplianceCards('all');
+
+  // Cloud data is optional: the built-in list remains as a safe fallback until
+  // the compliance_deadlines table is created in Supabase.
+  async function loadLiveComplianceDeadlines() {
+    try {
+      const client = await window.createSupabaseClient?.();
+      if (!client) return;
+      const { data, error } = await client.from('compliance_deadlines').select('*').eq('is_active', true).order('id');
+      if (error || !Array.isArray(data) || !data.length) return;
+      complianceData = data.map(row => ({
+        id: row.id, category: row.category, catLabel: row.category_label, catClass: row.category_class,
+        title: row.title, desc: row.description, dueDay: row.due_day, dueDate: row.due_date,
+        dueDateStr: row.due_date_label, freq: row.frequency, actText: row.action_text,
+        sourceUrl: row.source_url
+      }));
+      renderComplianceCards('all');
+      const channel = client.channel('public-compliance-deadlines')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'compliance_deadlines' }, loadLiveComplianceDeadlines)
+        .subscribe();
+      window.addEventListener('beforeunload', () => client.removeChannel(channel), { once: true });
+    } catch (error) { /* Keep fallback cards when cloud data is unavailable. */ }
+  }
+  loadLiveComplianceDeadlines();
 
   const filterPills = document.querySelectorAll('.filter-pill');
   filterPills.forEach(pill => {

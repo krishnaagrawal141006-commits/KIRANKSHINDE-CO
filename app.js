@@ -673,15 +673,15 @@ document.addEventListener('DOMContentLoaded', () => {
       let daysLeft = 0;
       let displayDate = '';
 
-      if (item.freq === 'monthly' && item.dueDay) {
+      if (item.dueDate) {
+        const due = new Date(`${item.dueDate}T23:59:59`);
+        daysLeft = Math.max(0, Math.ceil((due - now) / 86400000));
+        displayDate = item.dueDateStr || due.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      } else if (item.freq === 'monthly' && item.dueDay) {
         let due = new Date(now.getFullYear(), now.getMonth(), item.dueDay);
         if (due < now) due = new Date(now.getFullYear(), now.getMonth() + 1, item.dueDay);
         daysLeft = Math.max(0, Math.ceil((due - now) / 86400000));
         displayDate = `${item.dueDay}th ${due.toLocaleString('default', { month: 'short' })}`;
-      } else if (item.dueDate) {
-        const due = new Date(`${item.dueDate}T23:59:59`);
-        daysLeft = Math.max(0, Math.ceil((due - now) / 86400000));
-        displayDate = item.dueDateStr || due.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
       } else {
         daysLeft = item.fixedDays || 15;
         displayDate = item.dueDateStr || 'Date to be updated';

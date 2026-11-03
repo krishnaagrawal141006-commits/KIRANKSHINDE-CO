@@ -78,6 +78,11 @@ grant select on public.employees, public.clients, public.compliance_tasks, publi
 grant select on public.compliance_tasks to authenticated;
 grant all on table public.compliance_tasks to service_role;
 grant all on table public.clients to service_role;
+
+-- Private bucket for confidential client PDFs, statements and working papers.
+insert into storage.buckets (id, name, public)
+values ('client-documents', 'client-documents', false)
+on conflict (id) do update set public = false;
 grant select on public.compliance_deadlines to anon, authenticated;
 grant all on table public.compliance_deadlines to service_role;
 drop policy if exists "Public can view active compliance deadlines" on public.compliance_deadlines;

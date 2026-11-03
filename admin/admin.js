@@ -386,9 +386,9 @@ const AdminCRM = {
                   Advance &rarr;
                 </button>
               ` : `
-                <span style="font-size: 0.73rem; color: #16a34a; font-weight: 700;">
+                <button onclick="AdminCRM.createConsolidatedInvoice('${t.id}')" style="font-size: 0.73rem; color: #fff; font-weight: 700; border:0; background:#16a34a; border-radius:4px; padding:4px 8px; cursor:pointer;">
                   <i class="fa-solid fa-check-double"></i> Ready for Bill
-                </span>
+                </button>
               `}
             </div>
           </div>

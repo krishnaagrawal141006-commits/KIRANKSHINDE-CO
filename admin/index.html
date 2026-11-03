@@ -245,7 +245,7 @@
       <!-- ================= 3. CLIENTS MASTER VIEW ================= -->
       <section class="tab-content" id="tab-employees">
         <div class="admin-card">
-          <div class="admin-card-header"><div><h3>Employees & Public Team Directory</h3><p style="font-size:.84rem;color:#64748b;margin-top:4px">Publish active and former team profiles to the website.</p></div><a class="btn-admin btn-admin-outline" href="../employee/index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Employee Portal</a></div>
+          <div class="admin-card-header"><div><h3>Employees & Public Team Directory</h3><p style="font-size:.84rem;color:#64748b;margin-top:4px">Publish active and former team profiles to the website.</p></div><div class="header-action-group"><button class="btn-admin" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca" onclick="AdminCRM.clearAllEmployees()"><i class="fa-solid fa-trash"></i> Delete All Employees</button><a class="btn-admin btn-admin-outline" href="../employee/index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Employee Portal</a></div></div>
           <form id="employeeForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">
             <input id="employeeName" class="form-input-admin" placeholder="Employee name" required>
             <input id="employeeDesignation" class="form-input-admin" placeholder="Designation" required>

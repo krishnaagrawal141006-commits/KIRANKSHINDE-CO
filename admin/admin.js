@@ -12,10 +12,13 @@ const AdminCRM = {
     this.state.tasks = JSON.parse(localStorage.getItem('ks_tasks') || '[]');
     this.state.pendingDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
     this.loadDeadlines();
-    const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
-    const defaults = window.DEFAULT_TEAM || [];
-    const savedNames = new Set(savedTeam.map(employee => employee.name));
-    this.state.employees = [...defaults.filter(employee => !savedNames.has(employee.name)), ...savedTeam];
+    // Clear old seeded default team entries if found
+    let savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
+    if (savedTeam.length && savedTeam.some(emp => emp.name === 'CA Kiran Kashinath Shinde' || emp.name === 'Pooja Dilip Dahiwadkar' || emp.status === 'Former')) {
+      savedTeam = [];
+      localStorage.setItem('ks_team', JSON.stringify([]));
+    }
+    this.state.employees = savedTeam;
     this.renderAll();
     this.setupTabNavigation();
     this.setupModals();
@@ -133,12 +136,23 @@ const AdminCRM = {
   renderEmployeesTable() {
     const tbody = document.getElementById('employeesTableBody');
     if (!tbody) return;
+    if (!this.state.employees || this.state.employees.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 24px; color: #64748b;">No employees found.</td></tr>';
+      return;
+    }
     tbody.innerHTML = (this.state.employees || []).map((employee, index) => { const workCount = this.state.tasks.filter(task => task.assigned === employee.name && task.stage !== 'completed').length; return `<tr><td><strong>${employee.name}</strong><br><small>${employee.designation || ''}</small></td><td>${employee.email || 'Not set'}<br><small>Login: ${employee.loginId || 'Not set'}</small><br><small style="color:#b45309">Password: never displayed</small></td><td>${employee.role || 'employee'}</td><td><small>${(employee.permissions || []).join(', ') || 'None'}</small></td><td><strong>${workCount}</strong> active</td><td><strong>₹${Number(employee.incentive || 0).toLocaleString('en-IN')}</strong><br><button class="action-icon-btn" onclick="AdminCRM.setEmployeeIncentive(${index})" title="Set incentive"><i class="fa-solid fa-pen"></i></button></td><td><span class="status-pill ${employee.status === 'Former' ? 'status-overdue' : 'status-completed'}">${employee.status}<br><small>${employee.accountStatus || 'Invite pending'}</small></span></td><td><button class="action-icon-btn" onclick="AdminCRM.resetEmployeeAccess(${index})" title="Invite/reset password"><i class="fa-solid fa-key"></i></button><button class="action-icon-btn" onclick="AdminCRM.deleteEmployee(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }).join('');
   },
 
   deleteEmployee(index) {
     this.state.employees.splice(index, 1);
     localStorage.setItem('ks_team', JSON.stringify(this.state.employees));
+    this.renderEmployeesTable();
+  },
+
+  clearAllEmployees() {
+    if (!confirm('Are you sure you want to delete all employees?')) return;
+    this.state.employees = [];
+    localStorage.setItem('ks_team', JSON.stringify([]));
     this.renderEmployeesTable();
   },
 

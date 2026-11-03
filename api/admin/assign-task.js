@@ -13,6 +13,41 @@ module.exports = async function handler(req, res) {
     dueDate = new Date(body.dueDate).toISOString().split('T')[0];
   }
 
-  const row = { id: String(body.taskId), client_id: String(body.clientId || 'UNASSIGNED'), task_name: body.taskName || 'Compliance task', assigned_employee_email: String(body.employeeEmail).toLowerCase(), stage: body.stage || 'todo', due_date: dueDate };
-  const result = await fetch(`${url}/rest/v1/compliance_tasks`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(row) }); const data = await result.json().catch(() => ({})); if (!result.ok) return res.status(result.status).json({ error: data.message || 'Task sync failed' }); return res.status(200).json({ task: data[0] || null });
+  const clientId = String(body.clientId || body.clientName || 'GENERAL').trim();
+  const clientName = String(body.clientName || body.clientId || 'Client').trim();
+
+  // Ensure client exists in public.clients table first so foreign key doesn't fail
+  await fetch(`${url}/rest/v1/clients`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=ignore-duplicates'
+    },
+    body: JSON.stringify({
+      id: clientId,
+      name: clientName,
+      status: 'Active'
+    })
+  });
+
+  const row = {
+    id: String(body.taskId),
+    client_id: clientId,
+    task_name: body.taskName || 'Compliance task',
+    assigned_employee_email: String(body.employeeEmail).toLowerCase(),
+    stage: body.stage || 'todo',
+    due_date: dueDate
+  };
+  const result = await fetch(`${url}/rest/v1/compliance_tasks`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=representation'
+    },
+    body: JSON.stringify(row)
+  }); const data = await result.json().catch(() => ({})); if (!result.ok) return res.status(result.status).json({ error: data.message || 'Task sync failed' }); return res.status(200).json({ task: data[0] || null });
 };

@@ -520,7 +520,38 @@ const AdminCRM = {
     if (!modal) { modal = document.createElement('div'); modal.id = 'assignTaskModal'; modal.className = 'admin-modal-overlay'; document.body.appendChild(modal); }
     modal.innerHTML = `<div class="admin-modal"><div class="modal-header"><h3>Assign Compliance Work</h3><button class="modal-close-btn" onclick="document.getElementById('assignTaskModal').classList.remove('active')">&times;</button></div><p style="color:#64748b;font-size:.85rem">${task.taskName} • ${task.client}</p><label class="form-label-admin" style="display:block;margin-top:16px">Select employee</label><select id="assignEmployeeSelect" class="form-input-admin">${active.map(e => `<option value="${e.name}">${e.name} — ${e.designation || e.role || 'Employee'}</option>`).join('')}</select><div style="margin-top:20px;text-align:right"><button class="btn-admin btn-admin-outline" onclick="document.getElementById('assignTaskModal').classList.remove('active')">Cancel</button> <button id="confirmAssignBtn" class="btn-admin btn-admin-primary">Assign Work</button></div></div>`;
     const select = modal.querySelector('#assignEmployeeSelect'); if (task.assigned) select.value = task.assigned;
-    modal.querySelector('#confirmAssignBtn').onclick = async () => { const employee = active.find(e => e.name === select.value); task.assigned = select.value; this.persistWorkflow(); this.renderKanbanBoard(); try { const client = await window.createSupabaseClient?.(); const session = client && (await client.auth.getSession()).data.session; if (session && employee?.email) { const response = await fetch('/api/admin/assign-task', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ taskId: task.id, clientId: task.clientId, taskName: task.taskName, stage: task.stage, dueDate: task.dueDate, employeeEmail: employee.email }) }); if (!response.ok) { const result = await response.json().catch(() => ({})); alert(result.error || 'Cloud task sync failed'); } } } catch (error) { alert('Cloud task sync failed'); } modal.classList.remove('active'); };
+    modal.querySelector('#confirmAssignBtn').onclick = async () => {
+      const employee = active.find(e => e.name === select.value);
+      task.assigned = select.value;
+      this.persistWorkflow();
+      this.renderKanbanBoard();
+      try {
+        const client = await window.createSupabaseClient?.();
+        const session = client && (await client.auth.getSession()).data.session;
+        if (session && employee?.email) {
+          const response = await fetch('/api/admin/assign-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              taskId: task.id,
+              clientId: task.clientId,
+              clientName: task.client,
+              taskName: task.taskName,
+              stage: task.stage,
+              dueDate: task.dueDate,
+              employeeEmail: employee.email
+            })
+          });
+          if (!response.ok) {
+            const result = await response.json().catch(() => ({}));
+            alert(result.error || 'Cloud task sync failed');
+          }
+        }
+      } catch (error) {
+        alert('Cloud task sync failed');
+      }
+      modal.classList.remove('active');
+    };
     modal.classList.add('active');
   },
 

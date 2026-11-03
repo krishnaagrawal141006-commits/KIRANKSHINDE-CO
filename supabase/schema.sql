@@ -75,6 +75,7 @@ alter table public.compliance_deadlines enable row level security;
 revoke all on public.employees, public.clients, public.compliance_tasks, public.client_documents from anon;
 grant select on public.employees, public.clients, public.compliance_tasks, public.client_documents to authenticated;
 grant select on public.compliance_deadlines to anon, authenticated;
+grant all on table public.compliance_deadlines to service_role;
 drop policy if exists "Public can view active compliance deadlines" on public.compliance_deadlines;
 create policy "Public can view active compliance deadlines" on public.compliance_deadlines for select using (is_active = true);
 

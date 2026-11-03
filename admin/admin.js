@@ -13,6 +13,7 @@ const AdminCRM = {
     this.state.pendingDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
     this.loadDeadlines();
     this.loadCloudWorkflow();
+    this.loadCloudInvoices();
     // Clear old seeded default team entries if found
     let savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
     if (savedTeam.length && savedTeam.some(emp => emp.name === 'CA Kiran Kashinath Shinde' || emp.name === 'Pooja Dilip Dahiwadkar' || emp.status === 'Former')) {
@@ -203,6 +204,8 @@ const AdminCRM = {
     }
     client.channel('admin-compliance-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'compliance_tasks' }, () => this.loadCloudWorkflow()).subscribe();
   },
+
+  async loadCloudInvoices() { const token = await this.adminToken?.(); if (!token) return; const response = await fetch('/api/admin/invoice', { headers: { Authorization: `Bearer ${token}` } }); const result = await response.json().catch(() => ({})); const data = result.invoices; if (Array.isArray(data)) { this.state.invoices = data.map(i => ({ id: i.id, client: i.client_name, service: i.service, amount: `₹ ${Number(i.amount || 0).toLocaleString('en-IN')}`, date: i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN') : '', status: i.status })); this.renderInvoicesTable(); } },
 
   renderDeadlinesTable() {
     const body = document.getElementById('deadlinesTableBody');
@@ -653,11 +656,12 @@ const AdminCRM = {
   },
 
   // 5. Actions: Mark Invoice Paid
-  markInvoicePaid(invoiceId) {
+  async markInvoicePaid(invoiceId) {
     const inv = this.state.invoices.find(i => i.id === invoiceId);
     if (inv) {
       inv.status = 'Paid';
       this.renderInvoicesTable();
+      const token = await this.adminToken(); if (token) await fetch('/api/admin/invoice', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: invoiceId, status: 'Paid' }) });
     }
   },
 
@@ -943,7 +947,7 @@ const AdminCRM = {
   },
 
   // Create Consolidated Invoice
-  createConsolidatedInvoice(taskId) {
+  async createConsolidatedInvoice(taskId) {
     const task = this.state.tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -957,6 +961,9 @@ const AdminCRM = {
       status: 'Pending',
       method: 'Tally Auto-Sync / UPI QR'
     });
+
+    const token = await this.adminToken();
+    if (token) { const response = await fetch('/api/admin/invoice', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: newInvId, clientId: task.clientId, clientName: task.client, service: `${task.taskName} (Consolidated Fee)`, amount: task.fee || 3500 }) }); if (!response.ok) { const result = await response.json().catch(() => ({})); return alert(result.error || 'Invoice cloud save failed'); } }
 
     task.tallySynced = true;
     alert(`Consolidated Invoice ${newInvId} created for ${task.client}! Total: ₹ ${(task.fee || 3500).toLocaleString('en-IN')}. Added to Invoices & Fees Ledger.`);

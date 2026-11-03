@@ -48,6 +48,17 @@ create table if not exists public.client_documents (
   uploaded_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
+create table if not exists public.invoices (
+  id text primary key,
+  client_id text,
+  client_name text not null,
+  service text not null,
+  amount numeric(12,2) not null default 0,
+  status text not null default 'Pending',
+  due_date date,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
 
 create table if not exists public.compliance_deadlines (
   id text primary key,
@@ -78,6 +89,7 @@ grant select on public.employees, public.clients, public.compliance_tasks, publi
 grant select on public.compliance_tasks to authenticated;
 grant all on table public.compliance_tasks to service_role;
 grant all on table public.clients to service_role;
+grant all on table public.invoices to service_role;
 
 -- Private bucket for confidential client PDFs, statements and working papers.
 insert into storage.buckets (id, name, public)

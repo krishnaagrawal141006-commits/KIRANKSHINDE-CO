@@ -297,8 +297,9 @@
       <!-- ================= 4. COMPLIANCE KANBAN BOARD ================= -->
       <section class="tab-content" id="tab-deadlines">
         <div class="admin-card">
-          <div class="admin-card-header"><div><h3>Statutory Deadline Updates</h3><p style="font-size:.84rem;color:#64748b;margin-top:4px">Edit dates and official notes here. The public website updates from this panel.</p></div></div>
-          <div class="table-responsive"><table class="admin-table"><thead><tr><th>Compliance</th><th>Due date</th><th>Public label</th><th>Active</th><th>Action</th></tr></thead><tbody id="deadlinesTableBody"><tr><td colspan="5">Loading deadlines…</td></tr></tbody></table></div>
+          <div class="admin-card-header"><div><h3>Statutory Deadline Updates</h3><p style="font-size:.84rem;color:#64748b;margin-top:4px">Add, rename, edit or deactivate any deadline. Changes publish to the website.</p></div><button class="btn-admin btn-admin-primary" type="button" onclick="AdminCRM.toggleDeadlineForm()"><i class="fa-solid fa-plus"></i> New Deadline</button></div>
+          <form id="deadlineForm" style="display:none;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 18px"><input id="newDeadlineId" class="form-input-admin" placeholder="ID e.g. pf-return" required><input id="newDeadlineTitle" class="form-input-admin" placeholder="Title" required><input id="newDeadlineCategory" class="form-input-admin" placeholder="Category e.g. gst" required><input id="newDeadlineCategoryLabel" class="form-input-admin" placeholder="Category label" required><input id="newDeadlineDate" class="form-input-admin" type="date"><input id="newDeadlineLabel" class="form-input-admin" placeholder="Public date label"><input id="newDeadlineDescription" class="form-input-admin" placeholder="Description"><input id="newDeadlineAction" class="form-input-admin" placeholder="Action text" value="View compliance"><button class="btn-admin btn-admin-primary" type="submit">Create Deadline</button></form>
+          <div class="table-responsive"><table class="admin-table"><thead><tr><th>Title / Category</th><th>Date</th><th>Public label</th><th>Description</th><th>Active</th><th>Actions</th></tr></thead><tbody id="deadlinesTableBody"><tr><td colspan="6">Loading deadlines…</td></tr></tbody></table></div>
         </div>
       </section>
 

@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
   const id = String(body.id || '').trim();
   if (!id) return res.status(400).json({ error: 'Deadline id is required' });
-  const fields = { title: body.title, description: body.description, due_date: body.due_date || null, due_date_label: body.due_date_label || null, is_active: body.is_active !== false, updated_at: new Date().toISOString() };
+  const fields = { title: body.title, category: body.category, category_label: body.category_label, category_class: body.category_class, description: body.description, frequency: body.frequency, due_day: body.due_day ? Number(body.due_day) : null, due_date: body.due_date || null, due_date_label: body.due_date_label || null, action_text: body.action_text, source_url: body.source_url || null, is_active: body.is_active !== false, updated_at: new Date().toISOString() };
   const result = await fetch(`${url}/rest/v1/compliance_deadlines?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(fields) });
   const data = await result.json().catch(() => ({}));
   if (!result.ok) return res.status(result.status).json({ error: data.message || 'Deadline update failed' });

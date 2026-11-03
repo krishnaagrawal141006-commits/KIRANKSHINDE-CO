@@ -68,25 +68,28 @@ const AdminCRM = {
   renderDeadlinesTable() {
     const body = document.getElementById('deadlinesTableBody');
     if (!body) return;
-    body.innerHTML = this.state.deadlines.length ? this.state.deadlines.map((row, index) => `<tr><td><strong>${row.title}</strong><br><small>${row.category_label}</small></td><td><input class="form-input-admin" type="date" id="deadlineDate${index}" value="${row.due_date || ''}"></td><td><input class="form-input-admin" id="deadlineLabel${index}" value="${row.due_date_label || ''}"></td><td><input type="checkbox" id="deadlineActive${index}" ${row.is_active ? 'checked' : ''}></td><td><button class="btn-admin btn-admin-primary" onclick="AdminCRM.saveDeadline(${index})">Save</button></td></tr>`).join('') : '<tr><td colspan="5">No deadlines found. Run the schema SQL first.</td></tr>';
+    body.innerHTML = this.state.deadlines.length ? this.state.deadlines.map((row, index) => `<tr><td><input class="form-input-admin" id="deadlineTitle${index}" value="${row.title || ''}"><br><small>${row.category_label || row.category || ''}</small></td><td><input class="form-input-admin" type="date" id="deadlineDate${index}" value="${row.due_date || ''}"></td><td><input class="form-input-admin" id="deadlineLabel${index}" value="${row.due_date_label || ''}"></td><td><input class="form-input-admin" id="deadlineDescription${index}" value="${row.description || ''}"></td><td><input type="checkbox" id="deadlineActive${index}" ${row.is_active ? 'checked' : ''}></td><td><button class="btn-admin btn-admin-primary" onclick="AdminCRM.saveDeadline(${index})">Save</button> <button class="action-icon-btn" onclick="AdminCRM.deleteDeadline(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('') : '<tr><td colspan="6">No deadlines found. Run the schema SQL first.</td></tr>';
+  },
+
+  toggleDeadlineForm() { const form = document.getElementById('deadlineForm'); if (form) form.style.display = form.style.display === 'grid' ? 'none' : 'grid'; },
+
+  async adminToken() {
+    const client = await window.createSupabaseClient?.(); if (!client) return null;
+    let session = (await client.auth.getSession()).data.session;
+    if (!session) { const email = prompt('Main Admin email:'); const password = prompt('Main Admin password:'); if (!email || !password) return null; const login = await client.auth.signInWithPassword({ email: email.trim(), password }); if (login.error) { alert(`Main Admin login failed: ${login.error.message}`); return null; } session = login.data.session; }
+    return session.access_token;
   },
 
   async saveDeadline(index) {
     const row = this.state.deadlines[index]; if (!row) return;
-    const client = await window.createSupabaseClient?.(); if (!client) return alert('Supabase configuration missing.');
-    let session = (await client.auth.getSession()).data.session;
-    if (!session) {
-      const email = prompt('Main Admin email:'); const password = prompt('Main Admin password:');
-      if (!email || !password) return;
-      const login = await client.auth.signInWithPassword({ email: email.trim(), password });
-      if (login.error) return alert(`Main Admin login failed: ${login.error.message}`);
-      session = login.data.session;
-    }
-    const response = await fetch('/api/admin/update-deadline', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ id: row.id, due_date: document.getElementById(`deadlineDate${index}`).value, due_date_label: document.getElementById(`deadlineLabel${index}`).value, is_active: document.getElementById(`deadlineActive${index}`).checked, title: row.title, description: row.description }) });
+    const token = await this.adminToken(); if (!token) return;
+    const response = await fetch('/api/admin/update-deadline', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: row.id, due_date: document.getElementById(`deadlineDate${index}`).value, due_date_label: document.getElementById(`deadlineLabel${index}`).value, is_active: document.getElementById(`deadlineActive${index}`).checked, title: document.getElementById(`deadlineTitle${index}`).value, description: document.getElementById(`deadlineDescription${index}`).value, category: row.category, category_label: row.category_label, category_class: row.category_class, frequency: row.frequency, due_day: row.due_day, action_text: row.action_text, source_url: row.source_url }) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return alert(result.error || 'Deadline save failed');
     alert('Deadline updated. Public website will refresh from Supabase.'); this.loadDeadlines();
   },
+
+  async deleteDeadline(index) { const row = this.state.deadlines[index]; if (!row || !confirm(`Delete ${row.title}?`)) return; const token = await this.adminToken(); if (!token) return; const response = await fetch(`/api/admin/delete-deadline?id=${encodeURIComponent(row.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) { const result = await response.json().catch(() => ({})); return alert(result.error || 'Delete failed'); } this.loadDeadlines(); },
 
   renderMetrics() {
     const activeClientsEl = document.getElementById('metricActiveClients');
@@ -863,6 +866,14 @@ const AdminCRM = {
       employeeForm.reset();
       this.renderEmployeesTable();
       alert('Employee account created successfully. Employee can now login with the given email and password.');
+    });
+
+    const deadlineForm = document.getElementById('deadlineForm');
+    if (deadlineForm) deadlineForm.addEventListener('submit', async (event) => {
+      event.preventDefault(); const token = await this.adminToken(); if (!token) return;
+      const body = { id: document.getElementById('newDeadlineId').value, title: document.getElementById('newDeadlineTitle').value, category: document.getElementById('newDeadlineCategory').value, category_label: document.getElementById('newDeadlineCategoryLabel').value, due_date: document.getElementById('newDeadlineDate').value || null, due_date_label: document.getElementById('newDeadlineLabel').value || null, description: document.getElementById('newDeadlineDescription').value, action_text: document.getElementById('newDeadlineAction').value };
+      const response = await fetch('/api/admin/create-deadline', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }); const result = await response.json().catch(() => ({}));
+      if (!response.ok) return alert(result.error || 'Could not create deadline'); alert('New deadline added.'); deadlineForm.reset(); deadlineForm.style.display = 'none'; this.loadDeadlines();
     });
 
     const modalOverlay = document.getElementById('clientModal');

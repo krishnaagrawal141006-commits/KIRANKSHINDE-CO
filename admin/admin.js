@@ -205,7 +205,7 @@ const AdminCRM = {
     client.channel('admin-compliance-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'compliance_tasks' }, () => this.loadCloudWorkflow()).subscribe();
   },
 
-  async loadCloudInvoices() { const token = await this.adminToken?.(); if (!token) return; const response = await fetch('/api/admin/invoice', { headers: { Authorization: `Bearer ${token}` } }); const result = await response.json().catch(() => ({})); const data = result.invoices; if (Array.isArray(data)) { this.state.invoices = data.map(i => ({ id: i.id, client: i.client_name, service: i.service, amount: `₹ ${Number(i.amount || 0).toLocaleString('en-IN')}`, date: i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN') : '', status: i.status })); this.renderInvoicesTable(); } },
+  async loadCloudInvoices() { const token = await this.adminToken?.(); if (!token) return; const response = await fetch('/api/admin/invoice', { headers: { Authorization: `Bearer ${token}` } }); const result = await response.json().catch(() => ({})); const data = result.invoices; if (Array.isArray(data)) { this.state.invoices = data.map(i => ({ id: i.id, client: i.client_name, service: i.service, amount: `₹ ${Number(i.amount || 0).toLocaleString('en-IN')}`, date: i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN') : '', createdAt: i.created_at, status: i.status })); this.renderInvoicesTable(); this.renderMetrics(); } },
 
   renderDeadlinesTable() {
     const body = document.getElementById('deadlinesTableBody');
@@ -248,6 +248,9 @@ const AdminCRM = {
 
     const docPendingBadge = document.getElementById('docPendingBadge');
     if (docPendingBadge) docPendingBadge.innerText = `${this.state.pendingDocs.length} Pending`;
+
+    const monthlyBillingEl = document.getElementById('metricMonthlyBillings');
+    if (monthlyBillingEl) { const now = new Date(); const total = (this.state.invoices || []).filter(inv => { const date = new Date(inv.createdAt || inv.date || ''); return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear(); }).reduce((sum, inv) => sum + Number(String(inv.amount || 0).replace(/[^0-9.-]/g, '')), 0); monthlyBillingEl.textContent = `₹ ${total.toLocaleString('en-IN')}`; }
   },
 
   renderEmployeesTable() {

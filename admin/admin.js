@@ -12,6 +12,7 @@ const AdminCRM = {
     this.state.tasks = JSON.parse(localStorage.getItem('ks_tasks') || '[]');
     this.state.pendingDocs = JSON.parse(localStorage.getItem('ks_pending_docs') || '[]');
     this.loadDeadlines();
+    this.loadCloudWorkflow();
     // Clear old seeded default team entries if found
     let savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
     if (savedTeam.length && savedTeam.some(emp => emp.name === 'CA Kiran Kashinath Shinde' || emp.name === 'Pooja Dilip Dahiwadkar' || emp.status === 'Former')) {
@@ -20,6 +21,8 @@ const AdminCRM = {
     }
     this.state.employees = savedTeam;
     this.renderAll();
+    this.loadCloudTasks();
+    setInterval(() => this.loadCloudTasks(), 15000);
     this.setupTabNavigation();
     this.setupModals();
     this.setupMobileMenu();
@@ -73,6 +76,7 @@ const AdminCRM = {
     this.renderLeadsTable();
     this.renderEmployeesTable();
     this.renderKanbanBoard();
+    this.renderReviewBox();
     this.renderInvoicesTable();
     this.renderArticlesTable();
     this.renderDocumentsTable();
@@ -82,12 +86,122 @@ const AdminCRM = {
     this.populateDocModalClients();
   },
 
+  async loadCloudTasks() {
+    try {
+      const token = await this.adminToken();
+      if (!token) return;
+      const res = await fetch('/api/admin/list-tasks', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      if (data && Array.isArray(data.tasks)) {
+        const existingMap = new Map();
+        this.state.tasks.forEach(t => existingMap.set(String(t.id), t));
+
+        data.tasks.forEach(cloudTask => {
+          const local = existingMap.get(String(cloudTask.id));
+          if (local) {
+            local.stage = cloudTask.stage || local.stage;
+            local.assigned = cloudTask.assigned || local.assigned;
+            local.assignedEmail = cloudTask.assignedEmail || local.assignedEmail;
+            local.dueDate = cloudTask.dueDate || local.dueDate;
+            if (cloudTask.remarks && cloudTask.remarks.length) {
+              local.remarks = cloudTask.remarks;
+            }
+          } else {
+            this.state.tasks.push(cloudTask);
+          }
+        });
+
+        this.persistWorkflow();
+        this.renderKanbanBoard();
+        this.renderReviewBox();
+        this.renderDashboardRecent();
+        this.renderMetrics();
+      }
+    } catch (e) {
+      console.warn('Could not load cloud tasks', e);
+    }
+  },
+
+  renderReviewBox() {
+    const reviewTasks = (this.state.tasks || []).filter(t => t.stage === 'in-review');
+    const badge = document.getElementById('reviewBoxBadge');
+    if (badge) {
+      badge.textContent = `${reviewTasks.length} Pending`;
+      badge.style.display = reviewTasks.length > 0 ? 'inline-block' : 'none';
+    }
+    const banner = document.getElementById('complianceReviewBanner');
+    const countEl = document.getElementById('reviewBannerCount');
+    if (banner && countEl) {
+      countEl.textContent = reviewTasks.length;
+      banner.style.display = reviewTasks.length > 0 ? 'flex' : 'none';
+    }
+
+    const tbody = document.getElementById('reviewBoxTableBody');
+    if (!tbody) return;
+
+    if (reviewTasks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: #64748b;"><i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.5rem; margin-bottom: 8px; display: block;"></i>All caught up! No employee submissions currently waiting for review.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = reviewTasks.map(t => {
+      const remarks = t.remarks || [];
+      const lastRemark = remarks.length ? remarks[remarks.length - 1] : null;
+      return `
+        <tr>
+          <td>
+            <strong><i class="fa-solid fa-user-check" style="color:#2563eb;margin-right:6px"></i>${t.assigned || 'Employee'}</strong>
+            ${t.assignedEmail ? `<br><small style="color:#64748b">${t.assignedEmail}</small>` : ''}
+          </td>
+          <td><strong>${t.client || 'Client'}</strong></td>
+          <td>
+            <span class="kanban-tag ${t.tag || 'tag-gst'}">${(t.tag || 'GST').replace('tag-', '').toUpperCase()}</span>
+            <div style="font-weight:600;margin-top:4px">${t.taskName}</div>
+          </td>
+          <td><span style="color:#d97706;font-weight:600">${t.dueDate || 'To be scheduled'}</span></td>
+          <td style="max-width:260px">
+            ${lastRemark ? `<div style="font-size:0.8rem;background:#f8fafc;padding:6px 8px;border-radius:6px;border-left:3px solid #2563eb"><strong>${lastRemark.author}:</strong> ${lastRemark.note}</div>` : '<span style="color:#94a3b8;font-size:0.8rem;font-style:italic">No notes submitted</span>'}
+          </td>
+          <td><span class="status-pill status-progress">Under CA Review</span></td>
+          <td>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <button class="btn-admin btn-admin-primary" style="font-size:0.75rem;padding:5px 10px;background:#16a34a" onclick="AdminCRM.approveReviewTask('${t.id}')" title="Approve and mark completed">
+                <i class="fa-solid fa-check"></i> Approve & File
+              </button>
+              <button class="btn-admin" style="font-size:0.75rem;padding:5px 10px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca" onclick="AdminCRM.rejectReviewTask('${t.id}')" title="Send back to employee with rework notes">
+                <i class="fa-solid fa-rotate-left"></i> Send Back
+              </button>
+              <button class="action-icon-btn" onclick="AdminCRM.openRemarksModal('${t.id}')" title="Remarks">
+                <i class="fa-solid fa-comments"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
   async loadDeadlines() {
     const client = await window.createSupabaseClient?.();
     if (!client) return this.renderDeadlinesTable();
     const { data } = await client.from('compliance_deadlines').select('*').order('id');
     this.state.deadlines = data || [];
     this.renderDeadlinesTable();
+  },
+
+  async loadCloudWorkflow() {
+    const client = await window.createSupabaseClient?.();
+    if (!client) return;
+    const { data, error } = await client.from('compliance_tasks').select('*');
+    if (!error && Array.isArray(data) && data.length) {
+      this.state.tasks = data.map(task => ({ id: task.id, clientId: task.client_id, client: task.client_id, taskName: task.task_name, assigned: task.assigned_employee_email || 'Unassigned', stage: task.stage || 'todo', dueDate: task.due_date, files: [] }));
+      localStorage.setItem('ks_tasks', JSON.stringify(this.state.tasks));
+      this.renderKanbanBoard(); this.renderDashboardRecent(); this.renderMetrics();
+    }
+    client.channel('admin-compliance-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'compliance_tasks' }, () => this.loadCloudWorkflow()).subscribe();
   },
 
   renderDeadlinesTable() {
@@ -247,6 +361,12 @@ const AdminCRM = {
               <span><i class="fa-solid fa-user-tag"></i> ${t.assigned}</span>
             </div>
 
+            ${stage === 'in-review' ? `
+              <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; font-size: 0.73rem; color: #b45309; font-weight: 600; margin: 8px 0;">
+                <i class="fa-solid fa-hourglass-half"></i> In Review (Submitted by ${t.assigned || 'Employee'})
+              </div>
+            ` : ''}
+
             <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; pt-1 border-top: 1px dashed #e2e8f0;">
               <button onclick="AdminCRM.assignTask('${t.id}')" style="font-size: 0.73rem; padding: 3px 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 4px; cursor: pointer;">Assign</button>
               <button onclick="AdminCRM.uploadTaskFile('${t.id}')" style="font-size: 0.73rem; padding: 3px 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 4px; cursor: pointer;">Upload</button>
@@ -254,7 +374,11 @@ const AdminCRM = {
                 <i class="fa-regular fa-comment-dots"></i> Remarks (${remarksCount})
               </button>
 
-              ${stage !== 'completed' ? `
+              ${stage === 'in-review' ? `
+                <button onclick="AdminCRM.approveReviewTask('${t.id}')" style="font-size: 0.73rem; padding: 4px 10px; border: none; background: #16a34a; color: #fff; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                  <i class="fa-solid fa-check"></i> Approve &rarr;
+                </button>
+              ` : stage !== 'completed' ? `
                 <button onclick="AdminCRM.advanceTask('${t.id}')" style="font-size: 0.73rem; padding: 4px 10px; border: none; background: #0f172a; color: #fff; border-radius: 4px; cursor: pointer; font-weight: 600;">
                   Advance &rarr;
                 </button>
@@ -418,6 +542,10 @@ const AdminCRM = {
         const targetSection = document.getElementById(targetId);
         if (targetSection) targetSection.classList.add('active');
 
+        if (targetId === 'tab-reviewbox' || targetId === 'tab-compliance') {
+          AdminCRM.loadCloudTasks();
+        }
+
         if (pageTitle) {
           pageTitle.innerText = tab.querySelector('span').innerText;
         }
@@ -430,9 +558,9 @@ const AdminCRM = {
   },
 
   // 4. Actions: Advance Kanban Task
-  advanceTask(taskId) {
+  async advanceTask(taskId) {
     const stages = ['todo', 'in-progress', 'in-review', 'completed'];
-    const task = this.state.tasks.find(t => t.id === taskId);
+    const task = this.state.tasks.find(t => String(t.id) === String(taskId));
     if (!task) return;
 
     const currentIndex = stages.indexOf(task.stage);
@@ -440,9 +568,88 @@ const AdminCRM = {
       task.stage = stages[currentIndex + 1];
       this.persistWorkflow();
       this.renderKanbanBoard();
+      this.renderReviewBox();
       this.renderDashboardRecent();
       this.renderMetrics();
+
+      try {
+        const token = await this.adminToken();
+        if (token) {
+          await fetch('/api/admin/update-task', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ taskId: task.id, stage: task.stage })
+          });
+        }
+      } catch (e) {
+        console.warn('Task advance cloud sync skipped', e);
+      }
     }
+  },
+
+  async approveReviewTask(taskId) {
+    const task = this.state.tasks.find(t => String(t.id) === String(taskId));
+    if (!task) return;
+    task.stage = 'completed';
+    const now = new Date();
+    const timeStr = `${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (!task.remarks) task.remarks = [];
+    const remarkObj = {
+      author: 'CA Kiran Shinde',
+      time: timeStr,
+      note: 'Verified and approved by CA Sir. Ready for final filing / billing.'
+    };
+    task.remarks.push(remarkObj);
+    this.persistWorkflow();
+    this.renderKanbanBoard();
+    this.renderReviewBox();
+    this.renderDashboardRecent();
+    this.renderMetrics();
+    try {
+      const token = await this.adminToken();
+      if (token) {
+        await fetch('/api/admin/update-task', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ taskId: task.id, stage: 'completed', addRemark: remarkObj })
+        });
+      }
+    } catch (e) {}
+    alert(`Task "${task.taskName}" approved! Moved to Filed & Ack Generated.`);
+  },
+
+  async rejectReviewTask(taskId) {
+    const task = this.state.tasks.find(t => String(t.id) === String(taskId));
+    if (!task) return;
+    const reason = prompt(`Reason for sending back to ${task.assigned || 'employee'} (required):`);
+    if (!reason || !reason.trim()) return;
+
+    task.stage = 'in-progress';
+    const now = new Date();
+    const timeStr = `${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (!task.remarks) task.remarks = [];
+    const remarkObj = {
+      author: 'CA Kiran Shinde',
+      time: timeStr,
+      note: `Returned for rework: ${reason.trim()}`
+    };
+    task.remarks.push(remarkObj);
+    this.persistWorkflow();
+    this.renderKanbanBoard();
+    this.renderReviewBox();
+    this.renderDashboardRecent();
+    this.renderMetrics();
+    try {
+      const token = await this.adminToken();
+      if (token) {
+        await fetch('/api/admin/update-task', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ taskId: task.id, stage: 'in-progress', addRemark: remarkObj })
+        });
+      }
+    } catch (e) {}
+    alert(`Task sent back to ${task.assigned || 'employee'} for revision.`);
   },
 
   // 5. Actions: Mark Invoice Paid
@@ -592,12 +799,15 @@ const AdminCRM = {
 
   // Open Task Remarks Modal
   openRemarksModal(taskId) {
-    const task = this.state.tasks.find(t => t.id === taskId);
+    const task = this.state.tasks.find(t => String(t.id) === String(taskId));
     if (!task) return;
 
-    document.getElementById('currentRemarkTaskId').value = taskId;
-    document.getElementById('remarksClientHeading').innerText = task.client;
-    document.getElementById('remarksTaskSub').innerText = `${task.taskName} • Due: ${task.dueDate} • Assigned: ${task.assigned}`;
+    const idInput = document.getElementById('currentRemarkTaskId');
+    if (idInput) idInput.value = taskId;
+    const clientHeading = document.getElementById('remarksClientHeading');
+    if (clientHeading) clientHeading.innerText = task.client || 'Client';
+    const sub = document.getElementById('remarksTaskSub');
+    if (sub) sub.innerText = `${task.taskName || 'Compliance task'} • Due: ${task.dueDate || 'To be scheduled'} • Assigned: ${task.assigned || 'Unassigned'}`;
 
     const listContainer = document.getElementById('remarksHistoryList');
     if (listContainer) {
@@ -607,10 +817,10 @@ const AdminCRM = {
         listContainer.innerHTML = task.remarks.map(r => `
           <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <strong style="font-size: 0.84rem; color: #0f172a;"><i class="fa-solid fa-user-pen" style="color: #2563eb; margin-right: 5px;"></i> ${r.author}</strong>
-              <span style="font-size: 0.72rem; color: #64748b;">${r.time}</span>
+              <strong style="font-size: 0.84rem; color: #0f172a;"><i class="fa-solid fa-user-pen" style="color: #2563eb; margin-right: 5px;"></i> ${r.author || 'User'}</strong>
+              <span style="font-size: 0.72rem; color: #64748b;">${r.time || ''}</span>
             </div>
-            <p style="font-size: 0.83rem; color: #334155; line-height: 1.4;">${r.note}</p>
+            <p style="font-size: 0.83rem; color: #334155; line-height: 1.4;">${r.note || ''}</p>
           </div>
         `).join('');
       }
@@ -621,24 +831,39 @@ const AdminCRM = {
   },
 
   // Post New Remark to Task
-  postTaskRemark(taskId, note, author) {
-    const task = this.state.tasks.find(t => t.id === taskId);
+  async postTaskRemark(taskId, note, author) {
+    const task = this.state.tasks.find(t => String(t.id) === String(taskId));
     if (!task) return;
 
     if (!task.remarks) task.remarks = [];
 
     const now = new Date();
-    const timeStr = `${now.getDate()} Oct 2026, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const timeStr = `${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-    task.remarks.push({
+    const remarkObj = {
       author: author || 'CA Kiran Shinde',
       time: timeStr,
       note: note
-    });
+    };
 
+    task.remarks.push(remarkObj);
     this.persistWorkflow();
     this.renderKanbanBoard();
+    this.renderReviewBox();
     this.openRemarksModal(taskId);
+
+    try {
+      const token = await this.adminToken();
+      if (token) {
+        await fetch('/api/admin/update-task', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ taskId: task.id, addRemark: remarkObj })
+        });
+      }
+    } catch (e) {
+      console.warn('Remark cloud sync skipped', e);
+    }
   },
 
   // Document Follow-Up Handlers

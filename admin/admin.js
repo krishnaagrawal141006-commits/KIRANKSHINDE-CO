@@ -972,7 +972,7 @@ const AdminCRM = {
     });
 
     const token = await this.adminToken();
-    if (token) { const response = await fetch('/api/admin/invoice', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: newInvId, clientId: task.clientId, clientName: task.client, service: `${task.taskName} (Consolidated Fee)`, amount: task.fee || 3500 }) }); if (!response.ok) { const result = await response.json().catch(() => ({})); return alert(result.error || 'Invoice cloud save failed'); } }
+    if (token) { const response = await fetch('/api/admin/invoice', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: newInvId, clientId: task.clientId, clientName: task.client, service: `${task.taskName} (Consolidated Fee)`, amount: task.fee || 3500 }) }); if (!response.ok) { const result = await response.json().catch(() => ({})); return alert(result.error || 'Invoice cloud save failed'); } await this.loadCloudInvoices(); }
 
     task.tallySynced = true;
     alert(`Consolidated Invoice ${newInvId} created for ${task.client}! Total: ₹ ${(task.fee || 3500).toLocaleString('en-IN')}. Added to Invoices & Fees Ledger.`);

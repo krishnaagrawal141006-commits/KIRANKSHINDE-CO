@@ -35,6 +35,7 @@ create table if not exists public.compliance_tasks (
   remarks jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
+alter table public.compliance_tasks add column if not exists assigned_employee_email text;
 
 create table if not exists public.client_documents (
   id uuid primary key default gen_random_uuid(),
@@ -74,6 +75,8 @@ alter table public.compliance_deadlines enable row level security;
 -- Start restrictive. Add manager/admin policies only after Auth is connected.
 revoke all on public.employees, public.clients, public.compliance_tasks, public.client_documents from anon;
 grant select on public.employees, public.clients, public.compliance_tasks, public.client_documents to authenticated;
+grant select on public.compliance_tasks to authenticated;
+grant all on table public.compliance_tasks to service_role;
 grant select on public.compliance_deadlines to anon, authenticated;
 grant all on table public.compliance_deadlines to service_role;
 drop policy if exists "Public can view active compliance deadlines" on public.compliance_deadlines;

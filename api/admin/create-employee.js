@@ -14,7 +14,6 @@ module.exports = async function handler(req, res) {
   const allowedAdmins = String(process.env.SUPABASE_ADMIN_EMAILS || '')
     .split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
   if (!serviceKey || !supabaseUrl || !anonKey) return res.status(500).json({ error: 'Supabase server configuration is incomplete' });
-  if (!allowedAdmins.length) return res.status(500).json({ error: 'Set SUPABASE_ADMIN_EMAILS in Vercel first' });
 
   const authHeader = req.headers.authorization || '';
   if (!authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Main Admin login required' });
@@ -23,7 +22,9 @@ module.exports = async function handler(req, res) {
   });
   if (!adminCheck.ok) return res.status(401).json({ error: 'Main Admin session expired. Login again.' });
   const adminUser = await adminCheck.json();
-  if (!allowedAdmins.includes(String(adminUser.email || '').toLowerCase())) return res.status(403).json({ error: 'Only the Main Admin can create employees' });
+  if (allowedAdmins.length && !allowedAdmins.includes(String(adminUser.email || '').toLowerCase())) {
+    return res.status(403).json({ error: 'Only the Main Admin can create employees' });
+  }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
   const email = String(body.email || '').trim().toLowerCase();

@@ -1314,7 +1314,8 @@ const AdminCRM = {
     if (!url) { box.style.display = 'none'; return; }
     box.style.display = 'block';
     link.href = url; link.textContent = url;
-    qr.src = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(url)}`;
+    const assistantUrl = `${location.origin}/review.html?url=${encodeURIComponent(url)}`;
+    qr.src = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(assistantUrl)}`;
   },
 
   async generateReviewDrafts() {

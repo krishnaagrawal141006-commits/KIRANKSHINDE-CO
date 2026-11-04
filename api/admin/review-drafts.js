@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   const { feedback, rating } = req.body || {};
   if (!feedback || !String(feedback).trim()) return res.status(400).json({ error: 'Feedback is required.' });
   const prompt = `Write exactly 3 short, natural English Google review drafts for Kiran K. Shinde & Co., Chartered Accountants in Boisar. Use only the customer's real feedback below. Each draft must be 50-100 characters, sound like a normal person, and never invent facts. Rating: ${rating || 'not specified'}/5. Feedback: ${String(feedback).slice(0, 500)}`;
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.1-8b-instant', temperature: 0.7, messages: [{ role: 'user', content: prompt }] }) });
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'openai/gpt-oss-20b', temperature: 0.7, messages: [{ role: 'user', content: prompt }] }) });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'Draft generation failed.' });
   const drafts = String(data.choices?.[0]?.message?.content || '').split(/\n+/).map(s => s.replace(/^\s*(?:[-*]|\d+[.)])\s*/, '').trim()).filter(Boolean).slice(0, 3);

@@ -16,10 +16,6 @@ const AdminCRM = {
     this.loadCloudInvoices();
     // Clear old seeded default team entries if found
     let savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
-    if (!savedTeam.length) {
-      savedTeam = ['Ishika','Manasi','Purvi','Sneha','Gauri','Himanshu','Nidhi','Ritka','Deepak','Harshal','Janmesh','Priti','Purushottam','Vasundhara','Ankita','Diya','Pooja','Suraj'].map((name, i) => ({ id: `demo-${i + 1}`, name, designation: 'Demo Team Member', email: '', loginId: '', role: 'employee', permissions: ['clients','tasks','documents','calculators','team'], status: 'Active', accountStatus: 'Demo profile', incentive: 0, photoUrl: `../assets/team/${name}.jpg` }));
-      localStorage.setItem('ks_team', JSON.stringify(savedTeam));
-    }
     if (savedTeam.length && savedTeam.some(emp => emp.name === 'CA Kiran Kashinath Shinde' || emp.name === 'Pooja Dilip Dahiwadkar' || emp.status === 'Former')) {
       savedTeam = [];
       localStorage.setItem('ks_team', JSON.stringify([]));

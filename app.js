@@ -3,11 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const publicTeamGrid = document.getElementById('publicTeamGrid');
   if (publicTeamGrid) {
     const savedTeam = JSON.parse(localStorage.getItem('ks_team') || '[]');
-    const demoNames = ['Ishika','Manasi','Purvi','Sneha','Gauri','Himanshu','Nidhi','Ritka','Deepak','Harshal','Janmesh','Priti','Purushottam','Vasundhara','Ankita','Diya','Pooja','Suraj'];
-    const demoTeam = demoNames.map(name => ({ name, designation: 'Demo Team Member', status: 'Active', photo: `assets/team/${name}.jpg` }));
     const hasLegacyPlaceholder = savedTeam.some(member => ['k', 'krishna'].includes(String(member.name || '').toLowerCase()));
-    const hasDemoProfiles = savedTeam.some(member => String(member.id || '').startsWith('demo-'));
-    const team = hasDemoProfiles ? savedTeam : (window.DEFAULT_TEAM?.length ? window.DEFAULT_TEAM : demoTeam);
+    const team = savedTeam.length && !hasLegacyPlaceholder ? savedTeam : (window.DEFAULT_TEAM || []);
     const active = team.filter(member => member.status !== 'Former');
     const former = team.filter(member => member.status === 'Former');
     const renderMember = member => `<article class="team-member-card ${member.status === 'Former' ? 'team-former' : ''}">

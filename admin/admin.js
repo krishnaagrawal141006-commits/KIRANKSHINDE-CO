@@ -27,6 +27,7 @@ const AdminCRM = {
     this.setupTabNavigation();
     this.setupModals();
     this.setupMobileMenu();
+    this.loadGmbReviewLink();
     window.addEventListener('storage', (event) => {
       if (event.key === 'ks_leads') {
         this.state.leads = JSON.parse(event.newValue || '[]');
@@ -1287,7 +1288,34 @@ const AdminCRM = {
     if (toggleBtn && sidebar) {
       toggleBtn.addEventListener('click', () => sidebar.classList.toggle('active'));
     }
-  }
+  },
+
+  loadGmbReviewLink() {
+    const url = localStorage.getItem('gmb_review_url') || '';
+    const input = document.getElementById('gmbReviewUrl');
+    if (input) input.value = url;
+    this.renderGmbReviewLink(url);
+  },
+
+  saveGmbReviewLink() {
+    const input = document.getElementById('gmbReviewUrl');
+    const url = (input?.value || '').trim();
+    if (!url || !/^https?:\/\//i.test(url)) return alert('Valid Google review URL डालें.');
+    localStorage.setItem('gmb_review_url', url);
+    this.renderGmbReviewLink(url);
+    alert('Google Business review link saved.');
+  },
+
+  renderGmbReviewLink(url) {
+    const box = document.getElementById('gmbReviewSaved');
+    const link = document.getElementById('gmbReviewOpen');
+    const qr = document.getElementById('gmbReviewQr');
+    if (!box || !link || !qr) return;
+    if (!url) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    link.href = url; link.textContent = url;
+    qr.src = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(url)}`;
+  },
 };
 
 document.addEventListener('DOMContentLoaded', () => {

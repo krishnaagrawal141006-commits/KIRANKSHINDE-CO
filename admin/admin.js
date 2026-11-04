@@ -1316,6 +1316,18 @@ const AdminCRM = {
     link.href = url; link.textContent = url;
     qr.src = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(url)}`;
   },
+
+  async generateReviewDrafts() {
+    const feedback = document.getElementById('gmbReviewFeedback')?.value.trim();
+    const rating = document.getElementById('gmbReviewRating')?.value;
+    const target = document.getElementById('gmbReviewDrafts');
+    if (!feedback) return alert('Customer feedback लिखें.');
+    target.innerHTML = '<p>Drafts बन रहे हैं…</p>';
+    const response = await fetch('/api/admin/review-drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback, rating }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { target.innerHTML = `<p style="color:#b91c1c">${result.error || 'Generation failed'}</p>`; return; }
+    target.innerHTML = (result.drafts || []).map(draft => `<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><textarea class="form-input-admin" rows="2" readonly style="flex:1">${draft}</textarea><button class="btn-admin" type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button></div>`).join('') + `<button class="btn-admin btn-admin-primary" type="button" onclick="window.open(localStorage.getItem('gmb_review_url') || 'https://www.google.com/maps','_blank','noopener')">Open Google Review</button>`;
+  },
 };
 
 document.addEventListener('DOMContentLoaded', () => {

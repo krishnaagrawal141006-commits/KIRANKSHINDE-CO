@@ -527,6 +527,11 @@
           <input id="gmbReviewUrl" class="form-input-admin" type="url" placeholder="https://g.page/.../review" style="width:100%">
           <p style="color:#64748b;font-size:.85rem;margin:8px 0 16px">Get this from Google Business Profile → Ask for reviews → Copy link.</p>
           <button class="btn-admin btn-admin-primary" type="button" onclick="AdminCRM.saveGmbReviewLink()"><i class="fa-solid fa-floppy-disk"></i> Save review link</button>
+          <hr style="margin:24px 0;border:0;border-top:1px solid #e2e8f0">
+          <h3 style="margin:0 0 6px">Review Draft Tester</h3><p style="color:#64748b;font-size:.85rem">Customer ke real feedback se 3 draft options banayein. Final submission customer khud karega.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0"><select id="gmbReviewRating" class="form-input-admin" style="max-width:150px"><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select><textarea id="gmbReviewFeedback" class="form-input-admin" rows="3" placeholder="Customer ka actual feedback..." style="flex:1;min-width:260px"></textarea></div>
+          <button class="btn-admin btn-admin-primary" type="button" onclick="AdminCRM.generateReviewDrafts()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate 3 drafts</button>
+          <div id="gmbReviewDrafts" style="margin-top:14px"></div>
           <div id="gmbReviewSaved" style="display:none;margin-top:20px;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px">
             <strong>Saved review link</strong><br><a id="gmbReviewOpen" href="#" target="_blank" rel="noopener" style="word-break:break-all"></a>
             <div style="margin-top:16px"><img id="gmbReviewQr" alt="Google review QR code" width="180" height="180" style="border:8px solid #fff;box-shadow:0 2px 8px #0002"></div>

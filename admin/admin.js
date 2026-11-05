@@ -28,6 +28,7 @@ const AdminCRM = {
     this.setupModals();
     this.setupMobileMenu();
     this.loadGmbReviewLink();
+    this.renderTeamEditor();
     window.addEventListener('storage', (event) => {
       if (event.key === 'ks_leads') {
         this.state.leads = JSON.parse(event.newValue || '[]');
@@ -1317,6 +1318,16 @@ const AdminCRM = {
     const assistantUrl = `${location.origin}/review.html?url=${encodeURIComponent(url)}`;
     qr.src = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(assistantUrl)}`;
   },
+
+  renderTeamEditor() {
+    const root = document.getElementById('teamEditList'); if (!root) return;
+    const team = JSON.parse(localStorage.getItem('ks_team_profiles') || JSON.stringify(window.DEFAULT_TEAM || []));
+    localStorage.setItem('ks_team_profiles', JSON.stringify(team));
+    root.innerHTML = team.map((e,i)=>`<div class="admin-card" style="margin:14px 0"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"><input class="form-input-admin" id="teName${i}" value="${e.name||''}" placeholder="Name"><input class="form-input-admin" id="teRole${i}" value="${e.designation||''}" placeholder="Designation"><input class="form-input-admin" id="teTenure${i}" value="${e.tenure||''}" placeholder="Since / tenure"><select class="form-input-admin" id="teStatus${i}"><option ${e.status==='Active'?'selected':''}>Active</option><option ${e.status==='Former'?'selected':''}>Former</option></select><input class="form-input-admin" id="tePhoto${i}" value="${e.photo||''}" placeholder="Photo URL"></div><textarea class="form-input-admin" id="teBio${i}" rows="4" style="width:100%;margin-top:10px" placeholder="Full description">${e.bio||''}</textarea><button class="btn-admin btn-admin-primary" style="margin-top:10px" onclick="AdminCRM.saveTeamProfile(${i})">Save profile</button> <button class="btn-admin" onclick="AdminCRM.deleteTeamProfile(${i})">Delete</button></div>`).join('') || '<p>No profiles. Click New profile.</p>';
+  },
+  saveTeamProfile(i) { const team=JSON.parse(localStorage.getItem('ks_team_profiles')||'[]'); const e=team[i]||{}; Object.assign(e,{name:document.getElementById(`teName${i}`).value,designation:document.getElementById(`teRole${i}`).value,tenure:document.getElementById(`teTenure${i}`).value,status:document.getElementById(`teStatus${i}`).value,photo:document.getElementById(`tePhoto${i}`).value,bio:document.getElementById(`teBio${i}`).value}); team[i]=e; localStorage.setItem('ks_team_profiles',JSON.stringify(team)); alert('Team profile saved.'); },
+  addTeamProfile() { const team=JSON.parse(localStorage.getItem('ks_team_profiles')||'[]'); team.push({name:'',designation:'',tenure:'',status:'Active',photo:'',bio:''}); localStorage.setItem('ks_team_profiles',JSON.stringify(team)); this.renderTeamEditor(); },
+  deleteTeamProfile(i) { const team=JSON.parse(localStorage.getItem('ks_team_profiles')||'[]'); if(confirm('Delete this profile?')){team.splice(i,1);localStorage.setItem('ks_team_profiles',JSON.stringify(team));this.renderTeamEditor();} },
 
   async generateReviewDrafts() {
     const feedback = document.getElementById('gmbReviewFeedback')?.value.trim();

@@ -1,2 +1,25 @@
 // Public team directory
-window.DEFAULT_TEAM = [];
+window.DEFAULT_TEAM = [
+  { name:'CA Kiran Kashinath Shinde', designation:'Partner', tenure:'Since 2009', status:'Active', photo:'assets/team/tm1.jpg' },
+  { name:'CA Suvarna Amit Gokhale', designation:'Partner', tenure:'Since January 2026', status:'Active', photo:'assets/team/tm2.jpg' },
+  { name:'Ruchi Shivkumar Kushwah', designation:'Admin & Audit Assistant', tenure:'Since 2015', status:'Active', photo:'assets/team/tm3.jpg' },
+  { name:'Yogita Manoj Bhusare', designation:'GST & Audit Assistant', tenure:'Until 30 April 2025', status:'Former', photo:'assets/team/tm4.jpg' },
+  { name:'Ankita Baliram Kini', designation:'Accounting & GST Assistant', tenure:'Until February 2026', status:'Former', photo:'assets/team/Ankita.jpg' },
+  { name:'Diya Manoj Patil', designation:'Audit Assistant', tenure:'Since November 2024', status:'Active', photo:'assets/team/Diya.jpg' },
+  { name:'Suraj Bablu Deb', designation:'Audit, GST & Accounting Assistant', tenure:'Since December 2024', status:'Active', photo:'assets/team/Suraj.jpg' },
+  { name:'Purvi Deepak Shingadiya', designation:'Audit Assistant', tenure:'Since December 2023', status:'Active', photo:'assets/team/Purvi.jpg' },
+  { name:'Manasi Amit Gokhale', designation:'Audit Assistant', tenure:'June 2024 – July 2024', status:'Former', photo:'assets/team/Manasi.jpg' },
+  { name:'Pooja Dilip Dahiwadkar', designation:'Former Audit Assistant', tenure:'September 2012 – March 2016', status:'Former', photo:'assets/team/Pooja.jpg' },
+  { name:'Vasundhara Sharad Naykodi', designation:'Former Audit Assistant', tenure:'April 2016 – April 2017', status:'Former', photo:'assets/team/Vasundhara.jpg' },
+  { name:'Janmesh Chandrasen Vadarikar', designation:'Former Assistant', tenure:'October 2016 – October 2018', status:'Former', photo:'assets/team/Janmesh.jpg' },
+  { name:'Harshal Dnyaneshwar Patil', designation:'Former Assistant', tenure:'November 2016 – November 2018', status:'Former', photo:'assets/team/Harshal.jpg' },
+  { name:'Deepak Payan Thakur', designation:'Former Assistant', tenure:'January 2015 – November 2018', status:'Former', photo:'assets/team/Deepak.jpg' },
+  { name:'Purushottam Devanna Bhuga', designation:'Former Assistant', tenure:'August 2017 – December 2021', status:'Former', photo:'assets/team/Purushottam.jpg' },
+  { name:'Priti Brijendra Mishra', designation:'Former Audit Assistant', tenure:'September 2021 – November 2021', status:'Former', photo:'assets/team/Priti.jpg' },
+  { name:'Ritka Bhalchandra Vanmali', designation:'Former Audit Assistant', tenure:'March 2022 – December 2023', status:'Former', photo:'assets/team/Ritka.jpg' },
+  { name:'Himanshu Chamanlal Jain', designation:'Former Article Assistant', tenure:'June 2022 – April 2022', status:'Former', photo:'assets/team/Himanshu.jpg' },
+  { name:'Gauri Dharamdey Prasad', designation:'Former Audit Assistant', tenure:'April 2022 – October 2024', status:'Former', photo:'assets/team/Gauri.jpg' },
+  { name:'Nidhi Kumari Nageshwar', designation:'Former Audit Trainee', tenure:'May 2022 – December 2022', status:'Former', photo:'assets/team/Nidhi.jpg' },
+  { name:'Ishika Yatinbhai Patel', designation:'Former Audit Assistant', tenure:'May 2023 – June 2023', status:'Former', photo:'assets/team/Ishika.jpg' },
+  { name:'Sneha Dipak Gawad', designation:'Former Audit Assistant', tenure:'January 2023 – May 2024', status:'Former', photo:'assets/team/Sneha.jpg' }
+];

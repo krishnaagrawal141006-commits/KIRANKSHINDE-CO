@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const former = team.filter(member => member.status === 'Former');
     const renderMember = member => `<article class="team-member-card ${member.status === 'Former' ? 'team-former' : ''}">
       <div class="team-member-photo">${member.photo ? `<img src="${member.photo}" alt="${member.name}">` : '<i class="fa-solid fa-user"></i>'}</div>
-      <div><span class="team-member-status">${member.status || 'Active'}</span><h3>${member.name}</h3><p>${member.designation}</p><small>${member.phone || ''}</small></div>
+      <div><span class="team-member-status">${member.status || 'Active'}</span><h3>${member.name}</h3><p>${member.designation}</p><small>${member.tenure || member.phone || ''}</small></div>
     </article>`;
     const cards = [...active, ...former].map(renderMember).join('');
     if (cards) publicTeamGrid.innerHTML = cards;

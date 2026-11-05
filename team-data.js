@@ -1,15 +1,15 @@
 // Public team directory
 window.DEFAULT_TEAM = [
-  { name:'CA Kiran Kashinath Shinde', designation:'Partner', tenure:'Since 2009', status:'Active', photo:'assets/team/tm1.jpg' },
+  { name:'CA Kiran Kashinath Shinde', designation:'Partner', tenure:'Since 2009', status:'Active', photo:'assets/team/tm1.png' },
   { name:'CA Suvarna Amit Gokhale', designation:'Partner', tenure:'Since January 2026', status:'Active', photo:'assets/team/tm2.jpg' },
   { name:'Ruchi Shivkumar Kushwah', designation:'Admin & Audit Assistant', tenure:'Since 2015', status:'Active', photo:'assets/team/tm3.jpg' },
   { name:'Yogita Manoj Bhusare', designation:'GST & Audit Assistant', tenure:'Until 30 April 2025', status:'Former', photo:'assets/team/tm4.jpg' },
   { name:'Ankita Baliram Kini', designation:'Accounting & GST Assistant', tenure:'Until February 2026', status:'Former', photo:'assets/team/Ankita.jpg' },
   { name:'Diya Manoj Patil', designation:'Audit Assistant', tenure:'Since November 2024', status:'Active', photo:'assets/team/Diya.jpg' },
   { name:'Suraj Bablu Deb', designation:'Audit, GST & Accounting Assistant', tenure:'Since December 2024', status:'Active', photo:'assets/team/Suraj.jpg' },
-  { name:'Purvi Deepak Shingadiya', designation:'Audit Assistant', tenure:'Since December 2023', status:'Active', photo:'assets/team/Purvi.jpg' },
+  { name:'Purvi Deepak Shingadiya', designation:'Audit Assistant', tenure:'Since December 2023', status:'Active', photo:'assets/team/purvi.png' },
   { name:'Manasi Amit Gokhale', designation:'Audit Assistant', tenure:'June 2024 – July 2024', status:'Former', photo:'assets/team/Manasi.jpg' },
-  { name:'Pooja Dilip Dahiwadkar', designation:'Former Audit Assistant', tenure:'September 2012 – March 2016', status:'Former', photo:'assets/team/Pooja.jpg' },
+  { name:'Pooja Dilip Dahiwadkar', designation:'Former Audit Assistant', tenure:'September 2012 – March 2016', status:'Former', photo:'assets/team/Pooja.jpeg' },
   { name:'Vasundhara Sharad Naykodi', designation:'Former Audit Assistant', tenure:'April 2016 – April 2017', status:'Former', photo:'assets/team/Vasundhara.jpg' },
   { name:'Janmesh Chandrasen Vadarikar', designation:'Former Assistant', tenure:'October 2016 – October 2018', status:'Former', photo:'assets/team/Janmesh.jpg' },
   { name:'Harshal Dnyaneshwar Patil', designation:'Former Assistant', tenure:'November 2016 – November 2018', status:'Former', photo:'assets/team/Harshal.jpg' },

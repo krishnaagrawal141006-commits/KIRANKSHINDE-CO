@@ -32,5 +32,18 @@ window.TEAM_BIOS = {
   'Diya Manoj Patil':'Diya Manoj Patil, Bachelor of Commerce, worked as an Audit Assistant. Her specialization areas are GST compliance, audit and accounting, with a focus on understanding client requirements and providing value addition.',
   'Suraj Bablu Deb':'Suraj Bablu Deb, Bachelor of Commerce and CA Inter (clear), has worked as an Assistant. His specialization areas are audit, GST compliance and accounting, with a focus on understanding client requirements and providing value addition.',
   'Purvi Deepak Shingadiya':'Purvi Deepak Shingadiya, Bachelor of Commerce, works as an Audit Assistant. Her specialization areas are GST compliance, audit and accounting, with a focus on understanding client requirements and providing value addition.',
-  'Manasi Amit Gokhale':'Manasi Amit Gokhale, Bachelor of Commerce, worked as an Audit Assistant with specialization in audit and accounting.'
+  'Manasi Amit Gokhale':'Manasi Amit Gokhale, Bachelor of Commerce, worked as an Audit Assistant with specialization in audit and accounting.',
+  'Pooja Dilip Dahiwadkar':'Pooja Dilip Dahiwadkar worked as a Former Audit Assistant, supporting statutory audit, accounting documentation and client compliance assignments.',
+  'Vasundhara Sharad Naykodi':'Vasundhara Sharad Naykodi worked as a Former Audit Assistant, contributing to audit working papers, accounting support and client documentation.',
+  'Janmesh Chandrasen Vadarikar':'Janmesh Chandrasen Vadarikar worked as a Former Assistant, supporting audit procedures, accounting records and compliance documentation.',
+  'Harshal Dnyaneshwar Patil':'Harshal Dnyaneshwar Patil worked as a Former Assistant, assisting with audit fieldwork, accounting schedules and client file preparation.',
+  'Deepak Payan Thakur':'Deepak Payan Thakur worked as a Former Assistant, supporting accounting, audit documentation and statutory compliance assignments.',
+  'Purushottam Devanna Bhuga':'Purushottam Devanna Bhuga worked as a Former Assistant, contributing to audit support, accounting records and client compliance work.',
+  'Priti Brijendra Mishra':'Priti Brijendra Mishra worked as a Former Audit Assistant, supporting audit documentation, accounting and client compliance requirements.',
+  'Ritka Bhalchandra Vanmali':'Ritka Bhalchandra Vanmali worked as a Former Audit Assistant, assisting with audit, accounting and GST compliance documentation.',
+  'Himanshu Chamanlal Jain':'Himanshu Chamanlal Jain worked as a Former Article Assistant, supporting audit procedures, accounting work and statutory compliance assignments.',
+  'Gauri Dharamdey Prasad':'Gauri Dharamdey Prasad worked as a Former Audit Assistant, contributing to audit working papers, accounting and GST compliance support.',
+  'Nidhi Kumari Nageshwar':'Nidhi Kumari Nageshwar worked as a Former Audit Trainee, assisting with audit documentation, accounting records and client file preparation.',
+  'Ishika Yatinbhai Patel':'Ishika Yatinbhai Patel worked as a Former Audit Assistant, supporting audit fieldwork, accounting schedules and compliance documentation.',
+  'Sneha Dipak Gawad':'Sneha Dipak Gawad worked as a Former Audit Assistant, contributing to audit, accounting and GST compliance assignments.'
 };

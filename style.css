@@ -1551,6 +1551,7 @@ img {
   transform: scale(1.12);
   color: #ffffff;
 }
+.linkedin-float-btn{position:fixed;right:28px;bottom:104px;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#0a66c2;color:#fff;font-size:27px;z-index:1000;box-shadow:0 8px 22px rgba(10,102,194,.35);transition:transform .2s,box-shadow .2s}.linkedin-float-btn:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(10,102,194,.45)}
 
 /* ================= Compliance News Flash Ticker ================= */
 .compliance-flash-bar {

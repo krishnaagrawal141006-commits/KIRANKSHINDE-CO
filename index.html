@@ -64,7 +64,7 @@
   }
   </script>
 </head>
-<body class="home-page"><script>if(location.hash==='#accounts-suite')document.body.classList.add('show-tax-hub');</script>
+<body class="home-page"><script>if(location.hash==='#accounts-suite'){document.body.classList.add('show-tax-hub')}else{document.addEventListener('DOMContentLoaded',()=>{document.getElementById('accounts-suite')?.remove();document.getElementById('tax-updates')?.remove()})}</script>
 
   <!-- Sleek Executive Top Bar (Integrated Motto & Direct Contact) -->
   <div class="topbar">

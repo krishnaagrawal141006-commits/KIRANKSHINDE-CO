@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="compliance-desc">${item.desc}</p>
           <div class="compliance-footer">
             <div class="compliance-date"><i class="fa-regular fa-calendar"></i> Due: ${displayDate}</div>
-            <a href="https://wa.me/917506647791?text=${encodeURIComponent(`Hello CA Kiran Shinde, I need assistance with statutory compliance for ${item.title}.`)}" target="_blank" class="compliance-action-link">
+            <a href="https://wa.me/919762876099?text=${encodeURIComponent(`Hello CA Kiran Shinde, I need assistance with statutory compliance for ${item.title}.`)}" target="_blank" class="compliance-action-link">
               ${item.actText} <i class="fa-solid fa-arrow-right"></i>
             </a>
           </div>

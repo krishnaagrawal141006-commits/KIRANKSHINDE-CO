@@ -400,7 +400,13 @@ img {
   font-family: var(--font-serif);
   font-weight: 700;
   color: var(--accent-gold-dark);
+  max-width: 520px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.topbar-motto a { color: inherit; text-decoration: none; }
 
 .topbar-estd {
   color: #64748b;

@@ -408,6 +408,10 @@ img {
 
 .topbar-motto a { color: inherit; text-decoration: none; }
 
+.hero-motto-full{position:absolute;top:42px;right:7%;z-index:1;display:flex;gap:10px;max-width:510px;color:var(--accent-gold-dark);font-family:var(--font-serif);font-size:.82rem;line-height:1.7;text-decoration:none;text-align:left}
+.hero-motto-full i{padding-top:4px;color:var(--accent-gold-metallic)}
+.hero-motto-full:hover{text-decoration:underline}
+
 .topbar-estd {
   color: #64748b;
   font-weight: 600;

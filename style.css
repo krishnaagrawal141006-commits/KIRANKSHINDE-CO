@@ -2858,7 +2858,7 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
 
 .classic-brand-sub {
   font-family: var(--font-main);
-  font-size: 0.66rem;
+  font-size: 0.74rem;
   font-weight: 600;
   color: var(--accent-gold-dark);
   letter-spacing: 0.4px;
@@ -3456,5 +3456,5 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
   .entity-toggle-group{gap:5px}
   .entity-btn{padding:10px 6px;font-size:.68rem}
 }
-.brand-logo-image{width:76px;height:auto;max-height:58px;object-fit:contain;display:block}
-.ca-india-logo-image{width:82px;max-height:70px}
+.brand-logo-image{width:64px;height:auto;max-height:50px;object-fit:contain;display:block}
+.ca-india-logo-image{width:70px;max-height:58px}

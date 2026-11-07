@@ -1,1 +1,21 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tax Hub | Kiran K. Shinde & Co.</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style></head><body><iframe src="index.html#accounts-suite" title="Tax Hub"></iframe></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Interactive Accounting &amp; Tax Hub | Kiran K. Shinde and Co.</title>
+  <style>html,body{margin:0;width:100%;min-height:100%;background:#f5f8fc}iframe{display:block;width:100%;height:100vh;min-height:900px;border:0}</style>
+</head>
+<body>
+  <iframe id="taxHubFrame" src="index.html#accounts-suite" title="Interactive Accounting and Tax Hub"></iframe>
+  <script>
+    document.getElementById('taxHubFrame').addEventListener('load',function(){
+      try{
+        const doc=this.contentDocument;
+        doc.querySelectorAll('main > section').forEach(section=>{if(section.id!=='accounts-suite')section.style.display='none';});
+        doc.body.classList.add('show-tax-hub');
+        doc.querySelector('#accounts-suite')?.scrollIntoView({block:'start'});
+      }catch(error){console.warn('Tax Hub frame isolation unavailable',error);}
+    });
+  </script>
+</body>
+</html>

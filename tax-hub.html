@@ -1,21 +1,35 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Interactive Accounting &amp; Tax Hub | Kiran K. Shinde and Co.</title>
-  <style>html,body{margin:0;width:100%;min-height:100%;background:#f5f8fc}iframe{display:block;width:100%;height:100vh;min-height:900px;border:0}</style>
-</head>
-<body>
-  <iframe id="taxHubFrame" src="index.html#accounts-suite" title="Interactive Accounting and Tax Hub"></iframe>
-  <script>
-    document.getElementById('taxHubFrame').addEventListener('load',function(){
-      try{
-        const doc=this.contentDocument;
-        doc.querySelectorAll('main > section').forEach(section=>{if(section.id!=='accounts-suite')section.style.display='none';});
-        doc.body.classList.add('show-tax-hub');
-        doc.querySelector('#accounts-suite')?.scrollIntoView({block:'start'});
-      }catch(error){console.warn('Tax Hub frame isolation unavailable',error);}
-    });
-  </script>
-</body>
-</html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interactive Tax Hub | Kiran K. Shinde and Co.</title>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{--navy:#10243b;--gold:#bd8a18;--muted:#63758d;--line:#e1e8f0}
+body.tax-page{margin:0;background:#f5f8fc;color:var(--navy)}
+.tax-page .navbar{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid var(--line)}
+.tax-hero{padding:56px 18px 34px;text-align:center;background:linear-gradient(145deg,#fff 0%,#eef4fb 100%)}
+.tax-hero .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--gold);font-weight:800;letter-spacing:1.5px;text-transform:uppercase;font-size:.78rem}
+.tax-hero h1{font-family:Georgia,serif;font-size:clamp(2.2rem,6vw,4.4rem);margin:16px auto 10px;max-width:850px;line-height:1.05}
+.tax-hero p{max-width:700px;margin:auto;color:var(--muted);line-height:1.65}
+.tax-wrap{max-width:1120px;margin:auto;padding:22px 16px 70px}
+.tax-year{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:0 auto 24px}.year-pill{background:#fff;border:1px solid #e2c775;border-radius:999px;padding:10px 16px;font-weight:800}.year-pill span{color:var(--gold)}
+.tax-tabs{display:flex;gap:9px;overflow:auto;padding:4px 0 20px;scrollbar-width:thin}.tax-tab{white-space:nowrap;border:1px solid #d8e1eb;background:#fff;border-radius:999px;color:var(--navy);font-weight:800;padding:11px 17px;cursor:pointer}.tax-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tax-panel{display:none}.tax-panel.active{display:block}.tax-panel h2{font-family:Georgia,serif;margin:5px 0 6px;font-size:clamp(1.55rem,3vw,2.3rem)}.tax-panel>p{color:var(--muted);margin:0 0 18px}
+.tax-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.tax-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:0 9px 22px rgba(16,36,59,.055);display:flex;flex-direction:column;min-height:150px}.tax-card i{color:var(--gold);font-size:1.25rem}.tax-card h3{font-size:1.02rem;margin:12px 0 7px}.tax-card p{color:var(--muted);font-size:.88rem;line-height:1.45;margin:0 0 15px;flex:1}.tax-card a{color:#087fbd;font-weight:800;text-decoration:none}.tax-note{margin-top:24px;border-left:4px solid var(--gold);background:#fff;padding:15px 17px;color:var(--muted);line-height:1.5;font-size:.9rem}
+@media(max-width:760px){.tax-hero{padding:40px 16px 26px}.tax-wrap{padding:15px 12px 45px}.tax-grid{grid-template-columns:1fr 1fr;gap:11px}.tax-card{padding:15px;min-height:155px}.tax-card h3{font-size:.94rem}.tax-card p{font-size:.82rem}.tax-card a{font-size:.84rem}}
+@media(max-width:460px){.tax-grid{grid-template-columns:1fr}.tax-card{min-height:auto}.tax-hero h1{font-size:2.35rem}}
+</style></head>
+<body class="tax-page">
+<header class="navbar"><div class="container navbar-container"><a href="index.html" class="brand-link"><img class="brand-logo-image ca-india-logo-image" src="assets/ca-india-logo.png" alt="Institute of Chartered Accountants of India"><div class="brand-text"><h2 class="classic-brand-title">Kiran K. Shinde and Co.</h2><span class="classic-brand-sub">Chartered Accountants</span></div></a><nav class="nav-menu" style="position:static;display:flex"><a href="index.html#home" class="nav-item">Home</a><a href="index.html#about" class="nav-item">About Us</a><a href="team.html" class="nav-item">Our Team</a><a href="services.html" class="nav-item">Services</a><a href="tax-updates.html" class="nav-item">Notifications</a><a href="index.html#contact" class="nav-item">Contact</a><a href="index.html#appointment" class="nav-item">Book Consultation</a></nav></div></header>
+<main><section class="tax-hero"><div class="eyebrow"><i class="fa-solid fa-calculator"></i> Interactive Tax Hub</div><h1>Tax, Assessment &amp; Compliance Tools</h1><p>Quick calculators and practical tax references for individuals, professionals, businesses and property decisions.</p></section>
+<section class="tax-wrap"><div class="tax-year"><div class="year-pill">Financial Year <span id="fy"></span></div><div class="year-pill">Assessment Year <span id="ay"></span></div></div>
+<div class="tax-tabs" role="tablist"><button class="tax-tab active" data-target="income">Income Tax</button><button class="tax-tab" data-target="gst">GST &amp; TDS</button><button class="tax-tab" data-target="business">Business &amp; Finance</button><button class="tax-tab" data-target="property">Property &amp; Payroll</button></div>
+<section class="tax-panel active" id="panel-income"><h2>Income Tax Tools</h2><p>Compare regimes, estimate liability and plan advance tax for the current year.</p><div class="tax-grid"><article class="tax-card"><i class="fa-solid fa-scale-balanced"></i><h3>New vs Old Regime</h3><p>Compare tax liability, deductions and rebate eligibility.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-sack-dollar"></i><h3>Capital Gains</h3><p>Estimate short-term and long-term capital gains.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-calendar-check"></i><h3>Advance Tax</h3><p>Plan instalments under Sections 208–211.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-briefcase"></i><h3>Salary &amp; CTC Tax</h3><p>Estimate take-home impact and annual tax.</p><a href="index.html#accounts-suite">Open calculator →</a></article></div></section>
+<section class="tax-panel" id="panel-gst"><h2>GST &amp; TDS Tools</h2><p>Practical compliance estimators for regular business transactions.</p><div class="tax-grid"><article class="tax-card"><i class="fa-solid fa-receipt"></i><h3>GST Calculator</h3><p>Calculate GST-inclusive and exclusive amounts.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-arrow-right-arrow-left"></i><h3>GST Reverse Charge</h3><p>Estimate reverse-charge liability.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-file-invoice"></i><h3>TDS Calculator</h3><p>Estimate TDS under common sections.</p><a href="index.html#accounts-suite">Open calculator →</a></article></div></section>
+<section class="tax-panel" id="panel-business"><h2>Business &amp; Finance Tools</h2><p>Decision-support tools for professionals and enterprises.</p><div class="tax-grid"><article class="tax-card"><i class="fa-solid fa-chart-line"></i><h3>44AD / 44ADA</h3><p>Presumptive taxation estimate for eligible taxpayers.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-building-columns"></i><h3>Depreciation</h3><p>Plan depreciation and asset values.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-wallet"></i><h3>Net Worth</h3><p>Summarise assets, liabilities and net worth.</p><a href="index.html#accounts-suite">Open calculator →</a></article></div></section>
+<section class="tax-panel" id="panel-property"><h2>Property &amp; Payroll Tools</h2><p>Estimate property costs and employee-related statutory amounts.</p><div class="tax-grid"><article class="tax-card"><i class="fa-solid fa-house"></i><h3>Stamp Duty &amp; Registration</h3><p>Estimate registration-related costs.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-building"></i><h3>RERA Property Cost</h3><p>Plan total acquisition and compliance cost.</p><a href="index.html#accounts-suite">Open calculator →</a></article><article class="tax-card"><i class="fa-solid fa-user-clock"></i><h3>Leave &amp; Gratuity</h3><p>Estimate employee benefit amounts.</p><a href="index.html#accounts-suite">Open calculator →</a></article></div></section>
+<div class="tax-note"><i class="fa-solid fa-circle-info"></i> Tax rules and rates can change through Finance Acts and notifications. Verify applicability for your facts before filing.</div></section></main>
+<script>
+const now=new Date(),start=now.getMonth()>=3?now.getFullYear():now.getFullYear()-1;document.getElementById('fy').textContent=start+'–'+String(start+1).slice(-2);document.getElementById('ay').textContent=(start+1)+'–'+String(start+2).slice(-2);
+document.querySelectorAll('.tax-tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tax-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tax-panel').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('panel-'+t.dataset.target).classList.add('active')}));
+</script></body></html>

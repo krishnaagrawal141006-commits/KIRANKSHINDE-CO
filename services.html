@@ -65,11 +65,6 @@ serviceCategories.forEach((category, index) => {
   const headingCopy = makeElement('div');
   headingCopy.append(makeElement('h2', '', category.title), makeElement('p', '', 'Professional support across the following services:'));
   heading.appendChild(headingCopy);
-  if (category.source) {
-    const source = makeElement('a', 'reference-link'); source.href = category.source; source.target = '_blank'; source.rel = 'noopener noreferrer';
-    source.append(document.createTextNode('Official service reference '), Object.assign(document.createElement('i'), {className:'fa-solid fa-arrow-up-right-from-square', 'aria-hidden': 'true'}));
-    heading.appendChild(source);
-  }
   panel.appendChild(heading);
   category.sections.forEach(section => {
     const sectionElement = makeElement('div', 'service-section');

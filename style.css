@@ -3425,6 +3425,24 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
   .topbar {
     display: none;
   }
+  .hero-motto-full {
+    position: relative;
+    inset: auto;
+    display: flex;
+    width: auto;
+    max-width: none;
+    margin: 0 16px 12px;
+    gap: 7px;
+    font-size: .72rem;
+    line-height: 1.5;
+  }
+  .hero-motto-full i {
+    flex: 0 0 auto;
+    padding-top: 2px;
+  }
+  .hero .container {
+    z-index: 2;
+  }
   .hero-headline {
     font-size: 2.25rem;
   }

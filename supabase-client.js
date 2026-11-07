@@ -4,7 +4,7 @@ window.createSupabaseClient = async function () {
   if (!window.supabase) return null;
   if (!window.SUPABASE_CONFIG?.url || !window.SUPABASE_CONFIG?.publishableKey) {
     try {
-      const response = await fetch('/api/supabase-config');
+      const response = await fetch('/api/public-config');
       if (response.ok) window.SUPABASE_CONFIG = await response.json();
     } catch (error) { /* local static server uses supabase-config.js */ }
   }

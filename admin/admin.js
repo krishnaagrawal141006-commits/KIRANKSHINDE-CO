@@ -1116,7 +1116,7 @@ const AdminCRM = {
       if (!file) return;
       employeePhotoStatus.textContent = 'Uploading photo...';
       try {
-        const configResponse = await fetch('/api/cloudinary-config', { cache: 'no-store' });
+        const configResponse = await fetch('/api/public-config', { cache: 'no-store' });
         if (!configResponse.ok) throw new Error('Cloudinary configuration could not be loaded');
         const { cloudName, uploadPreset } = await configResponse.json();
         if (!cloudName || !uploadPreset) {

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Public calculator, tax utility, statutory reference and quick-link library from Kiran K. Shinde and Co.">
+  <title>Knowledge Base | Kiran K. Shinde and Co.</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .kb-page{--kb-ink:#10243b;--kb-gold:#bd8a18;--kb-muted:#64758d;--kb-line:#e1e8f0;background:#f5f8fc;color:var(--kb-ink);min-height:100vh}
+    .kb-page .navbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--kb-line)}
+    .kb-page .navbar-container{min-height:70px}
+    .kb-page .mobile-toggle-btn{display:none;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--kb-line);border-radius:10px;background:#fff;color:var(--kb-ink);font-size:1.1rem}
+    .kb-hero{padding:54px 18px 38px;text-align:center;background:radial-gradient(circle at 80% 20%,#f9edc9 0,transparent 24%),linear-gradient(145deg,#fff,#edf3fa)}
+    .kb-eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid #e7d49a;border-radius:999px;padding:8px 14px;background:#fff;color:#987016;font-size:.76rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+    .kb-hero h1{font:700 clamp(2.1rem,5vw,3.5rem)/1.08 Georgia,serif;margin:17px auto 12px;max-width:900px}
+    .kb-hero p{max-width:760px;margin:auto;color:var(--kb-muted);line-height:1.7}
+    .kb-shortcuts{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:22px auto 0}
+    .kb-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:11px 17px;border-radius:11px;background:#10243b;color:#fff;text-decoration:none;font-weight:750;box-shadow:0 6px 16px #10243b18}
+    .kb-button.secondary{background:#fff;color:#10243b;border:1px solid var(--kb-line);box-shadow:none}
+    .kb-content{width:min(1160px,calc(100% - 36px));margin:0 auto;padding:25px 0 70px}
+    .kb-nav{display:flex;gap:8px;overflow:auto;padding:4px 0 18px;scrollbar-width:thin;scroll-snap-type:x proximity}
+    .kb-nav a{white-space:nowrap;scroll-snap-align:start;border:1px solid #d9e2ec;border-radius:999px;background:#fff;color:#10243b;text-decoration:none;padding:10px 15px;font-size:.9rem;font-weight:750}
+    .kb-section{scroll-margin-top:95px;margin:0 0 20px;padding:clamp(18px,3vw,30px);border:1px solid var(--kb-line);border-radius:20px;background:#fff;box-shadow:0 10px 28px #10243b0a}
+    .kb-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px}
+    .kb-section-head h2{font:700 clamp(1.45rem,3vw,2rem)/1.2 Georgia,serif;margin:0 0 6px}
+    .kb-section-head p{color:var(--kb-muted);margin:0;line-height:1.55}
+    .kb-section-head i{color:var(--kb-gold);font-size:1.25rem;margin-top:4px}
+    .kb-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .kb-card{min-width:0;border:1px solid var(--kb-line);border-radius:13px;padding:15px;background:#fbfcfe}
+    .kb-card h3{font-size:.98rem;line-height:1.35;margin:0 0 6px}
+    .kb-card p{font-size:.86rem;line-height:1.5;color:var(--kb-muted);margin:0 0 10px}
+    .kb-card a{color:#087fbd;font-size:.84rem;font-weight:750;text-decoration:none}
+    .kb-card a:hover{text-decoration:underline}
+    .kb-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;padding-left:20px;margin:0}
+    .kb-list li{padding-left:2px;line-height:1.5;color:#273950}
+    .kb-group{border-top:1px solid var(--kb-line);padding-top:16px;margin-top:17px}
+    .kb-group:first-of-type{border-top:0;padding-top:0;margin-top:0}
+    .kb-group h3{font-size:1rem;margin:0 0 9px}
+    .kb-group p{margin:0 0 9px;color:var(--kb-muted);font-size:.88rem}
+    .kb-note{border-left:4px solid var(--kb-gold);padding:14px 16px;background:#fff9e9;color:#5d4a1b;border-radius:0 10px 10px 0;line-height:1.55;font-size:.9rem}
+    .kb-footer{padding:24px 18px;text-align:center;color:var(--kb-muted);font-size:.86rem}
+    @media(max-width:900px){.kb-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.kb-page .navbar-container{width:94%;gap:10px;justify-content:space-between}.kb-page .brand-link{gap:8px;min-width:0}.kb-page .brand-logo-image{width:48px;height:auto}.kb-page .brand-text{min-width:0}.kb-page .classic-brand-title{font-size:.95rem;white-space:normal;line-height:1.15}.kb-page .classic-brand-sub{font-size:.6rem}.kb-page .mobile-toggle-btn{display:inline-flex;flex:0 0 auto}.kb-page .nav-menu{position:fixed!important;display:flex!important;top:70px;right:-100%;left:auto!important;width:min(88vw,360px);height:calc(100dvh - 70px);box-sizing:border-box;align-items:stretch;justify-content:flex-start;flex-direction:column;padding:12px 18px 24px;gap:0;margin:0;background:#fff;box-shadow:0 14px 32px #10243b24;overflow-y:auto;z-index:1001;transition:right .22s ease}.kb-page .nav-menu.active{right:0}.kb-page .nav-menu .nav-item{display:flex;align-items:center;min-height:44px;padding:9px 8px;font-size:.96rem;border-bottom:1px solid #eef1f5}}
+    @media(max-width:560px){.kb-hero{padding:38px 16px 28px}.kb-content{width:calc(100% - 24px);padding-top:14px}.kb-cards,.kb-list{grid-template-columns:1fr}.kb-section{border-radius:15px;padding:17px}.kb-section-head{margin-bottom:15px}.kb-card{padding:14px}.kb-nav a{font-size:.84rem;padding:9px 12px}.kb-hero h1{font-size:2.15rem}}
+  </style>
+</head>
+<body class="kb-page">
+  <header class="navbar" id="mainNavbar"><div class="container navbar-container">
+    <a href="index.html" class="brand-link"><img class="brand-logo-image ca-india-logo-image" src="https://res.cloudinary.com/odxcrtwm/image/upload/f_auto,q_auto/v1794057691/zgj8pyzygicv7dgsaipv.png" alt="CA India logo"><div class="brand-text"><h2 class="classic-brand-title">Kiran K. Shinde and Co.</h2><span class="classic-brand-sub">Chartered Accountants</span></div></a>
+    <nav class="nav-menu" id="navMenu"><a href="index.html#home" class="nav-item">Home</a><a href="index.html#about" class="nav-item">About Us</a><a href="team.html" class="nav-item">Our Team</a><a href="services.html" class="nav-item">Services</a><a href="knowledge-base.html" class="nav-item" aria-current="page">Knowledge Base</a><a href="tax-updates.html" class="nav-item">Notifications</a><a href="index.html#why-us" class="nav-item">Why Us</a><a href="index.html#testimonials" class="nav-item">Reviews</a><a href="index.html#contact" class="nav-item">Contact</a><a href="index.html#appointment" class="nav-item">Book Consultation</a></nav>
+    <button class="mobile-toggle-btn" id="mobileToggleBtn" type="button" aria-label="Open navigation menu" aria-expanded="false"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+  </div></header>
+  <main>
+    <section class="kb-hero"><span class="kb-eyebrow"><i class="fa-solid fa-book-open"></i> Public Knowledge Base</span><h1>Calculators, Utilities &amp; Tax Resources</h1><p>Explore customer-facing calculators, reference utilities, quick links and legislation resources in one place. Select a calculator for an estimate, or open a reference source for further details.</p><div class="kb-shortcuts"><a class="kb-button" href="calculators.html"><i class="fa-solid fa-calculator"></i> Open Calculator Hub</a><a class="kb-button secondary" href="tax-updates.html"><i class="fa-solid fa-bell"></i> Tax Notifications</a></div></section>
+    <div class="kb-content">
+      <nav class="kb-nav" aria-label="Knowledge base sections"><a href="#calculators">9A Calculators</a><a href="#utilities">9B Utilities</a><a href="#quick-links">9C Links</a><a href="#acts">9D Acts</a><a href="#rules">9E Rules</a></nav>
+      <section class="kb-section" id="calculators"><div class="kb-section-head"><div><h2>9A. Calculators</h2><p>Choose an interactive estimate or open the supplied calculator reference.</p></div><i class="fa-solid fa-calculator" aria-hidden="true"></i></div><div class="kb-cards">
+        <article class="kb-card"><h3>GST MRP Calculator</h3><p>Estimate a GST-inclusive selling price.</p><a href="calculators.html?tool=mrp">Open calculator →</a></article>
+        <article class="kb-card"><h3>GST Rate Calculator</h3><p>Estimate GST and the total invoice value.</p><a href="calculators.html?tool=gst">Open calculator →</a></article>
+        <article class="kb-card"><h3>GST Calculator</h3><p>Calculate an indicative GST amount.</p><a href="calculators.html?tool=gst">Open calculator →</a></article>
+        <article class="kb-card"><h3>Tax Calculator</h3><p>Simple tax estimate; verify current law and eligibility.</p><a href="calculators.html?tool=tax">Open calculator →</a></article>
+        <article class="kb-card"><h3>TDS Calculator</h3><p>Basic TDS estimate. <a href="https://www.cakiran.co.in/resources/Calculators/TDS_Calculator/TDSCalculator2026.aspx" target="_blank" rel="noopener noreferrer">Open reference ↗</a></p><a href="calculators.html?tool=tds">Open calculator →</a></article>
+        <article class="kb-card"><h3>Calculate Net Profit</h3><p>Estimate profit and margin from revenue and costs.</p><a href="calculators.html?tool=profit">Open calculator →</a></article>
+        <article class="kb-card"><h3>Calculate Net Worth</h3><p>Summarise assets less liabilities.</p><a href="calculators.html?tool=worth">Open calculator →</a></article>
+        <article class="kb-card"><h3>Effective Capital Calculator</h3><p><a href="https://www.cakiran.co.in/resources/Calculators/Calculate_Effective_Capital/Calculate_Effective_Capital.aspx" target="_blank" rel="noopener noreferrer">Open calculator reference ↗</a></p></article>
+        <article class="kb-card"><h3>HRA Calculator</h3><p>Illustrative HRA exemption estimate.</p><a href="calculators.html?tool=hra">Open calculator →</a></article>
+        <article class="kb-card"><h3>NSC Calculator</h3><p>Illustrative maturity estimate using an entered rate.</p><a href="calculators.html?tool=nsc">Open calculator →</a></article>
+        <article class="kb-card"><h3>EMI Calculator</h3><p>Estimate monthly instalment and interest.</p><a href="calculators.html?tool=emi">Open calculator →</a></article>
+        <article class="kb-card"><h3>Auto Loan Calculator</h3><p>Estimate a vehicle-loan monthly instalment.</p><a href="calculators.html?tool=auto">Open calculator →</a></article>
+        <article class="kb-card"><h3>Home Loan Calculator</h3><p>Estimate a home-loan monthly instalment.</p><a href="calculators.html?tool=home">Open calculator →</a></article>
+        <article class="kb-card"><h3>Get No. of Instalments Calculator</h3><p>Estimate instalment count based on amount and payment.</p><a href="calculators.html?tool=interest">Open calculator →</a></article>
+        <article class="kb-card"><h3>RERA Calculator — Developers Calculator</h3><p><a href="https://www.cakiran.co.in/resources/Calculators/RERA_Calculator/Developers_Calculator/RERADEVELOPER.aspx" target="_blank" rel="noopener noreferrer">Open developer reference ↗</a></p><a href="calculators.html?tool=rera">Open general estimate →</a></article>
+        <article class="kb-card"><h3>RERA Calculator — Home Buyer Delay Interest</h3><p>Open the supplied Knowledge Bank calculator reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>RERA Calculator — Home Buyer Refund</h3><p><a href="https://www.cakiran.co.in/resources/Calculators/RERA_Calculator/HomeBuyerRefund/HomeBuyerRefund.aspx" target="_blank" rel="noopener noreferrer">Open refund calculator ↗</a></p></article>
+      </div></section>
+
+      <section class="kb-section" id="utilities"><div class="kb-section-head"><div><h2>9B. Utilities</h2><p>Rates and other reference information. Check the effective date and official source before relying on a rate.</p></div><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></div><div class="kb-cards">
+        <article class="kb-card"><h3>Rates of TDS</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>TDS Rates for Non-Residents under Section 195</h3><p>Use the reference and verify treaty, status and applicable rate.</p><a href="https://www.cakiran.co.in/resources/Utilities/TDS_Rates_for_NRI_us_195/.aspx" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Rates of Income Tax</h3><p>Check the tax year/assessment year and applicable regime.</p><a href="https://www.cakiran.co.in/resources/Utilities/Rates_of_Income_Tax/Rates_of_Income_Tax.aspx" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Depreciation Rates (Companies Act)</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Depreciation Rates (Income Tax Act)</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>ROC Filing Fees (Companies Act, 2013)</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>ROC Fee Structure (Companies Act, 2013)</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Cost Inflation Index</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>IFSC Codes</h3><p>Use a bank/official source to confirm current branch details.</p><a href="https://www.cakiran.co.in/resources/Utilities/IFSC_Codes/IFSC_Codes.aspx" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>MICR Codes</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Rates of NSC Interest</h3><p>Confirm the applicable issue/period with an official source.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Gold and Silver Rates</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Rates of Stamp Duty</h3><p>Rates can vary by State, instrument and transaction.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>LLP Fees (Limited Liability Partnership Fees)</h3><p>Knowledge Bank fee reference.</p><a href="https://www.cakiran.co.in/resources/Utilities/Limited_Liability_Partnership_Fees/Limited_Liability_Partnership_Fees.aspx" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>National Industries Classification (NIC)</h3><p>Knowledge Bank utilities reference.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>HSN Rate List</h3><p>Confirm current classification and rate against official GST material.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+        <article class="kb-card"><h3>Deduction under Section 80TTA vs 80TTB</h3><p>Check taxpayer eligibility and current law.</p><a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Open reference ↗</a></article>
+      </div></section>
+
+      <section class="kb-section" id="quick-links"><div class="kb-section-head"><div><h2>9C. Links</h2><p>Quick Links, Important Links, GST/VAT Links and Ease of Doing Business references.</p></div><i class="fa-solid fa-link" aria-hidden="true"></i></div>
+        <div class="kb-group"><h3>Quick Links</h3><p>Income Tax, Service Tax / Excise, Ministry of Corporate Affairs (MCA), Employees' State Insurance (ESI), Provident Fund (PF), Delhi VAT, Maharashtra VAT, ICSI, ICAI, ICAI (ICWAI), Property Registration and Others.</p><a href="https://www.cakiran.co.in/resources/Links/Quick_Link/Quick_Link.aspx" target="_blank" rel="noopener noreferrer">Open Quick Links ↗</a></div>
+        <div class="kb-group"><h3>Important Links</h3><p>Professional Institutions/Bodies, Public Financial Institutions, Indian Ministries, Government Departments and Other Statutory Bodies.</p><a href="https://www.cakiran.co.in/resources/Links/important_links/important_links.aspx" target="_blank" rel="noopener noreferrer">Open Important Links ↗</a></div>
+        <div class="kb-group"><h3>GST/VAT Links</h3><p>Goods and Services Tax websites of Indian States and Union Territories.</p><a href="https://www.cakiran.co.in/resources/Links/Vat_Links/Vat_Links.aspx" target="_blank" rel="noopener noreferrer">Open GST/VAT Links ↗</a></div>
+        <div class="kb-group"><h3>Ease of Doing Business</h3><p>Income Taxation, Service Taxation, Corporate Affairs (Ministry of Corporate Affairs), Human Resources / Industrial Relations and VAT.</p><a href="https://www.cakiran.co.in/resources/Links/EASE_OF_DOING_BUSINESS/EASE_OF_DOING_BUSINESS.aspx" target="_blank" rel="noopener noreferrer">Open Ease of Doing Business ↗</a></div>
+      </section>
+
+      <section class="kb-section" id="acts"><div class="kb-section-head"><div><h2>9D. Acts</h2><p>Legislation titles supplied for reference. Open the official legislation portals for authoritative text and amendments.</p></div><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></div>
+        <div class="kb-group"><h3>Direct Tax Acts</h3><ul class="kb-list"><li>Income Tax Act</li><li>Wealth Tax Act</li><li>Income Declaration Scheme 2016</li><li>Income Tax 2025</li></ul><p><a href="https://www.incometax.gov.in/iec/foportal/newdownloads/income-tax-act-2025" target="_blank" rel="noopener noreferrer">Income Tax Act, 2025 — official portal ↗</a> · <a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Knowledge Bank reference ↗</a></p></div>
+        <div class="kb-group"><h3>Indirect Tax Acts</h3><ul class="kb-list"><li>Service Tax (Finance Act, 1994)</li><li>Central Sales Tax Act, 1956</li><li>The Central Excise Act, 1944</li><li>Customs Act, 1962</li><li>Entry Tax Act</li></ul><p><a href="https://www.indiacode.nic.in/" target="_blank" rel="noopener noreferrer">Search India Code ↗</a> · <a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Knowledge Bank reference ↗</a></p></div>
+        <div class="kb-group"><h3>Corporate Laws</h3><ul class="kb-list"><li>Companies Act, 2013</li><li>Companies Act, 1956</li><li>LLP Act</li><li>SEBI Act, 1992</li></ul><p><a href="https://www.indiacode.nic.in/" target="_blank" rel="noopener noreferrer">Search India Code ↗</a> · <a href="https://www.mca.gov.in/" target="_blank" rel="noopener noreferrer">Ministry of Corporate Affairs ↗</a></p></div>
+        <div class="kb-group"><h3>GST Laws</h3><ul class="kb-list"><li>IGST Act, 2017</li><li>CGST Act, 2017</li><li>UTGST Act, 2017</li><li>GST (Compensation to States) Act</li></ul><p><a href="https://www.cbic.gov.in/htdocs-cbec/gst/index-english" target="_blank" rel="noopener noreferrer">CBIC GST portal ↗</a> · <a href="https://www.indiacode.nic.in/" target="_blank" rel="noopener noreferrer">Search India Code ↗</a></p></div>
+        <div class="kb-group"><h3>VAT Laws</h3><ul class="kb-list"><li>Delhi Value Added Tax Act, 2004</li><li>MVAT Act, 2002</li><li>West Bengal VAT Act, 2003</li><li>Tamil Nadu VAT Act, 2006</li><li>Karnataka Value Added Tax Act, 2003</li><li>Gujarat Value Added Tax Act, 2003</li><li>UP VAT Act, 2008</li><li>Rajasthan Value Added Tax Act, 2003</li><li>Punjab Value Added Tax Act</li><li>Haryana Value Added Tax Act</li><li>Telangana VAT Act, 2005</li><li>Andhra Pradesh VAT Act, 2005</li><li>Bihar Value Added Tax Act, 2005</li></ul><p><a href="https://www.indiacode.nic.in/" target="_blank" rel="noopener noreferrer">Search India Code ↗</a> · <a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Knowledge Bank reference ↗</a></p></div>
+        <div class="kb-group"><h3>Other Statutes</h3><ul class="kb-list"><li>ESI Act, 1948</li><li>PF Act, 1952</li><li>Profession Tax Act</li><li>The Indian Partnership Act, 1932</li><li>Societies Registration Act, 1860</li><li>Competition Act, 2002</li><li>Reserve Bank of India Act, 1934</li><li>MRTP Act, 1969</li><li>Equalisation Levy Act, 2016</li><li>Right to Information Act, 2005</li><li>FEMA, 1999</li><li>Maharashtra RERA</li><li>RERA, 2016</li><li>Insolvency &amp; Bankruptcy Code, 2016</li><li>Benami Property Act, 1988</li></ul><p><a href="https://www.indiacode.nic.in/" target="_blank" rel="noopener noreferrer">Search India Code ↗</a> · <a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Knowledge Bank reference ↗</a></p></div>
+      </section>
+
+      <section class="kb-section" id="rules"><div class="kb-section-head"><div><h2>9E. Rules</h2><p>Rules and delegated legislation references. Confirm current text and applicability from official sources.</p></div><i class="fa-solid fa-file-lines" aria-hidden="true"></i></div>
+        <div class="kb-group"><h3>Direct Tax Rules</h3><ul class="kb-list"><li>Income Tax Rules</li><li>Wealth Tax Rules, 1957</li><li>Income Declaration Scheme Rules, 2016</li></ul><p><a href="https://www.incometax.gov.in/iec/foportal/" target="_blank" rel="noopener noreferrer">Income Tax Department portal ↗</a> · <a href="https://www.cakiran.co.in/" target="_blank" rel="noopener noreferrer">Knowledge Bank reference ↗</a></p></div>
+        <div class="kb-group"><h3>Indirect Tax Rules</h3><ul class="kb-list"><li>GST Valuation Rules, 2016</li><li>Service Tax Rules</li><li>CST (Delhi) Rules, 2005</li><li>CST (Maharashtra) Rules</li><li>Customs Valuation Rules</li><li>Cenvat Credit Rules, 2017</li><li>Entry Tax Rules</li></ul><p><a href="https://www.cbic.gov.in/" target="_blank" rel="noopener noreferrer">CBIC official portal ↗</a> · <a href="https://www.indiacode.nic.in/" target="_blank" rel="noopener noreferrer">Search India Code ↗</a></p></div>
+      </section>
+      <aside class="kb-note"><strong>Reference notice:</strong> Some supplied Knowledge Bank links may show legacy material. Tax rates, statutes, rules and forms can change; verify the current effective date and applicability on the relevant official portal or with a Chartered Accountant before acting.</aside>
+    </div>
+  </main>
+  <footer class="kb-footer">Kiran K. Shinde and Co. · Chartered Accountants · <a href="index.html#contact">Contact the office</a></footer>
+  <script>const toggle=document.getElementById('mobileToggleBtn'),menu=document.getElementById('navMenu');if(toggle&&menu){toggle.addEventListener('click',()=>{const open=menu.classList.toggle('active');toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close navigation menu':'Open navigation menu');toggle.querySelector('i').className=open?'fa-solid fa-xmark':'fa-solid fa-bars'});menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.classList.remove('active');toggle.setAttribute('aria-expanded','false')}))}</script>
+</body>
+</html>

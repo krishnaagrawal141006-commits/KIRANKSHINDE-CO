@@ -2889,7 +2889,7 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
 
 .ornament-line {
   height: 1px;
-  width: 50px;
+  width: 44px;
   background: linear-gradient(90deg, transparent, var(--accent-gold));
 }
 
@@ -3311,7 +3311,7 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
 }
 
 .pillar-icon {
-  width: 50px;
+  width: 44px;
   height: 50px;
   border-radius: 50%;
   background: rgba(197, 155, 39, 0.12);
@@ -3492,10 +3492,10 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
   .entity-btn{padding:10px 6px;font-size:.68rem}
 }
 .brand-logo-image{width:60px;height:auto;max-height:48px;object-fit:contain;display:block}
-.ca-india-logo-image{width:62px;max-height:50px}
+.ca-india-logo-image{width:54px;max-height:44px}
 
 @media (max-width: 992px) {
-  .ca-india-logo-image{width:50px;max-height:42px}
+  .ca-india-logo-image{width:44px;max-height:38px}
   .classic-brand-title{font-size:1rem;line-height:1.15}
   .classic-brand-sub{font-size:.64rem}
 }

@@ -474,6 +474,9 @@
               <button class="btn-admin" onclick="AdminCRM.checkTallyConnectorStatus()">
                 <i class="fa-solid fa-rotate"></i> Refresh Status
               </button>
+              <button class="btn-admin" style="background:#d97706; color:#fff;" onclick="AdminCRM.retryAllFailedTallyItems()">
+                <i class="fa-solid fa-rotate-right"></i> Retry Failed Vouchers
+              </button>
               <button class="btn-admin btn-admin-primary" style="background:#16a34a;" onclick="AdminCRM.syncAllPendingInvoicesToTally()">
                 <i class="fa-solid fa-bolt"></i> Sync All Invoices to Tally
               </button>
@@ -767,7 +770,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js"></script>
   <script src="../supabase-client.js"></script>
-  <script src="admin.js?v=tally_v2"></script>
+  <script src="admin.js?v=tally_v3"></script>
 </body>
 </html>
 

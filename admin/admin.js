@@ -1426,7 +1426,12 @@ const AdminCRM = {
       tbody.innerHTML = queue.map(item => {
         let statusBadge = '<span class="status-pill status-pending">PENDING</span>';
         if (item.status === 'SYNCED') statusBadge = '<span class="status-pill status-completed"><i class="fa-solid fa-check"></i> SYNCED</span>';
-        if (item.status === 'FAILED') statusBadge = `<span class="status-pill status-overdue" title="${item.error_message || ''}">FAILED</span>`;
+        if (item.status === 'FAILED') {
+          statusBadge = `<div>
+            <span class="status-pill status-overdue">FAILED</span>
+            ${item.error_message ? `<div style="font-size:0.75rem; color:#dc2626; margin-top:4px; max-width:240px; word-break:break-word; line-height:1.2;">⚠️ ${item.error_message}</div>` : ''}
+          </div>`;
+        }
 
         return `<tr>
           <td>${item.date || new Date(item.created_at).toLocaleDateString('en-IN')}</td>
@@ -1437,14 +1442,71 @@ const AdminCRM = {
           <td>${statusBadge}</td>
           <td><strong style="color:#2563eb;">${item.tally_voucher_no || '—'}</strong></td>
           <td>
-            ${item.status === 'FAILED' ? `<button class="action-icon-btn" onclick="AdminCRM.retryTallyQueueItem('${item.id}')" title="Retry Sync"><i class="fa-solid fa-rotate-right"></i></button>` : ''}
-            ${item.status === 'PENDING' ? `<small style="color:#d97706;">Waiting for PC...</small>` : ''}
-            ${item.status === 'SYNCED' ? `<small style="color:#16a34a;"><i class="fa-solid fa-check-double"></i> Done</small>` : ''}
+            ${item.status === 'FAILED' ? `<button class="action-icon-btn" onclick="AdminCRM.retryTallyQueueItem('${item.id}')" title="Retry Sync to Tally"><i class="fa-solid fa-rotate-right"></i> Retry</button>` : ''}
+            ${item.status === 'PENDING' ? `<small style="color:#d97706;"><i class="fa-solid fa-spinner fa-spin"></i> Syncing...</small>` : ''}
+            ${item.status === 'SYNCED' ? `<small style="color:#16a34a;"><i class="fa-solid fa-check-double"></i> In Tally</small>` : ''}
           </td>
         </tr>`;
       }).join('');
     } catch (e) {
       console.error('Tally queue load error:', e);
+    }
+  },
+
+  async retryTallyQueueItem(id) {
+    try {
+      const token = await this.adminToken();
+      const res = await fetch('/api/tally/queue', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: id,
+          status: 'PENDING',
+          errorMessage: null
+        })
+      });
+      if (res.ok) {
+        this.loadTallyQueue();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error || 'Retry request failed');
+      }
+    } catch (e) {
+      alert('Retry error: ' + e.message);
+    }
+  },
+
+  async retryAllFailedTallyItems() {
+    try {
+      const token = await this.adminToken();
+      const res = await fetch('/api/tally/queue', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const data = await res.json().catch(() => ({}));
+      const failed = (data.queue || []).filter(q => q.status === 'FAILED');
+      if (!failed.length) return alert('No failed vouchers to retry.');
+
+      for (const item of failed) {
+        await fetch('/api/tally/queue', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id: item.id,
+            status: 'PENDING',
+            errorMessage: null
+          })
+        });
+      }
+      alert(`⚡ Reset ${failed.length} voucher(s) to PENDING!\n\nYour Local PC Connector will retry sync.`);
+      this.loadTallyQueue();
+    } catch (e) {
+      alert('Error retrying items: ' + e.message);
     }
   },
 

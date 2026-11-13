@@ -103,3 +103,4 @@ module.exports = async function handler(req, res) {
   const data = await list.json().catch(() => []);
   return res.status(200).json({ deadlines: data });
 };
+

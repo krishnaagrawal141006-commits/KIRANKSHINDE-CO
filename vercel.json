@@ -7,3 +7,4 @@
     { "source": "/api/admin/delete-deadline", "destination": "/api/admin/deadlines" }
   ]
 }
+

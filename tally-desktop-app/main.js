@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const TallySyncEngine = require('./sync-engine');
@@ -24,10 +24,52 @@ if (fs.existsSync(configFilePath)) {
 
 const engine = new TallySyncEngine(savedConfig);
 
+// Recent in-memory logs cache so renderer receives full history on load
+const recentLogs = [];
+engine.on('log', (logData) => {
+  recentLogs.push(logData);
+  if (recentLogs.length > 50) recentLogs.shift();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send('engine-log', logData);
+    } catch (e) {}
+  }
+});
+
+engine.on('stats-updated', (stats) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send('engine-stats', stats);
+    } catch (e) {}
+  }
+});
+
+engine.on('voucher-synced', (data) => {
+  try {
+    if (Notification.isSupported()) {
+      new Notification({
+        title: '✅ TallyPrime Sync Successful!',
+        body: `Invoice ${data.sourceId} (${data.clientName} - ₹${data.amount}) posted to Tally DayBook.`
+      }).show();
+    }
+  } catch (e) {}
+});
+
+engine.on('voucher-failed', (data) => {
+  try {
+    if (Notification.isSupported()) {
+      new Notification({
+        title: '⚠️ Tally Voucher Rejected',
+        body: `Invoice ${data.sourceId} (${data.clientName}): ${data.error}`
+      }).show();
+    }
+  } catch (e) {}
+});
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 940,
-    height: 680,
+    width: 960,
+    height: 700,
     minWidth: 840,
     minHeight: 560,
     frame: false,
@@ -43,6 +85,16 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
+  mainWindow.webContents.on('did-finish-load', () => {
+    // Send initial state & replay recent logs
+    try {
+      mainWindow.webContents.send('engine-stats', { ...engine.stats, isPaused: engine.isPaused });
+      for (const item of recentLogs) {
+        mainWindow.webContents.send('engine-log', item);
+      }
+    } catch (e) {}
+  });
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
@@ -51,76 +103,82 @@ function createWindow() {
     if (!isQuitting) {
       event.preventDefault();
       mainWindow.hide();
-      if (tray) {
-        tray.displayBalloon?.({
-          title: 'Kiran K. Shinde & Co. — Tally Bridge',
-          content: 'Running in background. Double-click tray icon to open.'
-        });
-      }
     }
   });
 }
 
 function createTray() {
-  const iconPath = path.join(__dirname, 'assets', 'icon.png');
-  // Fallback to electron default icon if custom icon missing
-  tray = new Tray(fs.existsSync(iconPath) ? iconPath : path.join(__dirname, 'assets', 'tray.png'));
+  try {
+    const iconPath = path.join(__dirname, 'assets', 'icon.png');
+    let img = null;
+    if (fs.existsSync(iconPath)) {
+      img = nativeImage.createFromPath(iconPath);
+    }
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Open Kiran Tally Dashboard',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
+    tray = new Tray(img || nativeImage.createEmpty());
+
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: 'Open Kiran Tally Dashboard',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+          }
+        }
+      },
+      {
+        label: 'Force Sync Now',
+        click: () => engine.syncNow()
+      },
+      {
+        label: 'Pause / Resume Sync',
+        click: () => {
+          if (engine.isPaused) {
+            engine.resume();
+          } else {
+            engine.pause();
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: 'Open Admin Website',
+        click: () => shell.openExternal('https://kirankshinde-co.vercel.app/admin/index.html')
+      },
+      { type: 'separator' },
+      {
+        label: 'Quit',
+        click: () => {
+          isQuitting = true;
+          engine.stop();
+          app.quit();
         }
       }
-    },
-    {
-      label: 'Force Sync Now',
-      click: () => engine.syncNow()
-    },
-    {
-      label: engine.isPaused ? 'Resume Sync' : 'Pause Sync',
-      id: 'pause-resume',
-      click: (item) => {
-        if (engine.isPaused) {
-          engine.resume();
-          item.label = 'Pause Sync';
-        } else {
-          engine.pause();
-          item.label = 'Resume Sync';
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Open Admin Website',
-      click: () => shell.openExternal('https://kirankshinde-co.vercel.app/admin/index.html')
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        isQuitting = true;
-        engine.stop();
-        app.quit();
-      }
-    }
-  ]);
+    ]);
 
-  tray.setToolTip('CA Kiran K. Shinde & Co. — TallyPrime Cloud Sync');
-  tray.setContextMenu(contextMenu);
+    tray.setToolTip('CA Kiran K. Shinde & Co. — TallyPrime Cloud Sync');
+    tray.setContextMenu(contextMenu);
 
-  tray.on('double-click', () => {
-    if (mainWindow) {
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  });
+    tray.on('double-click', () => {
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
+  } catch (e) {
+    console.warn('Tray init non-fatal warning:', e.message);
+  }
 }
 
 // IPC Handlers
+ipcMain.handle('get-initial-state', () => {
+  return {
+    stats: { ...engine.stats, isPaused: engine.isPaused },
+    logs: recentLogs
+  };
+});
+
 ipcMain.on('window-minimize', () => {
   if (mainWindow) mainWindow.minimize();
 });
@@ -151,7 +209,9 @@ ipcMain.on('open-tally-settings', () => {
 
 ipcMain.on('save-config', (event, newConfig) => {
   engine.config = { ...engine.config, ...newConfig };
-  fs.writeFileSync(configFilePath, JSON.stringify(engine.config, null, 2), 'utf8');
+  try {
+    fs.writeFileSync(configFilePath, JSON.stringify(engine.config, null, 2), 'utf8');
+  } catch (e) {}
   engine.log('success', 'Configuration updated successfully.');
 });
 
@@ -170,46 +230,14 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
-    // Ensure assets directory and fallback icon exist
-    const assetsDir = path.join(__dirname, 'assets');
-    if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
-
-    createWindow();
-    createTray();
-
-    // Wire Engine Events to Renderer UI & Notifications
-    engine.on('log', (logData) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('engine-log', logData);
-      }
-    });
-
-    engine.on('stats-updated', (stats) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('engine-stats', stats);
-      }
-    });
-
-    engine.on('voucher-synced', (data) => {
-      if (Notification.isSupported()) {
-        new Notification({
-          title: '✅ TallyPrime Sync Successful!',
-          body: `Invoice ${data.sourceId} (${data.clientName} - ₹${data.amount}) posted to Tally DayBook. Voucher #${data.voucherNo}`
-        }).show();
-      }
-    });
-
-    engine.on('voucher-failed', (data) => {
-      if (Notification.isSupported()) {
-        new Notification({
-          title: '⚠️ Tally Voucher Failed',
-          body: `Invoice ${data.sourceId} (${data.clientName}): ${data.error}`
-        }).show();
-      }
-    });
-
-    // Start background sync
+    // 1. Start Engine First
     engine.start();
+
+    // 2. Create Window
+    createWindow();
+
+    // 3. Create Tray
+    createTray();
   });
 }
 
@@ -219,7 +247,6 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', (e) => {
-  // Prevent quitting so background sync keeps running in tray
+  // Keep background sync running in tray
   e.preventDefault();
 });
-

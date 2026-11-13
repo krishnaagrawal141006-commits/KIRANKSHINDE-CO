@@ -499,7 +499,7 @@ const AdminCRM = {
         <td>
           <button class="action-icon-btn" onclick="AdminCRM.editInvoice('${inv.id}')" title="Edit invoice"><i class="fa-solid fa-pen"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.downloadInvoicePdf('${inv.id}')" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></button>
-          <button class="action-icon-btn" onclick="AdminCRM.syncInvoiceToTally('${inv.id}')" title="Sync to Tally Prime" style="color:#d97706; font-weight:700;"><i class="fa-solid fa-bolt"></i> Tally</button>
+          <button onclick="AdminCRM.syncInvoiceToTally('${inv.id}')" title="Sync to Tally Prime" style="color:#ffffff; background:#d97706; padding:4px 9px; border-radius:5px; font-weight:700; font-size:0.75rem; border:none; cursor:pointer; margin:0 4px;"><i class="fa-solid fa-bolt"></i> Tally</button>
           ${inv.status === 'Pending' ? `
             <a href="https://wa.me/917506647791?text=Payment%20Reminder%20for%20Invoice%20${inv.id}" target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Fee Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</a>
             <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Mark Paid"><i class="fa-solid fa-circle-check"></i></button>

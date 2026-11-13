@@ -109,4 +109,40 @@ values
   ('advance-tax', 'income-tax', 'Advance Tax', 'cat-it', 'Advance Tax Installment (Sec 208/211)', 'Quarterly payment of estimated tax liability.', 'annual', null, '2027-03-15', '15th June / 15th September / 15th December / 15th March', 'Calculate Advance Tax', 'https://www.incometax.gov.in/'),
   ('tax-audit', 'audit', 'Statutory Audit', 'cat-audit', 'Section 44AB Tax Audit Report (Form 3CA/3CB/3CD)', 'Submission of the Chartered Accountant tax audit report.', 'annual', null, '2027-09-30', '30th September (standard) / 21st October (extended cases)', 'Book Audit Review', 'https://www.incometax.gov.in/'),
   ('roc-annual', 'audit', 'Corporate MCA', 'cat-audit', 'ROC Annual Filing (AOC-4 & MGT-7)', 'Submission of audited financial statements and annual return.', 'annual', null, '2027-10-30', 'As per AGM date and Companies Act timelines', 'MCA Compliance', 'https://www.mca.gov.in/')
-on conflict (id) do update set title = excluded.title, description = excluded.description, due_date = excluded.due_date, due_date_label = excluded.due_date_label, updated_at = now();
+-- ================= TALLY PRIME SYNC CONNECTOR =================
+create table if not exists public.tally_sync_queue (
+  id uuid primary key default gen_random_uuid(),
+  source_type text not null default 'invoice', -- 'invoice', 'task', 'ledger'
+  source_id text,
+  client_name text not null,
+  voucher_type text not null default 'Sales', -- 'Sales', 'Receipt', 'Payment', 'Journal'
+  amount numeric(12,2) not null default 0,
+  date date not null default current_date,
+  narration text,
+  sales_ledger text default 'Sales Accounts',
+  party_ledger text,
+  status text not null default 'PENDING', -- 'PENDING', 'PROCESSING', 'SYNCED', 'FAILED'
+  tally_voucher_no text,
+  error_message text,
+  created_at timestamptz not null default now(),
+  synced_at timestamptz
+);
+
+create table if not exists public.tally_connector_heartbeat (
+  id text primary key default 'primary_pc',
+  connector_name text not null default 'Office Main PC',
+  tally_online boolean not null default false,
+  company_name text,
+  tally_version text,
+  last_heartbeat timestamptz not null default now(),
+  ip_info text
+);
+
+alter table public.tally_sync_queue enable row level security;
+alter table public.tally_connector_heartbeat enable row level security;
+
+grant all on table public.tally_sync_queue to service_role;
+grant all on table public.tally_connector_heartbeat to service_role;
+grant select, insert, update on table public.tally_sync_queue to authenticated;
+grant select on table public.tally_connector_heartbeat to authenticated;
+

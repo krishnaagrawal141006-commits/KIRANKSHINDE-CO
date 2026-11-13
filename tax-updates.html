@@ -4,10 +4,34 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Income Tax & CBDT Updates | Kiran K. Shinde & Co.</title>
+    <title>Tax & Regulatory Notifications | Kiran K. Shinde & Co.</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        .notifications-page .tax-authority-section {
+            margin-top: 34px
+        }
+
+        .notifications-page .tax-authority-heading {
+            margin-bottom: 16px
+        }
+
+        .notifications-page .tax-authority-heading h2 {
+            margin: 0 0 6px;
+            color: #15263a;
+            font-size: 1.35rem
+        }
+
+        .notifications-page .tax-authority-heading p {
+            margin: 0;
+            color: #687586;
+            line-height: 1.5
+        }
+
+        .notifications-page .tax-updates-grid-single {
+            grid-template-columns: minmax(0, 1fr)
+        }
+
         @media(max-width:992px) {
             .notifications-page .navbar-container {
                 width: 94%;
@@ -110,6 +134,14 @@
                 gap: 12px
             }
 
+            .notifications-page .tax-authority-section {
+                margin-top: 26px
+            }
+
+            .notifications-page .tax-authority-heading {
+                margin-bottom: 14px
+            }
+
             .notifications-page .tax-source-card {
                 min-height: 94px;
                 padding: 16px;
@@ -160,15 +192,16 @@
             <div class="container">
                 <div class="tax-updates-heading">
                     <div>
-                        <div class="badge-tag"><i class="fa-solid fa-landmark"></i> Official Tax Resources</div>
-                        <h1 class="section-title">Income Tax &amp; CBDT Updates</h1>
-                        <p class="section-desc">Access the latest circulars, notifications and announcements from
-                            official Government of India sources.</p>
+                        <div class="badge-tag"><i class="fa-solid fa-landmark"></i> Official Government Sources</div>
+                        <h1 class="section-title">Tax &amp; Regulatory Notifications</h1>
+                        <p class="section-desc">Find Income Tax, GST and MCA notifications, circulars and official updates from Government of India sources.</p>
                     </div><a class="tax-updates-primary-link" href="https://www.incometaxindia.gov.in/en/notifications"
-                        target="_blank" rel="noopener noreferrer">View CBDT Notifications <i
+                        target="_blank" rel="noopener noreferrer">Open Official Updates <i
                             class="fa-solid fa-arrow-up-right-from-square"></i></a>
                 </div>
-                <div class="tax-updates-grid"><a class="tax-source-card"
+                <section class="tax-authority-section" aria-labelledby="income-tax-updates-title">
+                    <div class="tax-authority-heading"><h2 id="income-tax-updates-title">Income Tax &amp; CBDT</h2><p>Direct links to CBDT notifications, circulars and subscribed update feeds.</p></div>
+                    <div class="tax-updates-grid"><a class="tax-source-card"
                         href="https://www.incometaxindia.gov.in/en/notifications" target="_blank"
                         rel="noopener noreferrer"><span class="tax-source-icon"><i
                                 class="fa-solid fa-file-circle-check"></i></span><span class="tax-source-copy"><span
@@ -183,17 +216,30 @@
                                 source</span><strong>Circulars</strong><span>Departmental guidance and
                                 clarifications</span></span><i
                             class="fa-solid fa-arrow-up-right-from-square tax-source-arrow"></i></a><a
-                        class="tax-source-card" href="https://www.incometaxindia.gov.in/en/tax-feeds" target="_blank"
+                        class="tax-source-card" href="https://www.incometaxindia.gov.in/tax-feeds" target="_blank"
                         rel="noopener noreferrer"><span class="tax-source-icon"><i
                                 class="fa-solid fa-rss"></i></span><span class="tax-source-copy"><span
                                 class="tax-source-label">Subscribe • RSS feeds</span><strong>Tax
                                 Feeds</strong><span>Feeds for notifications, circulars and press
                                 releases</span></span><i
                             class="fa-solid fa-arrow-up-right-from-square tax-source-arrow"></i></a></div>
+                </section>
+                <section class="tax-authority-section" aria-labelledby="gst-updates-title">
+                    <div class="tax-authority-heading"><h2 id="gst-updates-title">Goods &amp; Services Tax (GST)</h2><p>CBIC is the official source for central GST notifications and circulars.</p></div>
+                    <div class="tax-updates-grid">
+                        <a class="tax-source-card" href="https://taxinformation.cbic.gov.in/" target="_blank" rel="noopener noreferrer"><span class="tax-source-icon"><i class="fa-solid fa-bell"></i></span><span class="tax-source-copy"><span class="tax-source-label">CBIC • Official portal</span><strong>Latest GST Updates</strong><span>Search the CBIC Tax Information Portal for recent notifications and circulars</span></span><i class="fa-solid fa-arrow-up-right-from-square tax-source-arrow"></i></a>
+                        <a class="tax-source-card" href="https://cbic-gst.gov.in/central-tax-notifications.html" target="_blank" rel="noopener noreferrer"><span class="tax-source-icon"><i class="fa-solid fa-file-circle-check"></i></span><span class="tax-source-copy"><span class="tax-source-label">CBIC • Primary source</span><strong>GST Notifications</strong><span>Central Tax notifications and statutory changes</span></span><i class="fa-solid fa-arrow-up-right-from-square tax-source-arrow"></i></a>
+                        <a class="tax-source-card" href="https://cbic-gst.gov.in/circulars-cgst.html" target="_blank" rel="noopener noreferrer"><span class="tax-source-icon"><i class="fa-solid fa-file-lines"></i></span><span class="tax-source-copy"><span class="tax-source-label">CBIC • Primary source</span><strong>GST Circulars &amp; Orders</strong><span>Departmental guidance, clarifications and orders</span></span><i class="fa-solid fa-arrow-up-right-from-square tax-source-arrow"></i></a>
+                    </div>
+                </section>
+                <section class="tax-authority-section" aria-labelledby="mca-updates-title">
+                    <div class="tax-authority-heading"><h2 id="mca-updates-title">Ministry of Corporate Affairs (MCA)</h2><p>Open MCA’s official Notifications &amp; Updates area for company law notices and circulars.</p></div>
+                    <div class="tax-updates-grid tax-updates-grid-single">
+                        <a class="tax-source-card" href="https://www.mca.gov.in/" target="_blank" rel="noopener noreferrer"><span class="tax-source-icon"><i class="fa-solid fa-bell"></i></span><span class="tax-source-copy"><span class="tax-source-label">MCA • Official portal</span><strong>Notifications, Notices &amp; Circulars</strong><span>On the MCA home page, open “Notifications &amp; Updates” and choose Notices or Circulars. Use its document search and date filters to find an item.</span></span><i class="fa-solid fa-arrow-up-right-from-square tax-source-arrow"></i></a>
+                    </div>
+                </section>
                 <div class="tax-updates-note"><i class="fa-solid fa-circle-info"></i>
-                    <p><strong>For authoritative guidance:</strong> Open the linked CBDT document and check its date,
-                        applicability and any subsequent amendments. This page links to official sources; it does not
-                        provide automated legal or tax interpretation.</p>
+                    <p><strong>For authoritative guidance:</strong> These links open official government sources; they do not automatically copy new notices into this website. Check each document’s date, applicability and subsequent amendments before relying on it.</p>
                 </div>
             </div>
         </section>

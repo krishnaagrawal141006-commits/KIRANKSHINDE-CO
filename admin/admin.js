@@ -24,6 +24,12 @@ const AdminCRM = {
     this.renderAll();
     this.loadCloudTasks();
     setInterval(() => this.loadCloudTasks(), 15000);
+    this.checkTallyConnectorStatus();
+    this.loadTallyQueue();
+    setInterval(() => {
+      this.checkTallyConnectorStatus();
+      this.loadTallyQueue();
+    }, 10000);
     this.setupTabNavigation();
     this.setupModals();
     this.setupMobileMenu();
@@ -493,6 +499,7 @@ const AdminCRM = {
         <td>
           <button class="action-icon-btn" onclick="AdminCRM.editInvoice('${inv.id}')" title="Edit invoice"><i class="fa-solid fa-pen"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.downloadInvoicePdf('${inv.id}')" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></button>
+          <button class="action-icon-btn" onclick="AdminCRM.syncInvoiceToTally('${inv.id}')" title="Sync to Tally Prime" style="color:#d97706; font-weight:700;"><i class="fa-solid fa-bolt"></i> Tally</button>
           ${inv.status === 'Pending' ? `
             <a href="https://wa.me/917506647791?text=Payment%20Reminder%20for%20Invoice%20${inv.id}" target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Fee Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</a>
             <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Mark Paid"><i class="fa-solid fa-circle-check"></i></button>
@@ -1345,6 +1352,187 @@ const AdminCRM = {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) { target.innerHTML = `<p style="color:#b91c1c">${result.error || 'Generation failed'}</p>`; return; }
     target.innerHTML = (result.drafts || []).map(draft => `<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><textarea class="form-input-admin" rows="2" readonly style="flex:1">${draft}</textarea><button class="btn-admin" type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button></div>`).join('') + `<button class="btn-admin btn-admin-primary" type="button" onclick="window.open(localStorage.getItem('gmb_review_url') || 'https://www.google.com/maps','_blank','noopener')">Open Google Review</button>`;
+  },
+
+  // ================= TALLYPRIME CLOUD CONNECTOR METHODS =================
+  async checkTallyConnectorStatus() {
+    try {
+      const res = await fetch('/api/tally/heartbeat');
+      const data = await res.json().catch(() => ({}));
+
+      const badge = document.getElementById('tallyLiveStatusBadge');
+      const sideBadge = document.getElementById('tallyStatusBadge');
+      const companyEl = document.getElementById('tallyActiveCompanyText');
+
+      if (data.online) {
+        if (badge) {
+          badge.style.background = '#ecfdf5';
+          badge.style.color = '#065f46';
+          badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size:0.55rem; color:#10b981;"></i> Local PC Connector: Online 🟢 (${data.lastSeenSecondsAgo || 0}s ago)`;
+        }
+        if (sideBadge) {
+          sideBadge.style.background = '#10b981';
+          sideBadge.textContent = 'Online';
+        }
+        if (companyEl) {
+          companyEl.textContent = data.companyName || 'Tally Active';
+          companyEl.style.color = '#16a34a';
+        }
+      } else {
+        if (badge) {
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#b91c1c';
+          badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size:0.55rem; color:#ef4444;"></i> Local PC Connector: Offline 🔴`;
+        }
+        if (sideBadge) {
+          sideBadge.style.background = '#ef4444';
+          sideBadge.textContent = 'Offline';
+        }
+        if (companyEl) {
+          companyEl.textContent = 'Not Connected';
+          companyEl.style.color = '#64748b';
+        }
+      }
+    } catch (e) {
+      console.error('Tally heartbeat check error:', e);
+    }
+  },
+
+  async loadTallyQueue() {
+    const tbody = document.getElementById('tallySyncQueueTableBody');
+    if (!tbody) return;
+
+    try {
+      const token = await this.adminToken?.();
+      const res = await fetch('/api/tally/queue', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const data = await res.json().catch(() => ({}));
+      const queue = Array.isArray(data.queue) ? data.queue : [];
+
+      const pendingCount = queue.filter(q => q.status === 'PENDING').length;
+      const syncedCount = queue.filter(q => q.status === 'SYNCED').length;
+
+      const pendingEl = document.getElementById('tallyPendingCountText');
+      const syncedEl = document.getElementById('tallySyncedCountText');
+      if (pendingEl) pendingEl.textContent = `${pendingCount} Vouchers`;
+      if (syncedEl) syncedEl.textContent = `${syncedCount} Vouchers`;
+
+      if (!queue.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#64748b; padding:24px;">No sync requests in queue. Click "Tally" on any invoice in Consolidated Billing to push.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = queue.map(item => {
+        let statusBadge = '<span class="status-pill status-pending">PENDING</span>';
+        if (item.status === 'SYNCED') statusBadge = '<span class="status-pill status-completed"><i class="fa-solid fa-check"></i> SYNCED</span>';
+        if (item.status === 'FAILED') statusBadge = `<span class="status-pill status-overdue" title="${item.error_message || ''}">FAILED</span>`;
+
+        return `<tr>
+          <td>${item.date || new Date(item.created_at).toLocaleDateString('en-IN')}</td>
+          <td><strong>${item.source_id || 'N/A'}</strong></td>
+          <td><strong>${item.client_name}</strong></td>
+          <td><span style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:0.8rem;">${item.voucher_type}</span></td>
+          <td><strong style="color:#0f172a;">₹${Number(item.amount || 0).toLocaleString('en-IN')}</strong></td>
+          <td>${statusBadge}</td>
+          <td><strong style="color:#2563eb;">${item.tally_voucher_no || '—'}</strong></td>
+          <td>
+            ${item.status === 'FAILED' ? `<button class="action-icon-btn" onclick="AdminCRM.retryTallyQueueItem('${item.id}')" title="Retry Sync"><i class="fa-solid fa-rotate-right"></i></button>` : ''}
+            ${item.status === 'PENDING' ? `<small style="color:#d97706;">Waiting for PC...</small>` : ''}
+            ${item.status === 'SYNCED' ? `<small style="color:#16a34a;"><i class="fa-solid fa-check-double"></i> Done</small>` : ''}
+          </td>
+        </tr>`;
+      }).join('');
+    } catch (e) {
+      console.error('Tally queue load error:', e);
+    }
+  },
+
+  async syncInvoiceToTally(invoiceId) {
+    const inv = this.state.invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+
+    const token = await this.adminToken();
+    const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
+
+    const res = await fetch('/api/tally/queue', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        sourceType: 'invoice',
+        sourceId: inv.id,
+        clientName: inv.client,
+        amount: cleanAmount,
+        date: inv.date || new Date().toISOString().slice(0, 10),
+        voucherType: 'Sales',
+        narration: `${inv.service} - Fee Invoice ${inv.id} (Kiran K. Shinde & Co.)`,
+        salesLedger: 'Professional Fees Account'
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      alert(`⚡ SUCCESS!\n\nInvoice ${inv.id} (${inv.client} - ₹${cleanAmount.toLocaleString('en-IN')}) has been queued for TallyPrime.\n\nYour Local PC Connector will automatically post it into Tally!`);
+      this.loadTallyQueue();
+      this.checkTallyConnectorStatus();
+    } else {
+      alert(`Error queueing invoice: ${data.error || 'Server error'}`);
+    }
+  },
+
+  async syncAllPendingInvoicesToTally() {
+    if (!this.state.invoices || !this.state.invoices.length) {
+      return alert('No invoices found to sync.');
+    }
+
+    if (!confirm(`Sync all ${this.state.invoices.length} invoices to your local TallyPrime?`)) return;
+
+    let queuedCount = 0;
+    const token = await this.adminToken();
+
+    for (const inv of this.state.invoices) {
+      const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
+      try {
+        await fetch('/api/tally/queue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            sourceType: 'invoice',
+            sourceId: inv.id,
+            clientName: inv.client,
+            amount: cleanAmount,
+            date: inv.date || new Date().toISOString().slice(0, 10),
+            voucherType: 'Sales',
+            narration: `${inv.service} - Fee Invoice ${inv.id}`,
+            salesLedger: 'Professional Fees Account'
+          })
+        });
+        queuedCount++;
+      } catch (e) {}
+    }
+
+    alert(`⚡ Queued ${queuedCount} invoices for Tally Prime!\n\nCheck the TallyPrime Cloud Connector tab to monitor real-time posting.`);
+    this.loadTallyQueue();
+    this.checkTallyConnectorStatus();
+  },
+
+  async retryTallyQueueItem(queueId) {
+    const token = await this.adminToken();
+    await fetch('/api/tally/queue', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ id: queueId, status: 'PENDING', errorMessage: null })
+    });
+    this.loadTallyQueue();
   },
 };
 

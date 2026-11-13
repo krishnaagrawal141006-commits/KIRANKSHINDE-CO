@@ -1,0 +1,6 @@
+{
+  "siteUrl": "https://cakiran.co.in",
+  "bridgeToken": "ks_tally_secret_2026",
+  "tallyUrl": "http://127.0.0.1:9000",
+  "pollIntervalSeconds": 4
+}

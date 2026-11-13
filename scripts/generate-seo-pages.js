@@ -935,3 +935,4 @@ console.log(`\nSUCCESS: Generated ${generatedCount} programmatic location pages!
 console.log(`Generated Locations Directory: ${path.join(OUT_DIR, "index.html")}`);
 console.log(`Generated sitemap.xml with ${sitemapUrls.length} total URLs!`);
 console.log(`Generated robots.txt pointing to ${SITE_URL}/sitemap.xml!`);
+

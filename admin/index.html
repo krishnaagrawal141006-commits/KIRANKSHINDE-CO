@@ -76,6 +76,12 @@
         <span>Consolidated Billing</span>
       </button>
 
+      <button class="nav-tab-btn" data-target="tab-tally">
+        <i class="fa-solid fa-receipt"></i>
+        <span>TallyPrime Auto-Sync</span>
+        <span class="nav-counter" id="tallyStatusBadge" style="background: #ef4444;">Offline</span>
+      </button>
+
       <button class="nav-tab-btn" data-target="tab-calendar">
         <i class="fa-solid fa-calendar-check"></i>
         <span>Google Calendar Sync</span>
@@ -441,7 +447,91 @@
             </table>
           </div>
         </div>
-      </section>`n`n      <!-- ================= 6. DOCUMENTS & REMINDERS (Spectrum Style) ================= -->
+      </section>
+
+      <!-- ================= TALLY PRIME CLOUD CONNECTOR (Suvit-Style) ================= -->
+      <section class="tab-content" id="tab-tally">
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <h3 style="margin:0;"><i class="fa-solid fa-receipt" style="color:#d2a128;"></i> TallyPrime Cloud Connector</h3>
+                <span id="tallyLiveStatusBadge" style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:0.78rem; font-weight:700; background:#fef2f2; color:#b91c1c;">
+                  <i class="fa-solid fa-circle" style="font-size:0.55rem;"></i> Local PC Connector: Offline
+                </span>
+              </div>
+              <p style="font-size: 0.84rem; color: #64748b; margin:0;">
+                Live bridge between website billing and your office TallyPrime. Click "Sync" on any invoice to auto-post vouchers to Port 9000.
+              </p>
+            </div>
+            <div class="header-action-group" style="display:flex; gap:10px; flex-wrap:wrap;">
+              <a href="../tally-connector.zip" download class="btn-admin" style="background:#1e293b; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-download"></i> Download Local PC Connector (.zip)
+              </a>
+              <button class="btn-admin" onclick="AdminCRM.checkTallyConnectorStatus()">
+                <i class="fa-solid fa-rotate"></i> Refresh Status
+              </button>
+              <button class="btn-admin btn-admin-primary" style="background:#16a34a;" onclick="AdminCRM.syncAllPendingInvoicesToTally()">
+                <i class="fa-solid fa-bolt"></i> Sync All Invoices to Tally
+              </button>
+            </div>
+          </div>
+
+          <!-- Connection Stats Cards -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin: 20px 0;">
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+              <div style="font-size:0.78rem; color:#64748b; font-weight:700; text-transform:uppercase;">Active Company in Tally</div>
+              <div id="tallyActiveCompanyText" style="font-size:1.1rem; font-weight:800; color:#0f172a; margin-top:4px;">Not Connected</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+              <div style="font-size:0.78rem; color:#64748b; font-weight:700; text-transform:uppercase;">Local Tally Port</div>
+              <div style="font-size:1.1rem; font-weight:800; color:#2563eb; margin-top:4px;">127.0.0.1:9000</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+              <div style="font-size:0.78rem; color:#64748b; font-weight:700; text-transform:uppercase;">Pending Sync Vouchers</div>
+              <div id="tallyPendingCountText" style="font-size:1.1rem; font-weight:800; color:#d97706; margin-top:4px;">0 Vouchers</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+              <div style="font-size:0.78rem; color:#64748b; font-weight:700; text-transform:uppercase;">Synced to Tally</div>
+              <div id="tallySyncedCountText" style="font-size:1.1rem; font-weight:800; color:#16a34a; margin-top:4px;">0 Vouchers</div>
+            </div>
+          </div>
+
+          <!-- Setup Help Box -->
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:16px 20px; margin-bottom:24px; color:#1e40af; font-size:0.88rem; line-height:1.6;">
+            <strong><i class="fa-solid fa-circle-info"></i> How to connect your Office TallyPrime in 2 Minutes:</strong>
+            <ol style="margin:8px 0 0; padding-left:20px;">
+              <li>Open <strong>TallyPrime</strong> on your PC &rarr; Press <code>F1</code> (Help) &rarr; <code>Settings</code> &rarr; <code>Connectivity</code> &rarr; Set <strong>"TallyPrime acts as" = Both</strong>, Port = <strong>9000</strong>.</li>
+              <li>Click the black <strong>"Download Local PC Connector (.zip)"</strong> button above, unzip it on your desktop, and double-click <strong><code>START-TALLY-SYNC.bat</code></strong>.</li>
+              <li>That's it! As long as the window is open, any invoice synced from this panel posts directly into your Tally DayBook &amp; Ledger without manual typing!</li>
+            </ol>
+          </div>
+
+          <!-- Live Sync Queue Table -->
+          <h4 style="margin:0 0 12px; color:#0f172a; font-size:1rem;"><i class="fa-solid fa-list-check"></i> Real-time Tally Voucher Queue</h4>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Source / ID</th>
+                  <th>Client Name</th>
+                  <th>Voucher Type</th>
+                  <th>Amount</th>
+                  <th>Sync Status</th>
+                  <th>Tally Voucher #</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tallySyncQueueTableBody">
+                <tr><td colspan="8" style="text-align:center; color:#64748b; padding:24px;">No sync requests in queue. Click "Sync" on any invoice in Consolidated Billing to push to Tally.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 6. DOCUMENTS & REMINDERS (Spectrum Style) ================= -->
       <section class="tab-content" id="tab-documents">
         <div class="admin-card">
           <div class="admin-card-header">

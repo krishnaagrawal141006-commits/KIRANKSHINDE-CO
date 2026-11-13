@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/tally/queue", "destination": "/api/tally?action=queue" },
+    { "source": "/api/tally/heartbeat", "destination": "/api/tally?action=heartbeat" },
+    { "source": "/api/admin/create-deadline", "destination": "/api/admin/deadlines" },
+    { "source": "/api/admin/update-deadline", "destination": "/api/admin/deadlines" },
+    { "source": "/api/admin/delete-deadline", "destination": "/api/admin/deadlines" }
+  ]
+}

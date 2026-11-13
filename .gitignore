@@ -1,6 +1,8 @@
 server-out.log
 server-err.log
 node_modules/
+tally-desktop-app/node_modules/
+tally-desktop-app/dist/
 admin/cloudinary-config.js
 integrations/erpnext/
 storage/

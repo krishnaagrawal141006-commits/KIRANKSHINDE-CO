@@ -1,0 +1,31 @@
+{
+  "name": "kiran-tally-bridge",
+  "version": "1.2.0",
+  "description": "CA Kiran K. Shinde & Co. — TallyPrime Cloud Sync Desktop Connector",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "node node_modules/electron-builder/cli.js --dir",
+    "build:exe": "node node_modules/electron-builder/cli.js --dir"
+  },
+  "author": "CA Kiran K. Shinde & Co.",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.kirankshinde.tallybridge",
+    "productName": "Kiran Tally Bridge",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "signAndEditExecutable": false
+    }
+  }
+}

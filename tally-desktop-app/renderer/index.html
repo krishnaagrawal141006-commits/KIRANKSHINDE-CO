@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CA Kiran K. Shinde & Co. — TallyPrime Cloud Bridge</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <!-- Custom Frameless Titlebar -->
+  <header class="titlebar">
+    <div class="titlebar-drag">
+      <div class="brand">
+        <div class="brand-logo">KS</div>
+        <div class="brand-text">
+          <span class="firm-name">CA KIRAN K. SHINDE & CO.</span>
+          <span class="app-subtitle">TallyPrime Cloud Connector • v1.2</span>
+        </div>
+      </div>
+    </div>
+    <div class="window-controls">
+      <button class="win-btn" id="btnMinimize" title="Minimize to Tray"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn win-close" id="btnClose" title="Close (Keeps running in System Tray)"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </header>
+
+  <!-- Main App Shell -->
+  <main class="app-container">
+    <!-- Top Status Row -->
+    <section class="status-grid">
+      <!-- Card 1: TallyPrime Connection -->
+      <div class="card card-glow" id="tallyCard">
+        <div class="card-header">
+          <div class="card-label"><i class="fa-solid fa-receipt"></i> TALLYPRIME STATUS</div>
+          <span class="status-pill status-offline" id="tallyPill">
+            <span class="pulse-dot"></span> <span id="tallyPillText">Connecting...</span>
+          </span>
+        </div>
+        <div class="card-main-val" id="tallyCompanyVal">Company Active</div>
+        <div class="card-sub-info">
+          <span><i class="fa-solid fa-network-wired"></i> <span id="tallyPortVal">127.0.0.1:9000</span></span>
+          <span id="tallyPeriodVal">FY 2024-25 / 26</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Cloud Website Connection -->
+      <div class="card" id="cloudCard">
+        <div class="card-header">
+          <div class="card-label"><i class="fa-solid fa-cloud"></i> CLOUD BRIDGE</div>
+          <span class="status-pill status-online" id="cloudPill">
+            <span class="pulse-dot"></span> <span id="cloudPillText">Online</span>
+          </span>
+        </div>
+        <div class="card-main-val" style="font-size: 1.15rem;">kirankshinde-co.vercel.app</div>
+        <div class="card-sub-info">
+          <span><i class="fa-solid fa-bolt"></i> Auto-polling: 4s</span>
+          <span id="lastSyncVal">Ready</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Live Counters -->
+      <div class="card stats-counter-card">
+        <div class="counter-col">
+          <div class="counter-num text-emerald" id="countSynced">0</div>
+          <div class="counter-label"><i class="fa-solid fa-circle-check"></i> SYNCED</div>
+        </div>
+        <div class="counter-divider"></div>
+        <div class="counter-col">
+          <div class="counter-num text-amber" id="countPending">0</div>
+          <div class="counter-label"><i class="fa-solid fa-hourglass-half"></i> PENDING</div>
+        </div>
+        <div class="counter-divider"></div>
+        <div class="counter-col">
+          <div class="counter-num text-rose" id="countFailed">0</div>
+          <div class="counter-label"><i class="fa-solid fa-circle-xmark"></i> FAILED</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar & Action Bar -->
+    <section class="action-bar">
+      <div class="action-left">
+        <button class="btn btn-toggle-sync" id="btnToggleSync">
+          <i class="fa-solid fa-play"></i> <span id="toggleSyncText">SYNC RUNNING</span>
+        </button>
+        <button class="btn btn-secondary" id="btnForceSync" title="Check cloud queue immediately">
+          <i class="fa-solid fa-rotate"></i> Sync Now
+        </button>
+      </div>
+      <div class="action-right">
+        <button class="btn btn-outline" id="btnOpenAdmin" title="Open Cloud Admin Dashboard in Browser">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Admin Panel
+        </button>
+        <button class="btn btn-icon" id="btnClearLogs" title="Clear Console Log">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Live Terminal Activity Feed -->
+    <section class="console-section">
+      <div class="console-header">
+        <div class="console-title">
+          <i class="fa-solid fa-terminal"></i> LIVE ACTIVITY FEED &amp; TALLY LOGS
+        </div>
+        <div class="console-stats">
+          <span class="live-indicator"><span class="ping-dot"></span> LISTENING</span>
+        </div>
+      </div>
+      <div class="console-terminal" id="consoleBody">
+        <div class="log-entry log-info">
+          <span class="log-time">[Init]</span>
+          <span class="log-tag tag-info">SYSTEM</span>
+          <span class="log-text">Kiran K. Shinde &amp; Co. TallyPrime Cloud Connector initialized.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer Status Banner -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <i class="fa-solid fa-shield-halved text-gold"></i>
+        <span>Bank-Grade 256-Bit Encrypted Tally Data Sync • Port 9000</span>
+      </div>
+      <div class="footer-right">
+        <span>Runs in System Tray when closed</span>
+      </div>
+    </footer>
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

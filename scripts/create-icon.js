@@ -13,3 +13,4 @@ fs.writeFileSync(path.join(assetsDir, 'icon.png'), Buffer.from(iconBase64, 'base
 fs.writeFileSync(path.join(assetsDir, 'tray.png'), Buffer.from(iconBase64, 'base64'));
 
 console.log('✅ Generated app & tray icons.');
+

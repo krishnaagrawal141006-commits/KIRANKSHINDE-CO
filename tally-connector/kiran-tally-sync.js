@@ -475,35 +475,47 @@ console.log('==============================================================\n');
 
 let lastReportedOnline = null;
 
-// Main Cycle Loop
-async function runLoop() {
-  const tallyStatus = await getTallyActiveCompany();
+// Independent Heartbeat Loop (Runs every 4s regardless of sync queue operations)
+async function runHeartbeatLoop() {
+  try {
+    const tallyStatus = await getTallyActiveCompany();
 
-  if (tallyStatus.online !== lastReportedOnline) {
-    if (tallyStatus.online) {
-      console.log(`[TALLY CONNECTED] 🟢 Active Company: "${tallyStatus.company}" on ${config.tallyUrl}`);
-      if (tallyStatus.startingFrom && tallyStatus.endingAt) {
-        console.log(`                  Financial Period: ${tallyStatus.startingFrom} to ${tallyStatus.endingAt}`);
+    if (tallyStatus.online !== lastReportedOnline) {
+      if (tallyStatus.online) {
+        console.log(`[TALLY CONNECTED] 🟢 Active Company: "${tallyStatus.company}" on ${config.tallyUrl}`);
+        if (tallyStatus.startingFrom && tallyStatus.endingAt) {
+          console.log(`                  Financial Period: ${tallyStatus.startingFrom} to ${tallyStatus.endingAt}`);
+        }
+        console.log(`[STATUS] Listening for sync commands from website...`);
+      } else {
+        console.log(`[TALLY OFFLINE] 🔴 Could not reach Tally on ${config.tallyUrl}`);
+        console.log(`                Tip: Make sure TallyPrime is open & ODBC/HTTP enabled on port 9000.`);
       }
-      console.log(`[STATUS] Listening for sync commands from website...`);
-    } else {
-      console.log(`[TALLY OFFLINE] 🔴 Could not reach Tally on ${config.tallyUrl}`);
-      console.log(`                Tip: Make sure TallyPrime is open & ODBC/HTTP enabled on port 9000.`);
+      lastReportedOnline = tallyStatus.online;
     }
-    lastReportedOnline = tallyStatus.online;
+
+    await sendHeartbeat(tallyStatus);
+  } catch (e) {
+    // Non-fatal
   }
+}
 
-  // 1. Report Heartbeat to Cloud Website
-  await sendHeartbeat(tallyStatus);
-
-  // 2. Poll for any pending invoices to inject
-  if (tallyStatus.online) {
-    await pollSyncQueue();
+// Queue Polling Loop (Runs every 4s to check pending vouchers)
+async function runQueueLoop() {
+  try {
+    const tallyStatus = await getTallyActiveCompany();
+    if (tallyStatus.online) {
+      await pollSyncQueue();
+    }
+  } catch (e) {
+    // Non-fatal
   }
 }
 
 // Execute initial run immediately
-runLoop();
+runHeartbeatLoop();
+runQueueLoop();
 
-// Recurring interval
-setInterval(runLoop, config.pollIntervalSeconds * 1000);
+// Separate timers so Heartbeat NEVER drops while processing vouchers
+setInterval(runHeartbeatLoop, 4000);
+setInterval(runQueueLoop, config.pollIntervalSeconds * 1000);

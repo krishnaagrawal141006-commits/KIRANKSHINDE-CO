@@ -455,8 +455,8 @@ class TallySyncEngine extends EventEmitter {
     }
   }
 
-  // 9. Main Cycle
-  async cycle() {
+  // 9. Main Cycle & Heartbeat Loop
+  async heartbeat() {
     const tallyStatus = await this.getTallyActiveCompany();
     this.stats.tallyOnline = tallyStatus.online;
     this.stats.activeCompany = tallyStatus.company || 'Not Connected';
@@ -474,12 +474,14 @@ class TallySyncEngine extends EventEmitter {
     }
 
     await this.sendHeartbeat(tallyStatus);
+    this.emit('stats-updated', { ...this.stats, isPaused: this.isPaused });
+  }
 
+  async pollQueue() {
+    const tallyStatus = await this.getTallyActiveCompany();
     if (tallyStatus.online && !this.isPaused) {
       await this.pollSyncQueue(tallyStatus);
     }
-
-    this.emit('stats-updated', { ...this.stats, isPaused: this.isPaused });
   }
 
   start() {
@@ -487,8 +489,14 @@ class TallySyncEngine extends EventEmitter {
     this.isRunning = true;
     this.isPaused = false;
     this.log('info', `Starting Kiran K. Shinde & Co. Tally Bridge (Every ${this.config.pollIntervalSeconds}s)...`);
-    this.cycle();
-    this.timer = setInterval(() => this.cycle(), this.config.pollIntervalSeconds * 1000);
+
+    // Run initial iterations
+    this.heartbeat();
+    this.pollQueue();
+
+    // Independent timers: Heartbeat NEVER stops even if voucher syncing takes time
+    this.heartbeatTimer = setInterval(() => this.heartbeat(), 4000);
+    this.queueTimer = setInterval(() => this.pollQueue(), this.config.pollIntervalSeconds * 1000);
   }
 
   pause() {
@@ -501,20 +509,24 @@ class TallySyncEngine extends EventEmitter {
     this.isPaused = false;
     this.log('success', 'Sync resumed.');
     this.emit('stats-updated', { ...this.stats, isPaused: this.isPaused });
-    this.cycle();
+    this.pollQueue();
   }
 
   stop() {
     this.isRunning = false;
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    if (this.queueTimer) clearInterval(this.queueTimer);
+    this.heartbeatTimer = null;
+    this.queueTimer = null;
     this.log('info', 'Bridge stopped.');
   }
 
   syncNow() {
     this.log('info', '⚡ Force sync triggered by user.');
-    this.cycle();
+    this.heartbeat();
+    this.pollQueue();
   }
 }
 
 module.exports = TallySyncEngine;
+

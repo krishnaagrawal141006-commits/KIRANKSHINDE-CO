@@ -31,11 +31,34 @@ module.exports = async function handler(req, res) {
 
       try {
         if (!url || !key) return res.status(200).json({ ok: true, memoryOnly: true });
-        await fetch(`${url}/rest/v1/tally_connector_heartbeat`, {
-          method: 'POST',
-          headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+
+        // First try PATCH to update existing record
+        const patchRes = await fetch(`${url}/rest/v1/tally_connector_heartbeat?id=eq.primary_pc`, {
+          method: 'PATCH',
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
           body: JSON.stringify(heartbeatRow)
         });
+
+        const patchRows = await patchRes.json().catch(() => []);
+        if (!patchRes.ok || !Array.isArray(patchRows) || !patchRows.length) {
+          // If record does not exist yet, upsert with on_conflict=id
+          await fetch(`${url}/rest/v1/tally_connector_heartbeat?on_conflict=id`, {
+            method: 'POST',
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${key}`,
+              'Content-Type': 'application/json',
+              Prefer: 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(heartbeatRow)
+          });
+        }
+
         return res.status(200).json({ ok: true, received: heartbeatRow.last_heartbeat });
       } catch (e) {
         return res.status(500).json({ error: e.message });
@@ -56,11 +79,12 @@ module.exports = async function handler(req, res) {
         }
 
         const diffSeconds = (Date.now() - new Date(record.last_heartbeat).getTime()) / 1000;
-        const isOnline = diffSeconds <= 35;
+        // Increased threshold to 75 seconds so normal network jitter or sync operations don't falsely show offline
+        const isOnline = diffSeconds <= 75;
 
         return res.status(200).json({
           online: isOnline,
-          lastSeenSecondsAgo: Math.round(diffSeconds),
+          lastSeenSecondsAgo: Math.max(0, Math.round(diffSeconds)),
           tallyOnline: record.tally_online,
           companyName: record.company_name,
           tallyVersion: record.tally_version,

@@ -116,3 +116,4 @@ window.api?.onLog((log) => {
   // Auto-scroll to bottom
   consoleBody.scrollTop = consoleBody.scrollHeight;
 });
+

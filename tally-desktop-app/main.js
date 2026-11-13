@@ -222,3 +222,4 @@ app.on('window-all-closed', (e) => {
   // Prevent quitting so background sync keeps running in tray
   e.preventDefault();
 });
+

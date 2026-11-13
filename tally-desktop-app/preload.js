@@ -11,3 +11,4 @@ contextBridge.exposeInMainWorld('api', {
   onLog: (cb) => ipcRenderer.on('engine-log', (_event, value) => cb(value)),
   onStats: (cb) => ipcRenderer.on('engine-stats', (_event, value) => cb(value))
 });
+

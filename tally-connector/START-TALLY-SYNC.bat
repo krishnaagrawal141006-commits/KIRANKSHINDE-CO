@@ -1,10 +1,10 @@
 @echo off
 cd /d "%~dp0"
-title Kiran K. Shinde & Co. - TallyPrime Cloud Sync Connector
+title Kiran K. Shinde ^& Co. - TallyPrime Cloud Sync Connector
 color 0b
 
 echo ==============================================================================
-echo   KIRAN K. SHINDE & CO. - TALLYPRIME CLOUD CONNECTOR (v1.0)
+echo   KIRAN K. SHINDE ^& CO. - TALLYPRIME CLOUD CONNECTOR (v1.0)
 echo ==============================================================================
 echo.
 echo Starting local connector bridge to https://cakiran.co.in ...

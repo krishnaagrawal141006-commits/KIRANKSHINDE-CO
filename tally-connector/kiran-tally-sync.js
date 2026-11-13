@@ -12,7 +12,7 @@ const path = require('path');
 
 // Load config
 let config = {
-  siteUrl: "https://kiranshinde-co.vercel.app",
+  siteUrl: "https://kirankshinde-co.vercel.app",
   bridgeToken: "ks_tally_secret_2026",
   tallyUrl: "http://127.0.0.1:9000",
   pollIntervalSeconds: 4

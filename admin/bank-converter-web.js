@@ -40,41 +40,29 @@ window.WebBankConverter = {
   async extractTextFromPdf(file) {
     this.init();
     const arrayBuffer = await file.arrayBuffer();
-    let passwordPromptCancelled = false;
+    let pdf;
+    let password;
 
-    // Password handling for protected statements
-    const loadingTask = window.pdfjsLib.getDocument({
-      data: arrayBuffer,
-      onPassword: (callback, reason) => {
-        const promptMsg = reason === 2
+    // First attempt always opens the PDF without a password. Ask only if
+    // PDF.js confirms that the document is encrypted and requires one.
+    while (!pdf) {
+      try {
+        const data = new Uint8Array(arrayBuffer.slice(0));
+        const options = password ? { data, password } : { data };
+        pdf = await window.pdfjsLib.getDocument(options).promise;
+      } catch (error) {
+        const needsPassword = error && error.name === 'PasswordException' && (error.code === 1 || error.code === 2);
+        if (!needsPassword) throw error;
+
+        const promptMsg = error.code === 2
           ? '❌ Incorrect Password!\nPlease re-enter statement password:'
           : '🔒 This Bank Statement is Password-Protected.\n\nPlease enter the PDF Password (e.g. PAN in CAPS, DOB in DDMMYYYY, or Customer ID):';
         const userPwd = prompt(promptMsg);
         if (userPwd === null || !userPwd.trim()) {
-          passwordPromptCancelled = true;
-          // Settle PDF.js's password request; the catch below replaces its
-          // generic "No password given" exception with a useful message.
-          callback('');
-          return;
+          throw new Error('This PDF requires a password to open. Select it again and enter the statement password when prompted.');
         }
-        callback(userPwd.trim());
+        password = userPwd.trim();
       }
-    });
-
-    let pdf;
-    try {
-      pdf = await loadingTask.promise;
-    } catch (error) {
-      if (passwordPromptCancelled) {
-        throw new Error('PDF password is required to open this statement. Please select the PDF again and enter its password when prompted.');
-      }
-      if (error && error.name === 'PasswordException' && error.code === 1) {
-        throw new Error('This PDF is password-protected. Please select it again and enter the statement password when prompted.');
-      }
-      if (error && error.name === 'PasswordException' && error.code === 2) {
-        throw new Error('The PDF password was incorrect. Please select the statement again and enter the correct password.');
-      }
-      throw error;
     }
     let fullText = '';
     let extractedLines = [];

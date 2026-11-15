@@ -1,7 +1,10 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, shell, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const TallySyncEngine = require('./sync-engine');
+const BankStatementConverter = require('./bank-converter');
+
+const bankConverter = new BankStatementConverter();
 
 let mainWindow = null;
 let tray = null;
@@ -205,6 +208,38 @@ ipcMain.on('open-admin-site', () => {
 
 ipcMain.on('open-tally-settings', () => {
   shell.openExternal(engine.config.tallyUrl);
+});
+
+ipcMain.handle('browse-bank-pdf', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Bank Statement PDF',
+      filters: [{ name: 'Bank Statements (*.pdf)', extensions: ['pdf'] }],
+      properties: ['openFile']
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
+  } catch (e) {
+    return null;
+  }
+});
+
+ipcMain.handle('convert-bank-pdf', async (event, filePath) => {
+  try {
+    engine.log('info', `Converting Bank Statement: ${path.basename(filePath)}...`);
+    const res = await bankConverter.convertPdfToExcel(filePath);
+    engine.log('success', `✅ Converted! ${res.bankName} (${res.transactionCount} entries) -> ${res.fileName}`);
+    return res;
+  } catch (err) {
+    engine.log('error', `❌ Bank Conversion Error: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.on('open-file-in-explorer', (event, filePath) => {
+  if (filePath && fs.existsSync(filePath)) {
+    shell.showItemInFolder(filePath);
+  }
 });
 
 ipcMain.on('save-config', (event, newConfig) => {

@@ -15,7 +15,7 @@
         <div class="brand-logo">KS</div>
         <div class="brand-text">
           <span class="firm-name">CA KIRAN K. SHINDE & CO.</span>
-          <span class="app-subtitle">TallyPrime Cloud Connector • v1.2</span>
+          <span class="app-subtitle">TallyPrime Cloud Connector &amp; Bank Excel Engine • v1.3</span>
         </div>
       </div>
     </div>
@@ -25,103 +25,196 @@
     </div>
   </header>
 
+  <!-- Top App Navigation Tabs -->
+  <nav class="app-nav">
+    <button class="nav-tab active" data-tab="tab-tally">
+      <i class="fa-solid fa-bolt"></i> Tally Live Bridge
+    </button>
+    <button class="nav-tab" data-tab="tab-bank">
+      <i class="fa-solid fa-file-excel text-emerald"></i> Bank PDF to Excel <span class="badge-new">OFFLINE</span>
+    </button>
+  </nav>
+
   <!-- Main App Shell -->
   <main class="app-container">
-    <!-- Top Status Row -->
-    <section class="status-grid">
-      <!-- Card 1: TallyPrime Connection -->
-      <div class="card card-glow" id="tallyCard">
-        <div class="card-header">
-          <div class="card-label"><i class="fa-solid fa-receipt"></i> TALLYPRIME STATUS</div>
-          <span class="status-pill status-offline" id="tallyPill">
-            <span class="pulse-dot"></span> <span id="tallyPillText">Connecting...</span>
-          </span>
+    
+    <!-- ================= TAB 1: TALLY LIVE BRIDGE ================= -->
+    <div class="tab-pane active" id="tab-tally">
+      <!-- Top Status Row -->
+      <section class="status-grid">
+        <!-- Card 1: TallyPrime Connection -->
+        <div class="card card-glow" id="tallyCard">
+          <div class="card-header">
+            <div class="card-label"><i class="fa-solid fa-receipt"></i> TALLYPRIME STATUS</div>
+            <span class="status-pill status-offline" id="tallyPill">
+              <span class="pulse-dot"></span> <span id="tallyPillText">Connecting...</span>
+            </span>
+          </div>
+          <div class="card-main-val" id="tallyCompanyVal">Company Active</div>
+          <div class="card-sub-info">
+            <span><i class="fa-solid fa-network-wired"></i> <span id="tallyPortVal">127.0.0.1:9000</span></span>
+            <span id="tallyPeriodVal">FY 2026-27</span>
+          </div>
         </div>
-        <div class="card-main-val" id="tallyCompanyVal">Company Active</div>
-        <div class="card-sub-info">
-          <span><i class="fa-solid fa-network-wired"></i> <span id="tallyPortVal">127.0.0.1:9000</span></span>
-          <span id="tallyPeriodVal">FY 2024-25 / 26</span>
-        </div>
-      </div>
 
-      <!-- Card 2: Cloud Website Connection -->
-      <div class="card" id="cloudCard">
-        <div class="card-header">
-          <div class="card-label"><i class="fa-solid fa-cloud"></i> CLOUD BRIDGE</div>
-          <span class="status-pill status-online" id="cloudPill">
-            <span class="pulse-dot"></span> <span id="cloudPillText">Online</span>
-          </span>
+        <!-- Card 2: Cloud Website Connection -->
+        <div class="card" id="cloudCard">
+          <div class="card-header">
+            <div class="card-label"><i class="fa-solid fa-cloud"></i> CLOUD BRIDGE</div>
+            <span class="status-pill status-online" id="cloudPill">
+              <span class="pulse-dot"></span> <span id="cloudPillText">Online</span>
+            </span>
+          </div>
+          <div class="card-main-val" style="font-size: 1.15rem;">kirankshinde-co.vercel.app</div>
+          <div class="card-sub-info">
+            <span><i class="fa-solid fa-bolt"></i> Auto-polling: 4s</span>
+            <span id="lastSyncVal">Ready</span>
+          </div>
         </div>
-        <div class="card-main-val" style="font-size: 1.15rem;">kirankshinde-co.vercel.app</div>
-        <div class="card-sub-info">
-          <span><i class="fa-solid fa-bolt"></i> Auto-polling: 4s</span>
-          <span id="lastSyncVal">Ready</span>
-        </div>
-      </div>
 
-      <!-- Card 3: Live Counters -->
-      <div class="card stats-counter-card">
-        <div class="counter-col">
-          <div class="counter-num text-emerald" id="countSynced">0</div>
-          <div class="counter-label"><i class="fa-solid fa-circle-check"></i> SYNCED</div>
+        <!-- Card 3: Live Counters -->
+        <div class="card stats-counter-card">
+          <div class="counter-col">
+            <div class="counter-num text-emerald" id="countSynced">0</div>
+            <div class="counter-label"><i class="fa-solid fa-circle-check"></i> SYNCED</div>
+          </div>
+          <div class="counter-divider"></div>
+          <div class="counter-col">
+            <div class="counter-num text-amber" id="countPending">0</div>
+            <div class="counter-label"><i class="fa-solid fa-hourglass-half"></i> PENDING</div>
+          </div>
+          <div class="counter-divider"></div>
+          <div class="counter-col">
+            <div class="counter-num text-rose" id="countFailed">0</div>
+            <div class="counter-label"><i class="fa-solid fa-circle-xmark"></i> FAILED</div>
+          </div>
         </div>
-        <div class="counter-divider"></div>
-        <div class="counter-col">
-          <div class="counter-num text-amber" id="countPending">0</div>
-          <div class="counter-label"><i class="fa-solid fa-hourglass-half"></i> PENDING</div>
-        </div>
-        <div class="counter-divider"></div>
-        <div class="counter-col">
-          <div class="counter-num text-rose" id="countFailed">0</div>
-          <div class="counter-label"><i class="fa-solid fa-circle-xmark"></i> FAILED</div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Toolbar & Action Bar -->
-    <section class="action-bar">
-      <div class="action-left">
-        <button class="btn btn-toggle-sync" id="btnToggleSync">
-          <i class="fa-solid fa-play"></i> <span id="toggleSyncText">SYNC RUNNING</span>
-        </button>
-        <button class="btn btn-secondary" id="btnForceSync" title="Check cloud queue immediately">
-          <i class="fa-solid fa-rotate"></i> Sync Now
-        </button>
-      </div>
-      <div class="action-right">
-        <button class="btn btn-outline" id="btnOpenAdmin" title="Open Cloud Admin Dashboard in Browser">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Admin Panel
-        </button>
-        <button class="btn btn-icon" id="btnClearLogs" title="Clear Console Log">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
-      </div>
-    </section>
+      <!-- Toolbar & Action Bar -->
+      <section class="action-bar">
+        <div class="action-left">
+          <button class="btn btn-toggle-sync" id="btnToggleSync">
+            <i class="fa-solid fa-play"></i> <span id="toggleSyncText">SYNC RUNNING</span>
+          </button>
+          <button class="btn btn-secondary" id="btnForceSync" title="Check cloud queue immediately">
+            <i class="fa-solid fa-rotate"></i> Sync Now
+          </button>
+        </div>
+        <div class="action-right">
+          <button class="btn btn-outline" id="btnOpenAdmin" title="Open Cloud Admin Dashboard in Browser">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Admin Panel
+          </button>
+          <button class="btn btn-icon" id="btnClearLogs" title="Clear Console Log">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </section>
 
-    <!-- Live Terminal Activity Feed -->
-    <section class="console-section">
-      <div class="console-header">
-        <div class="console-title">
-          <i class="fa-solid fa-terminal"></i> LIVE ACTIVITY FEED &amp; TALLY LOGS
+      <!-- Live Terminal Activity Feed -->
+      <section class="console-section">
+        <div class="console-header">
+          <div class="console-title">
+            <i class="fa-solid fa-terminal"></i> LIVE ACTIVITY FEED &amp; TALLY LOGS
+          </div>
+          <div class="console-stats">
+            <span class="live-indicator"><span class="ping-dot"></span> LISTENING</span>
+          </div>
         </div>
-        <div class="console-stats">
-          <span class="live-indicator"><span class="ping-dot"></span> LISTENING</span>
+        <div class="console-terminal" id="consoleBody">
+          <div class="log-entry log-info">
+            <span class="log-time">[Init]</span>
+            <span class="log-tag tag-info">SYSTEM</span>
+            <span class="log-text">Kiran K. Shinde &amp; Co. TallyPrime Cloud Connector initialized.</span>
+          </div>
         </div>
+      </section>
+    </div>
+
+    <!-- ================= TAB 2: BANK STATEMENT TO EXCEL CONVERTER ================= -->
+    <div class="tab-pane" id="tab-bank">
+      <div class="bank-converter-container">
+        
+        <!-- Header Info -->
+        <div class="bank-header">
+          <div>
+            <h3><i class="fa-solid fa-file-excel text-emerald"></i> Bank Statement PDF to Clean Excel (.xlsx)</h3>
+            <p>100% Deterministic Engine • 0% AI • Exact Paisa-to-Paisa Accuracy • Supports HDFC, SBI, ICICI, Axis, Kotak, BOB &amp; More</p>
+          </div>
+          <span class="tag-accuracy"><i class="fa-solid fa-shield-check"></i> Mathematical Verification Enabled</span>
+        </div>
+
+        <!-- Drag & Drop / File Select Area -->
+        <div class="bank-dropzone" id="bankDropzone">
+          <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+          <h4>Drag &amp; Drop Bank Statement PDF Here</h4>
+          <p>Or click the button below to browse statement from your PC</p>
+          <button class="btn btn-secondary" id="btnBrowseBankPdf" style="margin-top: 10px;">
+            <i class="fa-regular fa-folder-open"></i> Select PDF File
+          </button>
+          <input type="file" id="bankFileInput" accept=".pdf" style="display: none;">
+        </div>
+
+        <!-- Conversion Result Card (Hidden by default) -->
+        <div class="bank-result-card" id="bankResultCard" style="display: none;">
+          <div class="result-header">
+            <div>
+              <span class="status-pill status-online" id="resBankName">HDFC Bank</span>
+              <h4 id="resFileName" style="margin: 6px 0 2px;">Statement_Converted.xlsx</h4>
+              <small id="resFilePath" style="color: var(--text-dim); word-break: break-all;"></small>
+            </div>
+            <div class="result-actions">
+              <button class="btn btn-toggle-sync" id="btnOpenExcelFile">
+                <i class="fa-solid fa-file-excel"></i> Open in Excel
+              </button>
+              <button class="btn btn-secondary" id="btnShowInFolder">
+                <i class="fa-regular fa-folder-closed"></i> Show in Folder
+              </button>
+            </div>
+          </div>
+
+          <div class="result-stats-grid">
+            <div class="mini-stat">
+              <div class="stat-lbl">TOTAL TRANSACTIONS</div>
+              <div class="stat-num text-emerald" id="resTxCount">0</div>
+            </div>
+            <div class="mini-stat">
+              <div class="stat-lbl">TOTAL WITHDRAWALS (DR)</div>
+              <div class="stat-num text-rose" id="resTotalDebit">₹ 0.00</div>
+            </div>
+            <div class="mini-stat">
+              <div class="stat-lbl">TOTAL DEPOSITS (CR)</div>
+              <div class="stat-num text-emerald" id="resTotalCredit">₹ 0.00</div>
+            </div>
+          </div>
+
+          <!-- Preview Table -->
+          <div class="preview-table-box">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Narration</th>
+                  <th>Ref No</th>
+                  <th>Debit (₹)</th>
+                  <th>Credit (₹)</th>
+                  <th>Balance (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="resPreviewBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
-      <div class="console-terminal" id="consoleBody">
-        <div class="log-entry log-info">
-          <span class="log-time">[Init]</span>
-          <span class="log-tag tag-info">SYSTEM</span>
-          <span class="log-text">Kiran K. Shinde &amp; Co. TallyPrime Cloud Connector initialized.</span>
-        </div>
-      </div>
-    </section>
+    </div>
 
     <!-- Footer Status Banner -->
     <footer class="app-footer">
       <div class="footer-left">
         <i class="fa-solid fa-shield-halved text-gold"></i>
-        <span>Bank-Grade 256-Bit Encrypted Tally Data Sync • Port 9000</span>
+        <span>Bank-Grade 256-Bit Encrypted Data Sync • Port 9000</span>
       </div>
       <div class="footer-right">
         <span>Runs in System Tray when closed</span>
@@ -132,4 +225,3 @@
   <script src="renderer.js"></script>
 </body>
 </html>
-

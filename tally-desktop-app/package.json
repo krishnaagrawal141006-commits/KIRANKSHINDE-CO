@@ -10,7 +10,10 @@
   },
   "author": "CA Kiran K. Shinde & Co.",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "pdf-parse": "^2.4.5",
+    "xlsx": "^0.18.5"
+  },
   "devDependencies": {
     "electron": "^34.2.0",
     "electron-builder": "^25.1.8"

@@ -131,21 +131,80 @@ body {
   color: #fff;
 }
 
-/* 2. Main Container */
-.app-container {
-  flex: 1;
-  padding: 16px 20px;
+/* 2. Top Navigation Tabs */
+.app-nav {
+  height: 38px;
+  background: #0d1326;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+}
+
+.nav-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.nav-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-tab.active {
+  color: var(--gold-light);
+  background: rgba(210, 161, 40, 0.15);
+  border: 1px solid rgba(210, 161, 40, 0.3);
+}
+
+.badge-new {
+  font-size: 0.6rem;
+  background: #10b981;
+  color: #064e3b;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+/* Tab Panes */
+.tab-pane {
+  display: none;
+  flex: 1;
   flex-direction: column;
   gap: 14px;
+  height: 100%;
   overflow: hidden;
 }
 
-/* 3. Status Grid */
+.tab-pane.active {
+  display: flex;
+}
+
+/* 3. Main Container */
+.app-container {
+  flex: 1;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 4. Status Grid */
 .status-grid {
   display: grid;
   grid-template-columns: 1.3fr 1.3fr 1.4fr;
-  gap: 14px;
+  gap: 12px;
 }
 
 .card {
@@ -153,7 +212,7 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -241,7 +300,7 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: space-around;
-  padding: 12px 10px;
+  padding: 10px 8px;
 }
 
 .counter-col {
@@ -252,7 +311,7 @@ body {
 }
 
 .counter-num {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 900;
   line-height: 1.1;
 }
@@ -276,7 +335,7 @@ body {
 .text-rose { color: var(--rose-500); }
 .text-gold { color: var(--gold-primary); }
 
-/* 4. Action Bar */
+/* 5. Action Bar */
 .action-bar {
   display: flex;
   justify-content: space-between;
@@ -284,7 +343,7 @@ body {
   background: rgba(17, 24, 39, 0.5);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 8px 14px;
+  padding: 6px 12px;
 }
 
 .action-left, .action-right {
@@ -297,9 +356,9 @@ body {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
-  padding: 7px 14px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -346,7 +405,7 @@ body {
 }
 
 .btn-icon {
-  padding: 7px 10px;
+  padding: 6px 10px;
   color: var(--text-dim);
 }
 
@@ -354,7 +413,7 @@ body {
   color: var(--rose-500);
 }
 
-/* 5. Terminal Console */
+/* 6. Terminal Console */
 .console-section {
   flex: 1;
   background: #060913;
@@ -367,7 +426,7 @@ body {
 }
 
 .console-header {
-  height: 36px;
+  height: 34px;
   background: rgba(17, 24, 39, 0.85);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
@@ -407,7 +466,7 @@ body {
 
 .console-terminal {
   flex: 1;
-  padding: 12px 14px;
+  padding: 10px 14px;
   overflow-y: auto;
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -459,7 +518,162 @@ body {
 .log-warn .log-text { color: #fde68a; }
 .log-error .log-text { color: #fda4af; }
 
-/* 6. Footer */
+/* ================= 7. BANK CONVERTER TAB STYLES ================= */
+.bank-converter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.bank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.bank-header h3 {
+  font-size: 0.95rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bank-header p {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.tag-accuracy {
+  font-size: 0.7rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--emerald-500);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 700;
+}
+
+/* Dropzone */
+.bank-dropzone {
+  background: rgba(17, 24, 39, 0.4);
+  border: 2px dashed rgba(210, 161, 40, 0.35);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bank-dropzone:hover, .bank-dropzone.dragover {
+  border-color: var(--gold-primary);
+  background: rgba(210, 161, 40, 0.08);
+}
+
+.drop-icon {
+  font-size: 2.2rem;
+  color: var(--gold-primary);
+  margin-bottom: 8px;
+}
+
+.bank-dropzone h4 {
+  font-size: 0.92rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.bank-dropzone p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* Result Card */
+.bank-result-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.result-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: #0a0f1d;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.mini-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.stat-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.preview-table-box {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+}
+
+.preview-table th {
+  background: #0a0f1d;
+  color: var(--text-dim);
+  padding: 6px 10px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+}
+
+.preview-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+/* 8. Footer */
 .app-footer {
   height: 24px;
   display: flex;
@@ -468,6 +682,7 @@ body {
   font-size: 0.7rem;
   color: var(--text-dim);
   padding: 0 4px;
+  margin-top: auto;
 }
 
 .footer-left {
@@ -475,4 +690,3 @@ body {
   align-items: center;
   gap: 6px;
 }
-

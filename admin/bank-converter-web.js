@@ -1,15 +1,16 @@
 /**
  * CA Kiran K. Shinde & Co. — Browser Client-Side Bank Statement PDF to Excel
- * 100% Client-Side, 0% AI, Offline, Free, Exact Paisa-to-Paisa Accuracy.
+ * 100% Client-Side, 0% AI, Exact Paisa-to-Paisa Accuracy, Zero Server Uploads.
  */
 
 window.WebBankConverter = {
-  pdfLibInitialized: false,
+  initialized: false,
 
   init() {
+    if (this.initialized) return;
     if (window.pdfjsLib) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-      this.pdfLibInitialized = true;
+      this.initialized = true;
     }
   },
 
@@ -29,65 +30,125 @@ window.WebBankConverter = {
     if (/BANK\s*OF\s*BARODA/i.test(text)) return 'Bank of Baroda';
     if (/PUNJAB\s*NATIONAL\s*BANK|PNB/i.test(text)) return 'Punjab National Bank (PNB)';
     if (/CANARA\s*BANK/i.test(text)) return 'Canara Bank';
+    if (/UNION\s*BANK/i.test(text)) return 'Union Bank of India';
+    if (/INDUSIND/i.test(text)) return 'IndusInd Bank';
+    if (/IDFC/i.test(text)) return 'IDFC First Bank';
+    if (/YES\s*BANK/i.test(text)) return 'Yes Bank';
     return 'Standard Indian Bank';
   },
 
   async extractTextFromPdf(file) {
     this.init();
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    // Password handling for protected statements
+    const loadingTask = window.pdfjsLib.getDocument({
+      data: arrayBuffer,
+      onPassword: (callback, reason) => {
+        const promptMsg = reason === 2
+          ? '❌ Incorrect Password!\nPlease re-enter statement password:'
+          : '🔒 This Bank Statement is Password-Protected.\n\nPlease enter the PDF Password (e.g. PAN in CAPS, DOB in DDMMYYYY, or Customer ID):';
+        const userPwd = prompt(promptMsg);
+        callback(userPwd || '');
+      }
+    });
+
+    const pdf = await loadingTask.promise;
     let fullText = '';
+    let extractedLines = [];
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
-      
-      // Group items by vertical position (Y coordinate) to preserve row structure
-      const items = textContent.items;
-      let lastY = null;
-      let pageText = '';
+      const items = textContent.items || [];
 
-      for (const item of items) {
-        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-          pageText += '\n';
-        } else if (lastY !== null) {
-          pageText += ' ';
+      if (!items.length) continue;
+
+      // Filter valid text items with non-empty content
+      const validItems = items
+        .filter(it => it.str && it.str.trim().length > 0)
+        .map(it => ({
+          str: it.str.trim(),
+          x: it.transform[4],
+          y: it.transform[5]
+        }));
+
+      if (!validItems.length) continue;
+
+      // Group items into rows by physical Y position (vertical coordinate)
+      // Y goes bottom-to-top in PDF coordinate space, so sort Y descending
+      validItems.sort((a, b) => b.y - a.y);
+
+      let currentRowY = null;
+      let currentRowItems = [];
+
+      for (const item of validItems) {
+        if (currentRowY === null || Math.abs(item.y - currentRowY) > 3.5) {
+          if (currentRowItems.length) {
+            // Sort items in this row from left to right (X ascending)
+            currentRowItems.sort((a, b) => a.x - b.x);
+            const lineText = currentRowItems.map(it => it.str).join(' ');
+            extractedLines.push(lineText);
+          }
+          currentRowY = item.y;
+          currentRowItems = [item];
+        } else {
+          currentRowItems.push(item);
         }
-        pageText += item.str;
-        lastY = item.transform[5];
       }
 
-      fullText += pageText + '\n';
+      if (currentRowItems.length) {
+        currentRowItems.sort((a, b) => a.x - b.x);
+        extractedLines.push(currentRowItems.map(it => it.str).join(' '));
+      }
     }
 
-    return fullText;
+    fullText = extractedLines.join('\n');
+    return { fullText, lines: extractedLines };
   },
 
-  parseTransactions(fullText) {
-    const lines = fullText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  parseTransactions(lines) {
     const transactions = [];
 
-    const dateRegex = /^(\d{1,2}[\/\-\.](\d{1,2}|[a-zA-Z]{3})[\/\-\.]\d{2,4})/;
-    const amountRegex = /(\d{1,3}(,\d{2,3})*(\.\d{2}))/g;
+    // Comprehensive Indian date regex:
+    // Matches DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD-Mon-YYYY, DD Mon YYYY, YYYY-MM-DD
+    // Tolerates leading Sl No (e.g. "1 01/04/2026" or "1. 01-Apr-2026")
+    const dateRegex = /(?:^\s*(?:\d{1,5}[\.\)]\s*)?)(\b\d{1,2}[\/\-\.](?:\d{1,2}|[a-zA-Z]{3,9})[\/\-\.]\d{2,4}\b|\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4}\b|\b\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b)/i;
+
+    // Decimal currency amounts e.g. 1,250.00, 500.00, 12,34,567.89
+    const amountRegex = /\b\d{1,3}(?:[,\s]\d{2,3})*(?:\.\d{2})\b/g;
 
     let currentTx = null;
+    let lastKnownBalance = null;
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const line = lines[i].trim();
+      if (!line) continue;
 
-      if (/^(page|statement|branch|account|ifsc|micr|customer|opening|closing|nominee|total|b\/f|c\/f|generated)/i.test(line)) {
+      // Skip non-transaction headers and summaries
+      if (/^(page\s+\d+|statement\s+of|branch\s+|account\s+number|ifsc|micr|customer\s+name|nominee|total\s+|b\/f|c\/f|generated\s+on)/i.test(line)) {
         continue;
       }
 
       const dateMatch = line.match(dateRegex);
 
       if (dateMatch) {
+        // Save previous transaction if valid
         if (currentTx && (currentTx.debit > 0 || currentTx.credit > 0 || currentTx.balance > 0)) {
           transactions.push(currentTx);
+          if (currentTx.balance > 0) lastKnownBalance = currentTx.balance;
         }
 
-        const dateStr = dateMatch[0];
-        const restOfLine = line.slice(dateStr.length).trim();
+        const dateStr = dateMatch[1];
+        // Remove date and optional serial number from line to extract narration & amounts
+        let restOfLine = line.replace(dateMatch[0], '').trim();
+
+        // If line has a second date (e.g. Value Date), capture or strip it
+        const secondDateMatch = restOfLine.match(dateRegex);
+        if (secondDateMatch && restOfLine.indexOf(secondDateMatch[0]) < 20) {
+          restOfLine = restOfLine.replace(secondDateMatch[0], '').trim();
+        }
+
         const amountsFound = restOfLine.match(amountRegex) || [];
         const amounts = amountsFound.map(a => this.cleanAmount(a)).filter(a => a > 0);
 
@@ -101,23 +162,40 @@ window.WebBankConverter = {
         });
         narration = narration.replace(/\s+/g, ' ').trim();
 
+        // Extract Cheque / UTR / Reference number
         let refNo = '';
-        const refMatch = narration.match(/(?:chq|cheque|ref|upi|neft|rtgs|imps)[\/:\s]*([a-zA-Z0-9_-]{4,25})/i) ||
+        const refMatch = narration.match(/(?:chq|cheque|ref|utr|upi|neft|rtgs|imps)[\/:\s]*([a-zA-Z0-9_-]{4,25})/i) ||
                          narration.match(/\b(\d{6,16})\b/);
         if (refMatch) refNo = refMatch[1];
 
+        // Column Assignment Strategy
         if (amounts.length >= 3) {
+          // Columns: Debit, Credit, Balance
           debit = amounts[0];
           credit = amounts[1];
           balance = amounts[2];
         } else if (amounts.length === 2) {
-          const isCredit = /cr|\bby\b|deposit|credit/i.test(line);
-          if (isCredit) {
-            credit = amounts[0];
-            balance = amounts[1];
+          const txnAmt = amounts[0];
+          balance = amounts[1];
+
+          // Determine Debit vs Credit
+          const isExplicitCredit = /\b(cr|credit|by transfer|deposit|neft cr|upi cr|rtgs cr)\b/i.test(line);
+          const isExplicitDebit = /\b(dr|debit|to transfer|withdrawal|chq|atm|pos|to clg)\b/i.test(line);
+
+          if (isExplicitCredit) {
+            credit = txnAmt;
+          } else if (isExplicitDebit) {
+            debit = txnAmt;
+          } else if (lastKnownBalance !== null) {
+            // Math validation: If balance increased -> Credit; if balance decreased -> Debit
+            if (balance > lastKnownBalance) {
+              credit = txnAmt;
+            } else {
+              debit = txnAmt;
+            }
           } else {
-            debit = amounts[0];
-            balance = amounts[1];
+            // Default fallback
+            debit = txnAmt;
           }
         } else if (amounts.length === 1) {
           balance = amounts[0];
@@ -125,17 +203,18 @@ window.WebBankConverter = {
 
         currentTx = {
           date: dateStr,
-          narration: narration || 'Transaction',
+          narration: narration || 'Bank Transaction',
           refNo: refNo || '-',
           debit,
           credit,
           balance
         };
       } else if (currentTx) {
+        // Multi-line narration or amounts on subsequent line
         const additionalAmounts = line.match(amountRegex) || [];
-        if (additionalAmounts.length > 0 && (currentTx.debit === 0 && currentTx.credit === 0)) {
+        if (additionalAmounts.length > 0 && currentTx.debit === 0 && currentTx.credit === 0) {
           const num = this.cleanAmount(additionalAmounts[0]);
-          if (/cr|\bby\b|deposit/i.test(line)) {
+          if (/\b(cr|credit|deposit)\b/i.test(line)) {
             currentTx.credit = num;
           } else {
             currentTx.debit = num;
@@ -144,7 +223,8 @@ window.WebBankConverter = {
             currentTx.balance = this.cleanAmount(additionalAmounts[1]);
           }
         } else {
-          if (!/^\d+$/.test(line)) {
+          // Append to narration
+          if (!/^\d+$/.test(line) && line.length > 2) {
             currentTx.narration += ' ' + line;
           }
         }
@@ -159,12 +239,29 @@ window.WebBankConverter = {
   },
 
   async convertFile(file) {
-    const fullText = await this.extractTextFromPdf(file);
+    const { fullText, lines } = await this.extractTextFromPdf(file);
+
+    // Diagnostics for Scanned / Non-selectable PDFs
+    if (!fullText || fullText.trim().length < 40) {
+      throw new Error(
+        '⚠️ Yeh PDF ek Scanned Image (Photo/Xerox) lag raha hai.\n\n' +
+        'Isme selectable digital text nahi mila. Bank Statement converter sirf original digital PDF statements (jo Net Banking / Mobile Banking se download hoti hain) ko parse karta hai.\n\n' +
+        'Solution: Kripya client se Net Banking se download ki hui Original PDF mangwayein.'
+      );
+    }
+
     const bankName = this.detectBank(fullText);
-    const transactions = this.parseTransactions(fullText);
+    const transactions = this.parseTransactions(lines);
 
     if (!transactions.length) {
-      throw new Error('No transactions detected in this PDF. Please check if it is a scanned image or password-protected.');
+      // Show sample lines for debug
+      const sample = lines.slice(0, 10).join('\n');
+      console.warn('PDF Extracted Text Sample:\n', sample);
+      throw new Error(
+        `PDF text toh extract ho gaya (${lines.length} lines, Bank: ${bankName}), lekin standard transaction rows match nahi hue.\n\n` +
+        `File ka sample text:\n${sample.slice(0, 300)}...\n\n` +
+        `Kripya check karein ki kya yeh summary page hai ya passbook format alag hai.`
+      );
     }
 
     let totalDebit = 0;
@@ -187,14 +284,14 @@ window.WebBankConverter = {
   },
 
   downloadExcel(result) {
-    if (!window.XLSX) return alert('Excel generator library loading...');
+    if (!window.XLSX) return alert('Excel generator library is still loading, please wait 2 seconds...');
 
     const sheetData = [
       ['CA KIRAN K. SHINDE & CO. — CHARTERED ACCOUNTANTS'],
       [`Bank Statement Conversion Report • Bank: ${result.bankName}`],
       [`Source File: ${result.fileName} • Transactions: ${result.transactions.length}`],
       [''],
-      ['SUMMARY METRICS', 'AMOUNT (INR)'],
+      ['SUMMARY AUDIT METRICS', 'AMOUNT (INR)'],
       ['Total Withdrawals (Debits)', result.totalDebit],
       ['Total Deposits (Credits)', result.totalCredit],
       ['Net Cash Flow', Math.round((result.totalCredit - result.totalDebit) * 100) / 100],
@@ -247,7 +344,7 @@ window.WebBankConverter = {
   }
 };
 
-// Global handlers & Drag-Drop Setup
+// Global UI Handlers & Drag-Drop Setup
 let currentBankResult = null;
 
 function escapeHtmlBank(str) {
@@ -304,7 +401,7 @@ async function handleWebBankFileSelect(files) {
     if (resultCard) resultCard.style.display = 'block';
   } catch (err) {
     console.error('PDF parsing error:', err);
-    alert('Statement Reading Error:\n\n' + err.message + '\n\nNote: If this statement is password-protected or a scanned image/photo, please convert or unlock it first.');
+    alert(err.message);
   } finally {
     if (loadingEl) loadingEl.style.display = 'none';
   }

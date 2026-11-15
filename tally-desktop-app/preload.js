@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   forceSync: () => ipcRenderer.send('sync-force-now'),
   openAdminSite: () => ipcRenderer.send('open-admin-site'),
   openTallySettings: () => ipcRenderer.send('open-tally-settings'),
+  openBankConverterSource: () => ipcRenderer.send('open-bank-converter-source'),
   getInitialState: () => ipcRenderer.invoke('get-initial-state'),
   saveConfig: (cfg) => ipcRenderer.send('save-config', cfg),
   browseBankPdf: () => ipcRenderer.invoke('browse-bank-pdf'),

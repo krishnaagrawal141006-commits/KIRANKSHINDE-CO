@@ -28,6 +28,9 @@ const navTabs = document.querySelectorAll('.nav-tab');
 const tabPanes = document.querySelectorAll('.tab-pane');
 const bankDropzone = document.getElementById('bankDropzone');
 const btnBrowseBankPdf = document.getElementById('btnBrowseBankPdf');
+document.getElementById('btnOpenBankConverterSource')?.addEventListener('click', () => {
+  window.api.openBankConverterSource();
+});
 const bankFileInput = document.getElementById('bankFileInput');
 const bankResultCard = document.getElementById('bankResultCard');
 const resBankName = document.getElementById('resBankName');

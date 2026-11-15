@@ -561,6 +561,18 @@ body {
   font-weight: 700;
 }
 
+.bank-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.bank-source-link {
+  font-size: 0.7rem;
+  padding: 5px 9px;
+}
+
 /* Dropzone */
 .bank-dropzone {
   background: rgba(17, 24, 39, 0.4);

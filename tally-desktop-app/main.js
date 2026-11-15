@@ -210,6 +210,10 @@ ipcMain.on('open-tally-settings', () => {
   shell.openExternal(engine.config.tallyUrl);
 });
 
+ipcMain.on('open-bank-converter-source', () => {
+  shell.openExternal('https://github.com/cloudpotions/PDF-to-Excel-Bank-Statements-Converter');
+});
+
 ipcMain.handle('browse-bank-pdf', async () => {
   try {
     const result = await dialog.showOpenDialog(mainWindow, {

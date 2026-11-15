@@ -40,6 +40,7 @@ window.WebBankConverter = {
   async extractTextFromPdf(file) {
     this.init();
     const arrayBuffer = await file.arrayBuffer();
+    let passwordPromptCancelled = false;
 
     // Password handling for protected statements
     const loadingTask = window.pdfjsLib.getDocument({
@@ -49,11 +50,32 @@ window.WebBankConverter = {
           ? '❌ Incorrect Password!\nPlease re-enter statement password:'
           : '🔒 This Bank Statement is Password-Protected.\n\nPlease enter the PDF Password (e.g. PAN in CAPS, DOB in DDMMYYYY, or Customer ID):';
         const userPwd = prompt(promptMsg);
-        callback(userPwd || '');
+        if (userPwd === null || !userPwd.trim()) {
+          passwordPromptCancelled = true;
+          // Settle PDF.js's password request; the catch below replaces its
+          // generic "No password given" exception with a useful message.
+          callback('');
+          return;
+        }
+        callback(userPwd.trim());
       }
     });
 
-    const pdf = await loadingTask.promise;
+    let pdf;
+    try {
+      pdf = await loadingTask.promise;
+    } catch (error) {
+      if (passwordPromptCancelled) {
+        throw new Error('PDF password is required to open this statement. Please select the PDF again and enter its password when prompted.');
+      }
+      if (error && error.name === 'PasswordException' && error.code === 1) {
+        throw new Error('This PDF is password-protected. Please select it again and enter the statement password when prompted.');
+      }
+      if (error && error.name === 'PasswordException' && error.code === 2) {
+        throw new Error('The PDF password was incorrect. Please select the statement again and enter the correct password.');
+      }
+      throw error;
+    }
     let fullText = '';
     let extractedLines = [];
 

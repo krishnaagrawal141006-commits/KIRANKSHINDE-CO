@@ -22,6 +22,7 @@ window.WebBankConverter = {
   },
 
   detectBank(text) {
+    if (/\bslice\b|slice\s+small\s+finance\s+bank/i.test(text)) return 'Slice Small Finance Bank';
     if (/HDFC\s*BANK/i.test(text)) return 'HDFC Bank';
     if (/STATE\s*BANK\s*OF\s*INDIA|SBI/i.test(text)) return 'State Bank of India (SBI)';
     if (/ICICI\s*BANK/i.test(text)) return 'ICICI Bank';
@@ -127,6 +128,12 @@ window.WebBankConverter = {
   },
 
   parseTransactions(lines) {
+    // Slice statements use Date | Details | Ref No. | Amount | Balance.
+    // Their dates are printed like "06 Aug '25" and the amount may carry
+    // an explicit + / - sign, unlike the usual separate Dr/Cr columns.
+    const sliceTransactions = this.parseSliceTransactions(lines);
+    if (sliceTransactions.length) return sliceTransactions;
+
     const transactions = [];
 
     // Comprehensive Indian date regex:
@@ -255,6 +262,66 @@ window.WebBankConverter = {
       transactions.push(currentTx);
     }
 
+    return transactions;
+  },
+
+  parseSliceTransactions(lines) {
+    const transactions = [];
+    const dateAtStart = /^\s*(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+'?\d{2,4})\b/i;
+    const moneyRegex = /[+-]?\s*(?:₹\s*)?(?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{1,2})?/g;
+    let current = null;
+    let lastBalance = null;
+
+    const finish = () => {
+      if (!current) return;
+      if (current.amount !== null && current.balance !== null) {
+        const amount = current.amount;
+        let credit = 0, debit = 0;
+        if (current.amountSign === '+') credit = Math.abs(amount);
+        else if (current.amountSign === '-') debit = Math.abs(amount);
+        else if (lastBalance !== null && current.balance >= lastBalance) credit = Math.abs(amount);
+        else debit = Math.abs(amount);
+        current.credit = credit;
+        current.debit = debit;
+        transactions.push(current);
+        lastBalance = current.balance;
+      }
+      current = null;
+    };
+
+    for (const raw of lines) {
+      const line = String(raw || '').trim();
+      const dateMatch = line.match(dateAtStart);
+      if (dateMatch) {
+        finish();
+        let rest = line.slice(dateMatch[0].length).trim();
+        const amounts = [...rest.matchAll(moneyRegex)];
+        if (amounts.length < 2) continue;
+        const amountMatch = amounts[amounts.length - 2];
+        const balanceMatch = amounts[amounts.length - 1];
+        const parseMoney = value => Math.round(parseFloat(value.replace(/[^\d.]/g, '')) * 100) / 100;
+        const amountToken = amountMatch[0].replace(/₹/g, '').trim();
+        const signMatch = amountToken.match(/^[+-]/);
+        let narration = rest.slice(0, amountMatch.index).trim();
+        // A reference number may occur between narration and the amount.
+        const refMatch = narration.match(/\b\d{8,24}\b/);
+        let refNo = refMatch ? refMatch[0] : '-';
+        if (refMatch) narration = narration.replace(refMatch[0], ' ').replace(/\s+/g, ' ').trim();
+        current = {
+          date: dateMatch[1].replace(/\s+/g, ' ').trim(),
+          narration: narration || 'Bank Transaction',
+          refNo,
+          amount: parseMoney(amountToken),
+          amountSign: signMatch ? signMatch[0] : '',
+          balance: parseMoney(balanceMatch[0]),
+          debit: 0,
+          credit: 0
+        };
+      } else if (current && line && !/^(date|details|ref\.?\s*no|amount|balance)$/i.test(line)) {
+        current.narration += ' ' + line;
+      }
+    }
+    finish();
     return transactions;
   },
 

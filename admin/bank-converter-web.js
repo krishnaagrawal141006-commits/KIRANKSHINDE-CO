@@ -487,6 +487,10 @@ async function handleWebBankFileSelect(files) {
     alert(err.message);
   } finally {
     if (loadingEl) loadingEl.style.display = 'none';
+    // Drop the browser file-input reference after processing. The PDF is
+    // handled locally and is never uploaded or persisted by this converter.
+    const fileInput = document.getElementById('webBankFileInput');
+    if (fileInput) fileInput.value = '';
   }
 }
 

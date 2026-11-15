@@ -42,6 +42,7 @@ window.WebBankConverter = {
     const arrayBuffer = await file.arrayBuffer();
     let pdf;
     let password;
+    let triedEmptyPassword = false;
 
     // First attempt always opens the PDF without a password. Ask only if
     // PDF.js confirms that the document is encrypted and requires one.
@@ -54,7 +55,15 @@ window.WebBankConverter = {
         const needsPassword = error && error.name === 'PasswordException' && (error.code === 1 || error.code === 2);
         if (!needsPassword) throw error;
 
-        const promptMsg = error.code === 2
+        // Some PDFs are encrypted with an empty user password. PDF.js asks
+        // for a password anyway, so try an empty one silently before prompting.
+        if (error.code === 1 && !triedEmptyPassword) {
+          triedEmptyPassword = true;
+          password = '';
+          continue;
+        }
+
+        const promptMsg = error.code === 2 && password
           ? '❌ Incorrect Password!\nPlease re-enter statement password:'
           : '🔒 This Bank Statement is Password-Protected.\n\nPlease enter the PDF Password (e.g. PAN in CAPS, DOB in DDMMYYYY, or Customer ID):';
         const userPwd = prompt(promptMsg);

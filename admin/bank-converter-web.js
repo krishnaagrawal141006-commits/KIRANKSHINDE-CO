@@ -131,8 +131,9 @@ window.WebBankConverter = {
 
     // Comprehensive Indian date regex:
     // Matches DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD-Mon-YYYY, DD Mon YYYY, YYYY-MM-DD
-    // Tolerates leading Sl No (e.g. "1 01/04/2026" or "1. 01-Apr-2026")
-    const dateRegex = /(?:^\s*(?:\d{1,5}[\.\)]\s*)?)(\b\d{1,2}[\/\-\.](?:\d{1,2}|[a-zA-Z]{3,9})[\/\-\.]\d{2,4}\b|\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4}\b|\b\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b)/i;
+    // Tolerates leading Sl No with or without punctuation (e.g. "1 01/04/2026",
+    // "1. 01-Apr-2026", and "01/04/2026").
+    const dateRegex = /^\s*(?:\d{1,5}[.)]?\s+)?(\b\d{1,2}[\/\-\.](?:\d{1,2}|[a-zA-Z]{3,9})[\/\-\.]\d{2,4}\b|\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4}\b|\b\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b)/i;
 
     // Decimal currency amounts e.g. 1,250.00, 500.00, 12,34,567.89
     const amountRegex = /\b\d{1,3}(?:[,\s]\d{2,3})*(?:\.\d{2})\b/g;

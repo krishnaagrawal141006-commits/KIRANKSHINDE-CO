@@ -134,6 +134,18 @@ body {
   color: #ffffff;
 }
 
+.nav-tab-btn.integration-locked,
+.nav-tab-btn.integration-locked:hover {
+  color: #64748b;
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.nav-tab-btn.integration-locked .nav-counter {
+  background: #334155;
+  color: #cbd5e1;
+}
+
 .nav-tab-btn.active {
   background: linear-gradient(90deg, rgba(194, 146, 39, 0.2) 0%, rgba(194, 146, 39, 0.05) 100%);
   color: #ffffff;

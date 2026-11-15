@@ -79,21 +79,22 @@
         <span>Consolidated Billing</span>
       </button>
 
-      <button class="nav-tab-btn" data-target="tab-tally">
+      <button class="nav-tab-btn integration-locked" data-target="tab-tally" disabled aria-disabled="true" title="Locked until client submissions begin">
         <i class="fa-solid fa-receipt"></i>
         <span>TallyPrime Auto-Sync</span>
-        <span class="nav-counter" id="tallyStatusBadge" style="background: #ef4444;">Offline</span>
+        <span class="nav-counter" id="tallyStatusBadge">Locked</span>
       </button>
 
-      <button class="nav-tab-btn" data-target="tab-bank-converter" style="color: #10b981; font-weight: 700;">
+      <button class="nav-tab-btn integration-locked" data-target="tab-bank-converter" disabled aria-disabled="true" title="Locked until client submissions begin">
         <i class="fa-solid fa-file-excel" style="color: #10b981;"></i>
         <span>Bank PDF to Excel</span>
-        <span class="nav-counter" style="background: #10b981;">NEW</span>
+        <span class="nav-counter">Locked</span>
       </button>
 
-      <button class="nav-tab-btn" data-target="tab-calendar">
+      <button class="nav-tab-btn integration-locked" data-target="tab-calendar" disabled aria-disabled="true" title="Locked until client submissions begin">
         <i class="fa-solid fa-calendar-check"></i>
         <span>Google Calendar Sync</span>
+        <span class="nav-counter">Locked</span>
       </button>
 
       <button class="nav-tab-btn" data-target="tab-gmb-review">

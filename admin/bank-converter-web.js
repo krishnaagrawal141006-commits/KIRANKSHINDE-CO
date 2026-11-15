@@ -273,13 +273,9 @@ window.WebBankConverter = {
     const transactions = this.parseTransactions(lines);
 
     if (!transactions.length) {
-      // Show sample lines for debug
-      const sample = lines.slice(0, 10).join('\n');
-      console.warn('PDF Extracted Text Sample:\n', sample);
       throw new Error(
-        `PDF text toh extract ho gaya (${lines.length} lines, Bank: ${bankName}), lekin standard transaction rows match nahi hue.\n\n` +
-        `File ka sample text:\n${sample.slice(0, 300)}...\n\n` +
-        `Kripya check karein ki kya yeh summary page hai ya passbook format alag hai.`
+        `PDF text was extracted (${lines.length} lines, detected as ${bankName}), but its transaction layout was not recognized. ` +
+        `No statement text was shown to protect account details. Please share a redacted transaction-page sample so the parser can be matched to this bank's format.`
       );
     }
 

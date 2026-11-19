@@ -988,58 +988,200 @@
           </p>
         </div>
 
-        <!-- Consultation Request Form -->
-        <div class="contact-card reveal-fade-right">
-          <h3>Request an Appointment</h3>
-          <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 22px;">
-            Submit your details below and our team will immediately connect with you on WhatsApp or call to confirm your appointment.
-          </p>
+        <!-- Consultation & Proforma Billing Engine -->
+        <div class="contact-card reveal-fade-right" style="padding: 24px;">
+          <!-- Segmented Tab Switcher -->
+          <div class="booking-tabs">
+            <button type="button" class="booking-tab-btn active" id="tabBtnProforma">
+              <i class="fa-solid fa-file-invoice text-gold"></i> Instant Proforma Bill
+            </button>
+            <button type="button" class="booking-tab-btn" id="tabBtnConsult">
+              <i class="fa-solid fa-calendar-check"></i> General Inquiry
+            </button>
+          </div>
 
-          <form id="appointmentForm">
-            <div class="form-field">
-              <label for="clientName" class="form-label">Full Name *</label>
-              <input type="text" id="clientName" class="form-control" placeholder="e.g. Anand K. More" required>
-            </div>
+          <!-- PANE 1: Multi-Line Service Booking & Proforma Bill (Tally Ready) -->
+          <div id="paneProforma">
+            <h3 style="margin-bottom: 6px;">Create Proforma Invoice</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 18px;">
+              Select required services below to generate your official break-up bill with UPI QR code &amp; WhatsApp copy.
+            </p>
 
-            <div class="form-field">
-              <label for="clientPhone" class="form-label">Phone / WhatsApp Number *</label>
-              <input type="tel" id="clientPhone" class="form-control" placeholder="e.g. +91 98200 XXXXX" required>
-            </div>
+            <form id="proformaBillingForm">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-field">
+                  <label for="pfClientName" class="form-label">Client / Firm Name *</label>
+                  <input type="text" id="pfClientName" class="form-control" placeholder="e.g. Anand K. More / Apex Corp" required>
+                </div>
+                <div class="form-field">
+                  <label for="pfClientPhone" class="form-label">WhatsApp Number *</label>
+                  <input type="tel" id="pfClientPhone" class="form-control" placeholder="e.g. 98200XXXXX" required>
+                </div>
+              </div>
 
-            <div class="form-field">
-              <label for="businessType" class="form-label">You Are / Entity Type</label>
-              <select id="businessType" class="form-control">
-                <option value="Industrial / Manufacturing Enterprise (MIDC)">Industrial / Manufacturing Enterprise (MIDC)</option>
-                <option value="MSME / Partnership / Private Limited">MSME / Partnership / Private Limited</option>
-                <option value="Trader / Retail Business">Trader / Retail Business</option>
-                <option value="Salaried Individual / Professional">Salaried Individual / Professional</option>
-              </select>
-            </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-field">
+                  <label for="pfClientEmail" class="form-label">Email Address</label>
+                  <input type="email" id="pfClientEmail" class="form-control" placeholder="e.g. client@example.com">
+                </div>
+                <div class="form-field">
+                  <label for="pfClientState" class="form-label">Place of Supply (State) *</label>
+                  <select id="pfClientState" class="form-control">
+                    <option value="27" selected>Maharashtra (Code 27 - CGST + SGST)</option>
+                    <option value="99">Other State (IGST 18%)</option>
+                  </select>
+                </div>
+              </div>
 
-            <div class="form-field">
-              <label for="serviceSelect" class="form-label">Service Required</label>
-              <select id="serviceSelect" class="form-control">
-                <option value="Income Tax Return (ITR) & Planning">Income Tax Return (ITR) & Planning</option>
-                <option value="GST Compliance & Return Filing">GST Compliance & Return Filing</option>
-                <option value="Statutory & Tax Audit">Statutory & Tax Audit</option>
-                <option value="Forensic Audit & Fraud Prevention (FAFP)">Forensic Audit & Fraud Prevention (FAFP)</option>
-                <option value="DISA Information Systems Audit">DISA Information Systems Audit</option>
-                <option value="Bank Branch Concurrent Audit">Bank Branch Concurrent Audit</option>
-                <option value="Accounting & General Financial Advisory">Accounting & General Financial Advisory</option>
-              </select>
-            </div>
+              <div class="form-field">
+                <label for="pfClientGstin" class="form-label">GSTIN / PAN (Optional)</label>
+                <input type="text" id="pfClientGstin" class="form-control" placeholder="e.g. 27ABCDE1234F1Z5 or PAN">
+              </div>
 
-            <div class="form-field">
-              <label for="clientNotes" class="form-label">Brief Query / Details</label>
-              <textarea id="clientNotes" class="form-control" rows="3" placeholder="Tell us how we can assist you..."></textarea>
-            </div>
+              <!-- Multi-Line Services Selector -->
+              <div class="form-field">
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Select Services &amp; Fees (Multi-line) *</span>
+                  <span style="font-size: 0.76rem; color: #64748b;">SAC: 998231</span>
+                </label>
+                <div class="services-picker-box">
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="Income Tax Return (ITR) Filing & Tax Planning" data-price="2500" data-taxable="true" checked>
+                      <span>Income Tax Return (ITR) Filing &amp; Planning</span>
+                    </label>
+                    <span class="service-price-tag">₹ 2,500</span>
+                  </div>
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="Tax Audit u/s 44AB & Financial Statements" data-price="15000" data-taxable="true">
+                      <span>Tax Audit u/s 44AB &amp; Financial Statements</span>
+                    </label>
+                    <span class="service-price-tag">₹ 15,000</span>
+                  </div>
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="GST Registration & 1st Month Compliance" data-price="2500" data-taxable="true">
+                      <span>GST Registration &amp; 1st Month Compliance</span>
+                    </label>
+                    <span class="service-price-tag">₹ 2,500</span>
+                  </div>
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="ROC Annual Company Filing (AOC-4 & MGT-7)" data-price="5000" data-taxable="true">
+                      <span>ROC Annual Company Filing (AOC-4 &amp; MGT-7)</span>
+                    </label>
+                    <span class="service-price-tag">₹ 5,000</span>
+                  </div>
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="Pvt Ltd / LLP Company Incorporation" data-price="7500" data-taxable="true">
+                      <span>Pvt Ltd / LLP Company Incorporation</span>
+                    </label>
+                    <span class="service-price-tag">₹ 7,500</span>
+                  </div>
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="Monthly Bookkeeping & Accounting Services" data-price="3000" data-taxable="true">
+                      <span>Monthly Bookkeeping &amp; Accounting</span>
+                    </label>
+                    <span class="service-price-tag">₹ 3,000</span>
+                  </div>
+                  <div class="service-item-row">
+                    <label class="service-item-label">
+                      <input type="checkbox" class="pf-srv-check" value="Govt Challan & MCA Filing Fees (Reimbursement)" data-price="1200" data-taxable="false">
+                      <span>Govt Challan / MCA Fees (0% Tax Reimbursement)</span>
+                    </label>
+                    <span class="service-price-tag">₹ 1,200</span>
+                  </div>
+                </div>
+              </div>
 
-            <div class="magnetic-btn" style="width: 100%;">
-              <button type="submit" class="btn btn-whatsapp" style="width: 100%;">
-                <i class="fa-brands fa-whatsapp"></i> Send Consultation Request on WhatsApp
-              </button>
-            </div>
-          </form>
+              <!-- Dynamic Calculator Card -->
+              <div class="proforma-calc-card">
+                <div class="calc-row">
+                  <span>Professional Services Subtotal:</span>
+                  <span id="calcSubtotal">₹ 2,500.00</span>
+                </div>
+                <div class="calc-row" id="rowCgst">
+                  <span>CGST (9%):</span>
+                  <span id="calcCgst">₹ 225.00</span>
+                </div>
+                <div class="calc-row" id="rowSgst">
+                  <span>SGST (9%):</span>
+                  <span id="calcSgst">₹ 225.00</span>
+                </div>
+                <div class="calc-row" id="rowIgst" style="display: none;">
+                  <span>IGST (18%):</span>
+                  <span id="calcIgst">₹ 0.00</span>
+                </div>
+                <div class="calc-row total-row">
+                  <span>Total Payable:</span>
+                  <span id="calcGrandTotal">₹ 2,950.00</span>
+                </div>
+              </div>
+
+              <div class="magnetic-btn" style="width: 100%;">
+                <button type="submit" class="btn btn-primary" id="btnSubmitProforma" style="width: 100%; font-size: 0.95rem;">
+                  <i class="fa-solid fa-file-invoice"></i> Generate Proforma &amp; Send on WhatsApp
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- PANE 2: General Consultation Form -->
+          <div id="paneConsultation" style="display: none;">
+            <h3 style="margin-bottom: 6px;">Request an Appointment</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 18px;">
+              Submit your details below and our team will connect with you on WhatsApp to confirm your slot.
+            </p>
+
+            <form id="appointmentForm">
+              <div class="form-field">
+                <label for="clientName" class="form-label">Full Name *</label>
+                <input type="text" id="clientName" class="form-control" placeholder="e.g. Anand K. More" required>
+              </div>
+
+              <div class="form-field">
+                <label for="clientPhone" class="form-label">Phone / WhatsApp Number *</label>
+                <input type="tel" id="clientPhone" class="form-control" placeholder="e.g. +91 98200 XXXXX" required>
+              </div>
+
+              <div class="form-field">
+                <label for="businessType" class="form-label">You Are / Entity Type</label>
+                <select id="businessType" class="form-control">
+                  <option value="Industrial / Manufacturing Enterprise (MIDC)">Industrial / Manufacturing Enterprise (MIDC)</option>
+                  <option value="MSME / Partnership / Private Limited">MSME / Partnership / Private Limited</option>
+                  <option value="Trader / Retail Business">Trader / Retail Business</option>
+                  <option value="Salaried Individual / Professional">Salaried Individual / Professional</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="serviceSelect" class="form-label">Service Required</label>
+                <select id="serviceSelect" class="form-control">
+                  <option value="Income Tax Return (ITR) & Planning">Income Tax Return (ITR) & Planning</option>
+                  <option value="GST Compliance & Return Filing">GST Compliance & Return Filing</option>
+                  <option value="Statutory & Tax Audit">Statutory & Tax Audit</option>
+                  <option value="Forensic Audit & Fraud Prevention (FAFP)">Forensic Audit & Fraud Prevention (FAFP)</option>
+                  <option value="DISA Information Systems Audit">DISA Information Systems Audit</option>
+                  <option value="Bank Branch Concurrent Audit">Bank Branch Concurrent Audit</option>
+                  <option value="Accounting & General Financial Advisory">Accounting & General Financial Advisory</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="clientNotes" class="form-label">Brief Query / Details</label>
+                <textarea id="clientNotes" class="form-control" rows="3" placeholder="Tell us how we can assist you..."></textarea>
+              </div>
+
+              <div class="magnetic-btn" style="width: 100%;">
+                <button type="submit" class="btn btn-whatsapp" style="width: 100%;">
+                  <i class="fa-brands fa-whatsapp"></i> Send Consultation Request on WhatsApp
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -1097,6 +1239,131 @@
       </div>
     </div>
   </footer>
+
+  <!-- Interactive Proforma Invoice Modal (Multi-Line & Tally Ready) -->
+  <div class="proforma-modal-overlay" id="proformaModal">
+    <div class="proforma-modal-box">
+      <div class="proforma-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-file-invoice" style="color: #fef08a;"></i>
+          <span style="font-weight: 700; font-size: 1rem;">CA Kiran K. Shinde &amp; Co. — Official Proforma Invoice</span>
+        </div>
+        <button type="button" id="btnCloseProformaModal" style="background: transparent; border: none; color: #fff; font-size: 1.25rem; cursor: pointer;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="proforma-modal-body">
+        <div class="proforma-sheet" id="proformaPrintableArea">
+          <!-- Firm Letterhead -->
+          <div class="proforma-firm-header">
+            <div>
+              <h2 style="margin: 0 0 4px; color: #0f172a; font-size: 1.35rem; font-weight: 800;">CA KIRAN K. SHINDE &amp; CO.</h2>
+              <p style="margin: 0; color: #64748b; font-size: 0.82rem; font-weight: 600;">CHARTERED ACCOUNTANTS</p>
+              <p style="margin: 4px 0 0; color: #475569; font-size: 0.78rem;">
+                001/2 A, Shanti Vista, Yashwant Shrishti, Boisar-Palghar Rd, Khaira, Boisar, Maharashtra 401501<br>
+                <strong>ICAI Reg No:</strong> 130179W &bull; <strong>FCA Membership No:</strong> 133526 &bull; <strong>Phone:</strong> +91 75066 47791
+              </p>
+            </div>
+            <div style="text-align: right;">
+              <span style="display: inline-block; background: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.5px;">
+                PROFORMA INVOICE
+              </span>
+              <div style="margin-top: 6px; font-size: 0.84rem;">
+                <div><strong>Invoice No:</strong> <span id="mPfInvNo">PI-2026-0001</span></div>
+                <div><strong>Date:</strong> <span id="mPfDate">19/11/2026</span></div>
+                <div><strong>Valid Until:</strong> <span id="mPfDueDate">26/11/2026</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Client & Bill To Details -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8fafc; padding: 12px 14px; border-radius: 6px; margin-bottom: 16px;">
+            <div>
+              <strong style="color: #64748b; font-size: 0.75rem; text-transform: uppercase;">Billed To / Client:</strong>
+              <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;" id="mPfClientName">Anand More</div>
+              <div style="font-size: 0.8rem; color: #475569;" id="mPfClientPhone">+91 98200 XXXXX</div>
+              <div style="font-size: 0.8rem; color: #475569;" id="mPfClientEmail">client@example.com</div>
+            </div>
+            <div style="text-align: right;">
+              <strong style="color: #64748b; font-size: 0.75rem; text-transform: uppercase;">Tax &amp; Supply Details:</strong>
+              <div style="font-size: 0.8rem; color: #0f172a;"><strong>Place of Supply:</strong> <span id="mPfState">Maharashtra (27)</span></div>
+              <div style="font-size: 0.8rem; color: #0f172a;"><strong>GSTIN / PAN:</strong> <span id="mPfGstin">Unregistered</span></div>
+              <div style="font-size: 0.8rem; color: #0f172a;"><strong>SAC Code:</strong> 998231 (Accounting &amp; Tax)</div>
+            </div>
+          </div>
+
+          <!-- Multi-line items table -->
+          <table class="proforma-items-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Service Description</th>
+                <th style="width: 90px; text-align: center;">SAC</th>
+                <th style="width: 120px; text-align: right;">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="mPfItemsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="text-align: right; font-weight: 600;">Subtotal:</td>
+                <td style="text-align: right; font-weight: 700;" id="mPfSubtotal">₹ 0.00</td>
+              </tr>
+              <tr id="mPfRowCgst">
+                <td colspan="3" style="text-align: right; font-size: 0.8rem; color: #64748b;">CGST (9%):</td>
+                <td style="text-align: right; font-size: 0.8rem;" id="mPfCgst">₹ 0.00</td>
+              </tr>
+              <tr id="mPfRowSgst">
+                <td colspan="3" style="text-align: right; font-size: 0.8rem; color: #64748b;">SGST (9%):</td>
+                <td style="text-align: right; font-size: 0.8rem;" id="mPfSgst">₹ 0.00</td>
+              </tr>
+              <tr id="mPfRowIgst" style="display: none;">
+                <td colspan="3" style="text-align: right; font-size: 0.8rem; color: #64748b;">IGST (18%):</td>
+                <td style="text-align: right; font-size: 0.8rem;" id="mPfIgst">₹ 0.00</td>
+              </tr>
+              <tr style="background: #f1f5f9; font-weight: 800; font-size: 1rem;">
+                <td colspan="3" style="text-align: right; color: #0f172a;">Total Payable:</td>
+                <td style="text-align: right; color: #0f172a;" id="mPfTotal">₹ 0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Payment QR & Bank Details Box -->
+          <div style="display: flex; gap: 16px; align-items: center; background: #fffbeb; border: 1px solid #fef3c7; padding: 14px 18px; border-radius: 8px; margin-top: 14px;">
+            <div id="mPfQrContainer" style="background: #fff; padding: 4px; border: 1px solid #e2e8f0; border-radius: 6px;">
+              <img id="mPfQrImg" src="" alt="UPI Payment QR Code" style="width: 100px; height: 100px; display: block;">
+            </div>
+            <div style="flex: 1; font-size: 0.8rem; color: #451a03;">
+              <strong style="font-size: 0.86rem; color: #92400e; display: block; margin-bottom: 3px;">
+                <i class="fa-solid fa-qrcode"></i> Instant Advance Payment via UPI QR Code
+              </strong>
+              <span>Scan above with GPay, PhonePe, Paytm, or BHIM.</span>
+              <div style="margin-top: 5px; line-height: 1.5;">
+                <strong>UPI ID:</strong> <code>7506647791@okbizaxis</code><br>
+                <strong>Bank A/C:</strong> CA Kiran K. Shinde &amp; Co. &bull; <strong>IFSC:</strong> HDFC0000842 &bull; <strong>Branch:</strong> Boisar
+              </div>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div style="margin-top: 14px; font-size: 0.74rem; color: #94a3b8; text-align: center;">
+            This is a computer-generated Proforma Invoice issued for advance service fee approval. Final Tax Invoice will be issued upon payment confirmation and synchronized with TallyPrime DayBook.
+          </div>
+        </div>
+      </div>
+
+      <div class="proforma-actions-bar">
+        <button type="button" class="btn btn-secondary" id="btnDownloadProformaPdf">
+          <i class="fa-solid fa-print"></i> Print / Save PDF
+        </button>
+        <button type="button" class="btn btn-whatsapp" id="btnSendProformaWa">
+          <i class="fa-brands fa-whatsapp"></i> Send on WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Floating WhatsApp CTA button with Ripple Glow Motion -->
   <a href="https://wa.me/919762876099?text=Hello%20CA%20Kiran%20Shinde%2C%20I%20would%20like%20to%20consult%20with%20you." target="_blank" class="whatsapp-float-btn" title="Chat with CA Kiran Shinde on WhatsApp" aria-label="WhatsApp Us">

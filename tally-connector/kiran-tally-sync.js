@@ -138,10 +138,26 @@ async function getTallyActiveCompany() {
   }
 }
 
-// 2. Auto-Create Master Ledgers in Tally (Sundry Debtors & Direct Incomes)
-async function ensureTallyLedgersExist(partyName, salesLedgerName) {
+// 2. Auto-Create Master Ledgers in Tally (Sundry Debtors, Direct Incomes & Tax Ledgers)
+async function ensureTallyLedgersExist(partyName, salesLedgerName, extraLedgers = []) {
   const party = xmlEscape(partyName || 'Sundry Debtors');
   const sales = xmlEscape(salesLedgerName || 'Professional Fees Account');
+
+  let extraXml = '';
+  const uniqueLedgers = Array.from(new Set(extraLedgers.filter(Boolean)));
+  for (const lName of uniqueLedgers) {
+    const esc = xmlEscape(lName);
+    const isTax = /cgst|sgst|igst|tax/i.test(lName);
+    const parent = isTax ? 'Duties &amp; Taxes' : 'Direct Incomes';
+    extraXml += `
+          <LEDGER NAME="${esc}" ACTION="Create">
+            <NAME.LIST><NAME>${esc}</NAME></NAME.LIST>
+            <PARENT>${parent}</PARENT>
+            <ISBILLWISEON>No</ISBILLWISEON>
+            <AFFECTSSTOCK>No</AFFECTSSTOCK>
+            <OPENINGBALANCE>0</OPENINGBALANCE>
+          </LEDGER>`;
+  }
 
   const masterXml = `<ENVELOPE>
   <HEADER>
@@ -172,6 +188,7 @@ async function ensureTallyLedgersExist(partyName, salesLedgerName) {
             <AFFECTSSTOCK>No</AFFECTSSTOCK>
             <OPENINGBALANCE>0</OPENINGBALANCE>
           </LEDGER>
+          ${extraXml}
         </TALLYMESSAGE>
       </REQUESTDATA>
     </IMPORTDATA>
@@ -247,14 +264,90 @@ function parseToTallyDate(dateVal, companyInfo = null, forceEducationalDay = fal
   return `${y}${m}${d}`;
 }
 
-// 4. Generate Tally Voucher XML (Accounting Voucher View)
+// 4. Generate Tally Voucher XML (Supports Multi-line Items, GST & Optional Proformas)
 function buildVoucherXml(item, dateStr) {
   const amount = Number(item.amount || 0).toFixed(2);
   const party = xmlEscape(item.party_ledger || item.client_name || 'Sundry Debtors');
-  const salesLedger = xmlEscape(item.sales_ledger || 'Professional Fees Account');
-  const narration = xmlEscape(item.narration || `Professional Fees - ${item.client_name}`);
-  const vchType = xmlEscape(item.voucher_type || 'Sales');
+  const defaultSalesLedger = xmlEscape(item.sales_ledger || 'Professional Fees Account');
+
+  // Check if narration has structured JSON metadata
+  let rawNarration = item.narration || `Professional Fees - ${item.client_name}`;
+  let metadata = null;
+  if (rawNarration.includes('| JSON:')) {
+    const parts = rawNarration.split('| JSON:');
+    rawNarration = parts[0].trim();
+    try {
+      metadata = JSON.parse(parts[1].trim());
+    } catch (e) {}
+  }
+
+  const isOptional = Boolean(item.is_optional || item.voucher_type === 'Proforma' || (metadata && metadata.isOptional));
+  const vchType = xmlEscape(item.voucher_type === 'Proforma' ? 'Sales' : (item.voucher_type || 'Sales'));
   const invoiceNo = xmlEscape(item.source_id || `INV-${Date.now().toString().slice(-4)}`);
+  const narration = xmlEscape(rawNarration);
+
+  let ledgerEntriesXml = '';
+
+  if (metadata && Array.isArray(metadata.items) && metadata.items.length > 0) {
+    // 1. Debit: Client / Party Ledger with total amount
+    ledgerEntriesXml += `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${party}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${amount}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+
+    // 2. Credit: Individual Service Line Items
+    for (const line of metadata.items) {
+      const lineLedger = xmlEscape(line.ledger || line.name || defaultSalesLedger);
+      const lineAmt = Number(line.amount || 0).toFixed(2);
+      ledgerEntriesXml += `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${lineLedger}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${lineAmt}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+    }
+
+    // 3. Credit: GST Tax Ledgers
+    if (metadata.cgst && Number(metadata.cgst) > 0) {
+      ledgerEntriesXml += `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>CGST Output (9%)</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${Number(metadata.cgst).toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+    }
+    if (metadata.sgst && Number(metadata.sgst) > 0) {
+      ledgerEntriesXml += `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>SGST Output (9%)</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${Number(metadata.sgst).toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+    }
+    if (metadata.igst && Number(metadata.igst) > 0) {
+      ledgerEntriesXml += `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>IGST Output (18%)</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${Number(metadata.igst).toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+    }
+  } else {
+    // Standard 2-leg voucher
+    ledgerEntriesXml = `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${party}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${amount}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${defaultSalesLedger}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${amount}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+  }
 
   return `<ENVELOPE>
   <HEADER>
@@ -275,21 +368,9 @@ function buildVoucherXml(item, dateStr) {
             <PARTYLEDGERNAME>${party}</PARTYLEDGERNAME>
             <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
             <ISINVOICE>No</ISINVOICE>
+            <ISOPTIONAL>${isOptional ? 'Yes' : 'No'}</ISOPTIONAL>
             <NARRATION>${narration}</NARRATION>
-
-            <!-- Debit: Client / Party Ledger -->
-            <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>${party}</LEDGERNAME>
-              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-              <AMOUNT>-${amount}</AMOUNT>
-            </ALLLEDGERENTRIES.LIST>
-
-            <!-- Credit: Professional Fees / Sales Ledger -->
-            <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>${salesLedger}</LEDGERNAME>
-              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-              <AMOUNT>${amount}</AMOUNT>
-            </ALLLEDGERENTRIES.LIST>
+            ${ledgerEntriesXml}
           </VOUCHER>
         </TALLYMESSAGE>
       </REQUESTDATA>
@@ -303,9 +384,25 @@ async function injectVoucherIntoTally(item, companyInfo) {
   const party = item.party_ledger || item.client_name || 'Sundry Debtors';
   const salesLedger = item.sales_ledger || 'Professional Fees Account';
 
-  // Step 1: Ensure master ledgers exist in Tally (avoids "Ledger does not exist" error)
-  console.log(`  [MASTERS] Verifying / auto-creating ledgers in Tally: "${party}", "${salesLedger}"...`);
-  await ensureTallyLedgersExist(party, salesLedger);
+  // Collect extra ledgers if present in JSON metadata
+  const extraLedgers = [];
+  if (item.narration && item.narration.includes('| JSON:')) {
+    try {
+      const meta = JSON.parse(item.narration.split('| JSON:')[1].trim());
+      if (meta.items) {
+        meta.items.forEach(it => {
+          if (it.name || it.ledger) extraLedgers.push(it.ledger || it.name);
+        });
+      }
+      if (meta.cgst && Number(meta.cgst) > 0) extraLedgers.push('CGST Output (9%)');
+      if (meta.sgst && Number(meta.sgst) > 0) extraLedgers.push('SGST Output (9%)');
+      if (meta.igst && Number(meta.igst) > 0) extraLedgers.push('IGST Output (18%)');
+    } catch (e) {}
+  }
+
+  // Step 1: Ensure master ledgers exist in Tally
+  console.log(`  [MASTERS] Verifying / auto-creating ledgers in Tally: "${party}", "${salesLedger}" ${extraLedgers.length ? `+ ${extraLedgers.length} GST/Service ledgers` : ''}...`);
+  await ensureTallyLedgersExist(party, salesLedger, extraLedgers);
 
   // Step 2: Post voucher with parsed date
   let dateStr = parseToTallyDate(item.date, companyInfo, false);

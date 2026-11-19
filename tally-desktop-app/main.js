@@ -246,6 +246,21 @@ ipcMain.on('open-file-in-explorer', (event, filePath) => {
   }
 });
 
+// Client Document Vault IPC Handlers
+ipcMain.handle('client-vault-list', async () => {
+  try {
+    return engine.clientVault ? engine.clientVault.listClients() : [];
+  } catch (e) {
+    return [];
+  }
+});
+
+ipcMain.on('client-vault-open', (event, folderName) => {
+  try {
+    if (engine.clientVault) engine.clientVault.openClientInExplorer(folderName);
+  } catch (e) {}
+});
+
 ipcMain.on('save-config', (event, newConfig) => {
   engine.config = { ...engine.config, ...newConfig };
   try {

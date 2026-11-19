@@ -334,6 +334,7 @@ body {
 .text-amber { color: var(--amber-500); }
 .text-rose { color: var(--rose-500); }
 .text-gold { color: var(--gold-primary); }
+.text-blue { color: var(--blue-500); }
 
 /* 5. Action Bar */
 .action-bar {

@@ -3529,3 +3529,190 @@ body.home-page:not(.show-tax-hub) #accounts-suite,body.home-page:not(.show-tax-h
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ================= CA Proforma Billing & Multi-Line Service Engine ================= */
+.booking-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+.booking-tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.booking-tab-btn.active {
+  background: #ffffff;
+  color: var(--primary-navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.services-picker-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.service-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+.service-item-row:last-child { border-bottom: none; }
+.service-item-row:hover { background: #f1f5f9; }
+.service-item-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #334155;
+  cursor: pointer;
+  flex: 1;
+}
+.service-item-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent-gold);
+  cursor: pointer;
+}
+.service-price-tag {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--primary-navy);
+  font-family: monospace;
+}
+.proforma-calc-card {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+.calc-row.total-row {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fef08a;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding-top: 8px;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+/* Proforma Modal */
+.proforma-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 29, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+.proforma-modal-overlay.active { display: flex; }
+.proforma-modal-box {
+  background: #ffffff;
+  color: #0f172a;
+  width: 100%;
+  max-width: 780px;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+}
+.proforma-modal-header {
+  background: var(--primary-navy);
+  color: #ffffff;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.proforma-modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+.proforma-sheet {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 22px;
+  background: #ffffff;
+}
+.proforma-firm-header {
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.proforma-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+.proforma-items-table th {
+  background: #f1f5f9;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-bottom: 1px solid #cbd5e1;
+}
+.proforma-items-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+}
+.proforma-actions-bar {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  .proforma-modal-box, .proforma-modal-box * { visibility: visible !important; }
+  .proforma-modal-overlay { position: absolute; inset: 0; background: transparent; padding: 0; }
+  .proforma-modal-box { box-shadow: none; max-width: 100%; width: 100%; }
+  .proforma-modal-header, .proforma-actions-bar { display: none !important; }
+  .proforma-sheet { border: none; padding: 0; }
+}

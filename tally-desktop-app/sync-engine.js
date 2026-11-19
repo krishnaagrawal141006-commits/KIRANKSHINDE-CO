@@ -6,6 +6,7 @@
 const http = require('http');
 const https = require('https');
 const EventEmitter = require('events');
+const ClientVaultManager = require('./client-vault');
 
 class TallySyncEngine extends EventEmitter {
   constructor(config = {}) {
@@ -18,6 +19,7 @@ class TallySyncEngine extends EventEmitter {
       ...config
     };
 
+    this.clientVault = new ClientVaultManager();
     this.isRunning = false;
     this.isPaused = false;
     this.timer = null;
@@ -138,10 +140,26 @@ class TallySyncEngine extends EventEmitter {
     }
   }
 
-  // 2. Ensure master ledgers exist in Tally
-  async ensureTallyLedgersExist(partyName, salesLedgerName) {
+  // 2. Ensure master ledgers exist in Tally (Supports Multi-Service & GST Ledgers)
+  async ensureTallyLedgersExist(partyName, salesLedgerName, extraLedgers = []) {
     const party = this.xmlEscape(partyName || 'Sundry Debtors');
     const sales = this.xmlEscape(salesLedgerName || 'Professional Fees Account');
+
+    let extraXml = '';
+    const uniqueLedgers = Array.from(new Set(extraLedgers.filter(Boolean)));
+    for (const lName of uniqueLedgers) {
+      const esc = this.xmlEscape(lName);
+      const isTax = /cgst|sgst|igst|tax/i.test(lName);
+      const parent = isTax ? 'Duties &amp; Taxes' : 'Direct Incomes';
+      extraXml += `
+            <LEDGER NAME="${esc}" ACTION="Create">
+              <NAME.LIST><NAME>${esc}</NAME></NAME.LIST>
+              <PARENT>${parent}</PARENT>
+              <ISBILLWISEON>No</ISBILLWISEON>
+              <AFFECTSSTOCK>No</AFFECTSSTOCK>
+              <OPENINGBALANCE>0</OPENINGBALANCE>
+            </LEDGER>`;
+    }
 
     const masterXml = `<ENVELOPE>
     <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
@@ -164,6 +182,7 @@ class TallySyncEngine extends EventEmitter {
               <AFFECTSSTOCK>No</AFFECTSSTOCK>
               <OPENINGBALANCE>0</OPENINGBALANCE>
             </LEDGER>
+            ${extraXml}
           </TALLYMESSAGE>
         </REQUESTDATA>
       </IMPORTDATA>
@@ -231,14 +250,90 @@ class TallySyncEngine extends EventEmitter {
     return `${y}${m}${d}`;
   }
 
-  // 4. Generate Voucher XML
+  // 4. Generate Voucher XML (Supports Multi-line Items, GST & Optional Proformas)
   buildVoucherXml(item, dateStr) {
     const amount = Number(item.amount || 0).toFixed(2);
     const party = this.xmlEscape(item.party_ledger || item.client_name || 'Sundry Debtors');
-    const salesLedger = this.xmlEscape(item.sales_ledger || 'Professional Fees Account');
-    const narration = this.xmlEscape(item.narration || `Professional Fees - ${item.client_name}`);
-    const vchType = this.xmlEscape(item.voucher_type || 'Sales');
+    const defaultSalesLedger = this.xmlEscape(item.sales_ledger || 'Professional Fees Account');
+    
+    // Parse metadata from narration if present
+    let rawNarration = item.narration || `Professional Fees - ${item.client_name}`;
+    let metadata = null;
+    if (rawNarration.includes('| JSON:')) {
+      const parts = rawNarration.split('| JSON:');
+      rawNarration = parts[0].trim();
+      try {
+        metadata = JSON.parse(parts[1].trim());
+      } catch (e) {}
+    }
+
+    const isOptional = Boolean(item.is_optional || item.voucher_type === 'Proforma' || (metadata && metadata.isOptional));
+    const vchType = this.xmlEscape(item.voucher_type === 'Proforma' ? 'Sales' : (item.voucher_type || 'Sales'));
     const invoiceNo = this.xmlEscape(item.source_id || `INV-${Date.now().toString().slice(-4)}`);
+    const narration = this.xmlEscape(rawNarration);
+
+    let ledgerEntriesXml = '';
+
+    if (metadata && Array.isArray(metadata.items) && metadata.items.length > 0) {
+      // 1. Party Ledger (Debited with Full Total Amount)
+      ledgerEntriesXml += `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${party}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                <AMOUNT>-${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+
+      // 2. Individual Line Items (Credited)
+      for (const line of metadata.items) {
+        const lineLedger = this.xmlEscape(line.ledger || line.name || defaultSalesLedger);
+        const lineAmt = Number(line.amount || 0).toFixed(2);
+        ledgerEntriesXml += `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${lineLedger}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${lineAmt}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+      }
+
+      // 3. GST Tax Ledgers (Credited)
+      if (metadata.cgst && Number(metadata.cgst) > 0) {
+        ledgerEntriesXml += `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>CGST Output (9%)</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${Number(metadata.cgst).toFixed(2)}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+      }
+      if (metadata.sgst && Number(metadata.sgst) > 0) {
+        ledgerEntriesXml += `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>SGST Output (9%)</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${Number(metadata.sgst).toFixed(2)}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+      }
+      if (metadata.igst && Number(metadata.igst) > 0) {
+        ledgerEntriesXml += `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>IGST Output (18%)</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${Number(metadata.igst).toFixed(2)}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+      }
+    } else {
+      // Standard 2-leg voucher
+      ledgerEntriesXml = `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${party}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                <AMOUNT>-${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${defaultSalesLedger}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+    }
 
     return `<ENVELOPE>
     <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
@@ -255,19 +350,9 @@ class TallySyncEngine extends EventEmitter {
               <PARTYLEDGERNAME>${party}</PARTYLEDGERNAME>
               <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
               <ISINVOICE>No</ISINVOICE>
+              <ISOPTIONAL>${isOptional ? 'Yes' : 'No'}</ISOPTIONAL>
               <NARRATION>${narration}</NARRATION>
-
-              <ALLLEDGERENTRIES.LIST>
-                <LEDGERNAME>${party}</LEDGERNAME>
-                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                <AMOUNT>-${amount}</AMOUNT>
-              </ALLLEDGERENTRIES.LIST>
-
-              <ALLLEDGERENTRIES.LIST>
-                <LEDGERNAME>${salesLedger}</LEDGERNAME>
-                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-                <AMOUNT>${amount}</AMOUNT>
-              </ALLLEDGERENTRIES.LIST>
+              ${ledgerEntriesXml}
             </VOUCHER>
           </TALLYMESSAGE>
         </REQUESTDATA>
@@ -330,8 +415,24 @@ class TallySyncEngine extends EventEmitter {
     const party = item.party_ledger || item.client_name || 'Sundry Debtors';
     const salesLedger = item.sales_ledger || 'Professional Fees Account';
 
-    this.log('info', `Checking master ledgers: "${party}" & "${salesLedger}"`);
-    await this.ensureTallyLedgersExist(party, salesLedger);
+    // Collect extra ledgers from metadata if present
+    const extraLedgers = [];
+    if (item.narration && item.narration.includes('| JSON:')) {
+      try {
+        const meta = JSON.parse(item.narration.split('| JSON:')[1].trim());
+        if (meta.items) {
+          meta.items.forEach(it => {
+            if (it.name || it.ledger) extraLedgers.push(it.ledger || it.name);
+          });
+        }
+        if (meta.cgst && Number(meta.cgst) > 0) extraLedgers.push('CGST Output (9%)');
+        if (meta.sgst && Number(meta.sgst) > 0) extraLedgers.push('SGST Output (9%)');
+        if (meta.igst && Number(meta.igst) > 0) extraLedgers.push('IGST Output (18%)');
+      } catch (e) {}
+    }
+
+    this.log('info', `Checking master ledgers: "${party}", "${salesLedger}" ${extraLedgers.length ? `+ ${extraLedgers.length} tax/service ledgers` : ''}`);
+    await this.ensureTallyLedgersExist(party, salesLedger, extraLedgers);
 
     let dateStr = this.parseToTallyDate(item.date, companyInfo, false);
     let res = await this.sendVoucherXml(item, dateStr);
@@ -405,6 +506,15 @@ class TallySyncEngine extends EventEmitter {
           this.stats.totalSynced++;
           this.stats.lastSyncTime = new Date().toLocaleTimeString('en-IN');
           this.log('success', `✅ Posted in Tally! Voucher No: ${tallyRes.voucherNo}`);
+
+          // Auto-sync with local client document vault
+          if (this.clientVault) {
+            try {
+              const panOrId = item.source_id || '';
+              this.clientVault.ensureClientFolder(item.client_name, panOrId);
+              this.log('info', `📁 Local Client Vault synchronized for: "${item.client_name}"`);
+            } catch (err) {}
+          }
 
           this.emit('voucher-synced', {
             id: item.id,

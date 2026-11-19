@@ -33,6 +33,9 @@
     <button class="nav-tab" data-tab="tab-bank">
       <i class="fa-solid fa-file-excel text-emerald"></i> Bank PDF to Excel <span class="badge-new">OFFLINE</span>
     </button>
+    <button class="nav-tab" data-tab="tab-vault">
+      <i class="fa-solid fa-folder-tree text-blue"></i> Client Local Vault <span class="badge-new">AUTO-SORT</span>
+    </button>
   </nav>
 
   <!-- Main App Shell -->
@@ -209,6 +212,37 @@
               <tbody id="resPreviewBody">
               </tbody>
             </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: CLIENT DOCUMENT VAULT ================= -->
+    <div class="tab-pane" id="tab-vault">
+      <div class="bank-converter-container">
+        
+        <div class="bank-header">
+          <div>
+            <h3><i class="fa-solid fa-folder-tree text-blue"></i> Local Client Vault &amp; Auto-Organizer</h3>
+            <p>Automatically organizes KYC, GST, Income Tax, Bank Statements &amp; Employee Working Papers on local office PC.</p>
+          </div>
+          <div class="bank-header-actions">
+            <button class="btn btn-secondary" id="btnRefreshVault"><i class="fa-solid fa-rotate"></i> Refresh Vault</button>
+            <button class="btn btn-toggle-sync" id="btnOpenVaultRoot"><i class="fa-regular fa-folder-open"></i> Open Storage Root</button>
+          </div>
+        </div>
+
+        <!-- Client Folders Grid / Table -->
+        <div class="vault-container" style="margin-top: 15px;">
+          <div class="vault-search-bar" style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="vaultSearchInput" placeholder="Search client name or PAN..." style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff;">
+          </div>
+          <div id="vaultClientsList" class="vault-clients-list">
+            <div style="text-align: center; padding: 40px; color: var(--text-dim);">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
+              <p>Loading local client folders...</p>
+            </div>
           </div>
         </div>
 

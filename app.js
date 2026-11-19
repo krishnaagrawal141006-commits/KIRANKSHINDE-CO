@@ -301,7 +301,256 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 11. Appointment Consultation Request to WhatsApp
+  // 11. Proforma Billing Engine & Appointment Consultation
+  const tabBtnProforma = document.getElementById('tabBtnProforma');
+  const tabBtnConsult = document.getElementById('tabBtnConsult');
+  const paneProforma = document.getElementById('paneProforma');
+  const paneConsultation = document.getElementById('paneConsultation');
+
+  if (tabBtnProforma && tabBtnConsult) {
+    tabBtnProforma.addEventListener('click', () => {
+      tabBtnProforma.classList.add('active');
+      tabBtnConsult.classList.remove('active');
+      if (paneProforma) paneProforma.style.display = 'block';
+      if (paneConsultation) paneConsultation.style.display = 'none';
+    });
+    tabBtnConsult.addEventListener('click', () => {
+      tabBtnConsult.classList.add('active');
+      tabBtnProforma.classList.remove('active');
+      if (paneConsultation) paneConsultation.style.display = 'block';
+      if (paneProforma) paneProforma.style.display = 'none';
+    });
+  }
+
+  // Dynamic Live Calculation for Proforma
+  const srvChecks = document.querySelectorAll('.pf-srv-check');
+  const pfClientState = document.getElementById('pfClientState');
+  const calcSubtotal = document.getElementById('calcSubtotal');
+  const calcCgst = document.getElementById('calcCgst');
+  const calcSgst = document.getElementById('calcSgst');
+  const calcIgst = document.getElementById('calcIgst');
+  const calcGrandTotal = document.getElementById('calcGrandTotal');
+  const rowCgst = document.getElementById('rowCgst');
+  const rowSgst = document.getElementById('rowSgst');
+  const rowIgst = document.getElementById('rowIgst');
+
+  function updateProformaCalculations() {
+    let subtotal = 0;
+    let taxableTotal = 0;
+
+    srvChecks.forEach(chk => {
+      if (chk.checked) {
+        const price = parseFloat(chk.getAttribute('data-price')) || 0;
+        const isTaxable = chk.getAttribute('data-taxable') === 'true';
+        subtotal += price;
+        if (isTaxable) taxableTotal += price;
+      }
+    });
+
+    const isMaharashtra = (pfClientState?.value || '27') === '27';
+    let cgst = 0, sgst = 0, igst = 0;
+
+    if (isMaharashtra) {
+      cgst = Math.round(taxableTotal * 0.09);
+      sgst = Math.round(taxableTotal * 0.09);
+      if (rowCgst) rowCgst.style.display = 'flex';
+      if (rowSgst) rowSgst.style.display = 'flex';
+      if (rowIgst) rowIgst.style.display = 'none';
+    } else {
+      igst = Math.round(taxableTotal * 0.18);
+      if (rowCgst) rowCgst.style.display = 'none';
+      if (rowSgst) rowSgst.style.display = 'none';
+      if (rowIgst) rowIgst.style.display = 'flex';
+    }
+
+    const grandTotal = subtotal + cgst + sgst + igst;
+
+    if (calcSubtotal) calcSubtotal.textContent = `₹ ${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (calcCgst) calcCgst.textContent = `₹ ${cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (calcSgst) calcSgst.textContent = `₹ ${sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (calcIgst) calcIgst.textContent = `₹ ${igst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (calcGrandTotal) calcGrandTotal.textContent = `₹ ${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+    return { subtotal, taxableTotal, cgst, sgst, igst, grandTotal, isMaharashtra };
+  }
+
+  srvChecks.forEach(chk => chk.addEventListener('change', updateProformaCalculations));
+  pfClientState?.addEventListener('change', updateProformaCalculations);
+
+  // Proforma Billing Form Submission
+  const proformaBillingForm = document.getElementById('proformaBillingForm');
+  const proformaModal = document.getElementById('proformaModal');
+  const btnCloseProformaModal = document.getElementById('btnCloseProformaModal');
+  const btnDownloadProformaPdf = document.getElementById('btnDownloadProformaPdf');
+  const btnSendProformaWa = document.getElementById('btnSendProformaWa');
+
+  let activeProformaData = null;
+
+  if (proformaBillingForm) {
+    proformaBillingForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('pfClientName').value.trim();
+      const rawPhone = document.getElementById('pfClientPhone').value.trim();
+      const email = document.getElementById('pfClientEmail')?.value.trim() || '';
+      const stateCode = pfClientState?.value || '27';
+      const gstin = document.getElementById('pfClientGstin')?.value.trim() || 'Unregistered';
+
+      const selectedItems = [];
+      srvChecks.forEach(chk => {
+        if (chk.checked) {
+          selectedItems.push({
+            name: chk.value,
+            amount: parseFloat(chk.getAttribute('data-price')) || 0,
+            sac: '998231',
+            taxable: chk.getAttribute('data-taxable') === 'true'
+          });
+        }
+      });
+
+      if (!name || !rawPhone) {
+        alert('Please enter your Client / Firm Name and WhatsApp number.');
+        return;
+      }
+      if (selectedItems.length === 0) {
+        alert('Please select at least one service to generate your Proforma Invoice.');
+        return;
+      }
+
+      const { subtotal, cgst, sgst, igst, grandTotal } = updateProformaCalculations();
+      const invoiceNo = `PI-2026-${Date.now().toString().slice(-4)}`;
+      const cleanPhone = rawPhone.replace(/[^0-9]/g, '').slice(-10);
+
+      activeProformaData = {
+        invoiceNo,
+        clientName: name,
+        phone: cleanPhone,
+        email,
+        stateCode,
+        stateName: stateCode === '27' ? 'Maharashtra (27)' : 'Other State',
+        gstin,
+        items: selectedItems,
+        subtotal,
+        cgst,
+        sgst,
+        igst,
+        grandTotal,
+        date: new Date().toLocaleDateString('en-IN'),
+        dueDate: new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-IN')
+      };
+
+      // 1. Queue to Tally Sync Connector via Supabase / API
+      try {
+        const metaPayload = {
+          items: selectedItems,
+          cgst,
+          sgst,
+          igst,
+          phone: cleanPhone,
+          email,
+          stateCode,
+          gstin,
+          isOptional: true
+        };
+
+        await fetch('/api/tally?action=queue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientName: name,
+            amount: grandTotal,
+            sourceType: 'proforma_invoice',
+            sourceId: invoiceNo,
+            voucherType: 'Proforma',
+            salesLedger: 'Professional Fees Account',
+            partyLedger: name,
+            narration: `Proforma Invoice - ${name} | JSON:${JSON.stringify(metaPayload)}`
+          })
+        }).catch(() => {});
+      } catch (err) {
+        console.warn('Tally queue notice:', err);
+      }
+
+      // 2. Save in Local Storage for offline persistence
+      try {
+        const stored = JSON.parse(localStorage.getItem('ks_proformas') || '[]');
+        stored.unshift(activeProformaData);
+        localStorage.setItem('ks_proformas', JSON.stringify(stored));
+      } catch (e) {}
+
+      // 3. Render Modal UI
+      document.getElementById('mPfInvNo').textContent = invoiceNo;
+      document.getElementById('mPfDate').textContent = activeProformaData.date;
+      document.getElementById('mPfDueDate').textContent = activeProformaData.dueDate;
+      document.getElementById('mPfClientName').textContent = name;
+      document.getElementById('mPfClientPhone').textContent = `+91 ${cleanPhone}`;
+      document.getElementById('mPfClientEmail').textContent = email || 'N/A';
+      document.getElementById('mPfState').textContent = activeProformaData.stateName;
+      document.getElementById('mPfGstin').textContent = gstin || 'Unregistered';
+
+      const tbody = document.getElementById('mPfItemsTableBody');
+      if (tbody) {
+        tbody.innerHTML = selectedItems.map((it, idx) => `
+          <tr>
+            <td style="color: #64748b;">${idx + 1}</td>
+            <td><strong>${it.name}</strong></td>
+            <td style="text-align: center; color: #64748b; font-size: 0.8rem;">${it.sac}</td>
+            <td style="text-align: right; font-weight: 700; font-family: monospace;">₹ ${it.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('mPfSubtotal').textContent = `₹ ${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('mPfCgst').textContent = `₹ ${cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('mPfSgst').textContent = `₹ ${sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('mPfIgst').textContent = `₹ ${igst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('mPfTotal').textContent = `₹ ${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+      const mPfRowCgst = document.getElementById('mPfRowCgst');
+      const mPfRowSgst = document.getElementById('mPfRowSgst');
+      const mPfRowIgst = document.getElementById('mPfRowIgst');
+      if (stateCode === '27') {
+        if (mPfRowCgst) mPfRowCgst.style.display = 'table-row';
+        if (mPfRowSgst) mPfRowSgst.style.display = 'table-row';
+        if (mPfRowIgst) mPfRowIgst.style.display = 'none';
+      } else {
+        if (mPfRowCgst) mPfRowCgst.style.display = 'none';
+        if (mPfRowSgst) mPfRowSgst.style.display = 'none';
+        if (mPfRowIgst) mPfRowIgst.style.display = 'table-row';
+      }
+
+      // Dynamic UPI QR Code
+      const upiUrl = `upi://pay?pa=7506647791@okbizaxis&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${grandTotal.toFixed(2)}&cu=INR&tn=Proforma%20${invoiceNo}`;
+      const qrImg = document.getElementById('mPfQrImg');
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiUrl)}`;
+      }
+
+      // Show Modal
+      proformaModal?.classList.add('active');
+    });
+  }
+
+  btnCloseProformaModal?.addEventListener('click', () => {
+    proformaModal?.classList.remove('active');
+  });
+
+  btnDownloadProformaPdf?.addEventListener('click', () => {
+    window.print();
+  });
+
+  btnSendProformaWa?.addEventListener('click', () => {
+    if (!activeProformaData) return;
+    const { clientName, phone, invoiceNo, grandTotal, items } = activeProformaData;
+    const servicesList = items.map(i => `• ${i.name} (₹${i.amount})`).join('%0A');
+
+    const msg = `Namaste ${encodeURIComponent(clientName)} ji,%0A%0AThank you for connecting with *CA Kiran K. Shinde & Co.* (Chartered Accountants).%0A%0AYour official service *Proforma Invoice (${invoiceNo})* for *₹${grandTotal.toLocaleString('en-IN')}* has been generated and queued in our TallyPrime DayBook.%0A%0A*Service Breakdown:*%0A${servicesList}%0A%0A*Total Amount Due:* ₹${grandTotal.toLocaleString('en-IN')}%0A*UPI ID for Advance Payment:* 7506647791@okbizaxis%0A%0APlease feel free to reply to this chat if you have any questions or require any adjustments.%0A%0AWarm regards,%0A*CA Kiran K. Shinde & Co.*%0ABoisar & Tarapur MIDC, Palghar`;
+
+    const targetPhone = phone.length === 10 ? `91${phone}` : phone;
+    window.open(`https://wa.me/${targetPhone}?text=${msg}`, '_blank');
+  });
+
+  // Appointment Consultation Request to WhatsApp
   const appointmentForm = document.getElementById('appointmentForm');
   if (appointmentForm) {
     appointmentForm.addEventListener('submit', (e) => {

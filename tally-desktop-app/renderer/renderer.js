@@ -281,6 +281,109 @@ window.api?.onStats((stats) => {
   updateStatsUI(stats);
 });
 
-window.api?.onLog((log) => {
-  appendLog(log);
+// 8. Client Document Vault Manager
+const btnRefreshVault = document.getElementById('btnRefreshVault');
+const btnOpenVaultRoot = document.getElementById('btnOpenVaultRoot');
+const vaultClientsList = document.getElementById('vaultClientsList');
+const vaultSearchInput = document.getElementById('vaultSearchInput');
+
+let cachedVaultClients = [];
+
+async function loadClientVault() {
+  if (!vaultClientsList) return;
+  vaultClientsList.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: var(--text-dim);">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
+      <p>Loading local client folders...</p>
+    </div>`;
+
+  try {
+    const clients = await window.api?.getClientVaults() || [];
+    cachedVaultClients = clients;
+    renderVaultClients(clients);
+  } catch (err) {
+    vaultClientsList.innerHTML = `<div style="padding: 20px; color: var(--color-rose);">Failed to load vault: ${err.message}</div>`;
+  }
+}
+
+function renderVaultClients(clients) {
+  if (!vaultClientsList) return;
+  if (!clients || clients.length === 0) {
+    vaultClientsList.innerHTML = `
+      <div style="text-align: center; padding: 50px 20px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px;">
+        <i class="fa-regular fa-folder-open" style="font-size: 2.2rem; color: var(--text-dim); margin-bottom: 12px;"></i>
+        <h4 style="margin: 0 0 6px;">No Client Vault Folders Yet</h4>
+        <p style="color: var(--text-dim); font-size: 0.88rem; max-width: 440px; margin: 0 auto;">
+          Client folders are created automatically when invoices sync from the website or when client files are placed in storage.
+        </p>
+      </div>`;
+    return;
+  }
+
+  vaultClientsList.innerHTML = clients.map(c => {
+    const kyc = c.subCount?.['01_KYC_and_Certificates'] || 0;
+    const gst = c.subCount?.['02_GST_Documents'] || 0;
+    const tax = c.subCount?.['03_Income_Tax_and_Audit'] || 0;
+    const bank = c.subCount?.['04_Bank_Statements_and_Bills'] || 0;
+    const work = c.subCount?.['05_CA_Employee_Work_Papers'] || 0;
+
+    return `
+      <div class="card" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border: 1px solid rgba(255,255,255,0.06); background: rgba(15,23,42,0.6);">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <i class="fa-solid fa-folder text-blue" style="font-size: 1.25rem;"></i>
+            <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #f8fafc;">${c.name}</h4>
+            <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; background: rgba(59,130,246,0.15); color: #60a5fa; font-weight: 600;">
+              ${c.totalFiles} files
+            </span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.76rem;">
+            <span style="color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">KYC: <strong style="color: #cbd5e1;">${kyc}</strong></span>
+            <span style="color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">GST: <strong style="color: #cbd5e1;">${gst}</strong></span>
+            <span style="color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">Tax/Audit: <strong style="color: #cbd5e1;">${tax}</strong></span>
+            <span style="color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">Bank: <strong style="color: #cbd5e1;">${bank}</strong></span>
+            <span style="color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">Work Papers: <strong style="color: #cbd5e1;">${work}</strong></span>
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-secondary btn-open-client-vault" data-path="${c.folderPath}" style="padding: 6px 14px; font-size: 0.85rem;">
+            <i class="fa-regular fa-folder-open"></i> Open in Explorer
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.btn-open-client-vault').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const p = e.currentTarget.getAttribute('data-path');
+      window.api?.openClientVault(p);
+    });
+  });
+}
+
+btnRefreshVault?.addEventListener('click', () => loadClientVault());
+
+btnOpenVaultRoot?.addEventListener('click', () => {
+  window.api?.openClientVault('');
 });
+
+vaultSearchInput?.addEventListener('input', (e) => {
+  const q = String(e.target.value || '').toLowerCase().trim();
+  if (!q) {
+    renderVaultClients(cachedVaultClients);
+    return;
+  }
+  const filtered = cachedVaultClients.filter(c => c.name.toLowerCase().includes(q) || c.folderName.toLowerCase().includes(q));
+  renderVaultClients(filtered);
+});
+
+// Load vault when clicking on Vault tab
+navTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (tab.getAttribute('data-tab') === 'tab-vault') {
+      loadClientVault();
+    }
+  });
+});
+

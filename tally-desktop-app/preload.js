@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('api', {
   browseBankPdf: () => ipcRenderer.invoke('browse-bank-pdf'),
   convertBankPdf: (filePath) => ipcRenderer.invoke('convert-bank-pdf', filePath),
   openFileInExplorer: (filePath) => ipcRenderer.send('open-file-in-explorer', filePath),
+  getClientVaults: () => ipcRenderer.invoke('client-vault-list'),
+  openClientVault: (folderName) => ipcRenderer.send('client-vault-open', folderName),
   onLog: (cb) => ipcRenderer.on('engine-log', (_event, value) => cb(value)),
   onStats: (cb) => ipcRenderer.on('engine-stats', (_event, value) => cb(value))
 });

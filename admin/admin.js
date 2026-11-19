@@ -469,13 +469,27 @@ const AdminCRM = {
     const tbody = document.getElementById('calendarTableBody');
     if (!tbody) return;
 
+    let bookings = this.state.calendarBookings;
+    if (!bookings || bookings.length === 0) {
+      bookings = JSON.parse(localStorage.getItem('ks_calendar_bookings') || '[]');
+      if (bookings.length === 0) {
+        bookings = [
+          { id: 'GCAL-2026-101', client: 'Anand K. More (Apex Corp)', dateTime: 'Tomorrow, 11:30 AM', purpose: 'ITR-3 & Tax Planning Review', mode: 'Google Meet', status: 'Calendar Synced' },
+          { id: 'GCAL-2026-102', client: 'Suresh Patel (Patel Logistics)', dateTime: '21 Nov 2026, 03:00 PM', purpose: 'GST Audit & E-Way Bill Reconciliation', mode: 'Office Meeting', status: 'Calendar Synced' },
+          { id: 'GCAL-2026-103', client: 'Dr. Meena Iyer', dateTime: '22 Nov 2026, 05:00 PM', purpose: 'Presumptive Tax 44ADA Advisory', mode: 'Phone / Video Call', status: 'Calendar Synced' }
+        ];
+        localStorage.setItem('ks_calendar_bookings', JSON.stringify(bookings));
+      }
+      this.state.calendarBookings = bookings;
+    }
+
     tbody.innerHTML = this.state.calendarBookings.map(b => `
       <tr>
         <td><code>${b.id}</code></td>
         <td><strong>${b.client}</strong></td>
         <td><i class="fa-regular fa-calendar-check" style="color: #2563eb; margin-right: 6px;"></i> ${b.dateTime}</td>
         <td>${b.purpose}</td>
-        <td><span style="font-size: 0.78rem; background: #e2e8f0; padding: 2px 8px; border-radius: 4px;">${b.mode}</span></td>
+        <td><span style="font-size: 0.78rem; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">${b.mode}</span></td>
         <td><span class="status-pill status-completed"><i class="fa-brands fa-google"></i> ${b.status}</span></td>
         <td>
           <button class="action-icon-btn" onclick="alert('Google Calendar meeting invite resent to ${b.client}')" title="Resend Invite"><i class="fa-regular fa-envelope"></i></button>

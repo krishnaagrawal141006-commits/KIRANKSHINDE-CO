@@ -42,8 +42,10 @@ const resTotalCredit = document.getElementById('resTotalCredit');
 const resPreviewBody = document.getElementById('resPreviewBody');
 const btnOpenExcelFile = document.getElementById('btnOpenExcelFile');
 const btnShowInFolder = document.getElementById('btnShowInFolder');
+const btnAiClassify = document.getElementById('btnAiClassify');
 
 let lastGeneratedExcelPath = null;
+let currentBankTransactions = [];
 let isPaused = false;
 
 // 1. Tab Switching
@@ -103,12 +105,14 @@ async function processBankPdf(filePath) {
     if (resTotalDebit) resTotalDebit.textContent = `₹ ${Number(res.totalDebit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
     if (resTotalCredit) resTotalCredit.textContent = `₹ ${Number(res.totalCredit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
-    // Populate Preview Table
+    currentBankTransactions = res.transactions || [];
+
+    // Populate Preview Table with AI Ledger Column
     if (resPreviewBody) {
-      resPreviewBody.innerHTML = (res.transactions || []).map(tx => `
+      resPreviewBody.innerHTML = currentBankTransactions.map((tx, idx) => `
         <tr>
           <td>${tx.date}</td>
-          <td>${tx.narration.slice(0, 45)}...</td>
+          <td title="${tx.narration}">${tx.narration.slice(0, 42)}...</td>
           <td>${tx.refNo || '-'}</td>
           <td style="color: ${tx.debit > 0 ? '#f43f5e' : 'inherit'}; font-weight: ${tx.debit > 0 ? '700' : '400'};">
             ${tx.debit > 0 ? '₹ ' + Number(tx.debit).toLocaleString('en-IN') : '-'}
@@ -117,6 +121,9 @@ async function processBankPdf(filePath) {
             ${tx.credit > 0 ? '₹ ' + Number(tx.credit).toLocaleString('en-IN') : '-'}
           </td>
           <td>₹ ${Number(tx.balance || 0).toLocaleString('en-IN')}</td>
+          <td id="txLedgerCell_${idx}">
+            <span style="color: var(--text-dim); font-size: 0.76rem; background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px;">Pending AI Tag</span>
+          </td>
         </tr>
       `).join('');
     }
@@ -130,6 +137,45 @@ async function processBankPdf(filePath) {
     alert('Error converting PDF: ' + err.message);
   }
 }
+
+// 2b. NaraRouter AI Auto-Categorize Button
+btnAiClassify?.addEventListener('click', async () => {
+  if (!currentBankTransactions || currentBankTransactions.length === 0) {
+    alert('Please select and convert a bank statement first.');
+    return;
+  }
+
+  btnAiClassify.disabled = true;
+  btnAiClassify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Categorizing with AI...';
+
+  try {
+    const aiRes = await window.api?.classifyBankNarrations(currentBankTransactions);
+    if (aiRes && aiRes.success && Array.isArray(aiRes.classifications)) {
+      aiRes.classifications.forEach(c => {
+        const cell = document.getElementById(`txLedgerCell_${c.index}`);
+        if (cell) {
+          cell.innerHTML = `
+            <span style="background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">
+              ${c.suggestedLedger}
+            </span>`;
+        }
+      });
+      alert(`✅ Success: AI tagged ${aiRes.classifications.length} bank transactions into Tally Ledgers!`);
+    } else {
+      const errMsg = aiRes?.error || 'Unknown error';
+      if (errMsg.includes('telegram_required')) {
+        alert('⚠️ NaraRouter Activation Notice:\nPlease open your NaraRouter dashboard (https://router.bynara.id/settings) and bind your Telegram account once to activate completions for this API key.');
+      } else {
+        alert('NaraRouter AI Notice: ' + errMsg);
+      }
+    }
+  } catch (e) {
+    alert('AI Error: ' + e.message);
+  } finally {
+    btnAiClassify.disabled = false;
+    btnAiClassify.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI Auto-Tag Ledgers';
+  }
+});
 
 // Browse Button
 btnBrowseBankPdf?.addEventListener('click', async () => {

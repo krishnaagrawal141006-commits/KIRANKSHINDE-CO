@@ -3,8 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const TallySyncEngine = require('./sync-engine');
 const BankStatementConverter = require('./bank-converter');
+const NaraRouterAI = require('./ai-router');
 
 const bankConverter = new BankStatementConverter();
+const aiRouter = new NaraRouterAI();
 
 let mainWindow = null;
 let tray = null;
@@ -236,6 +238,19 @@ ipcMain.handle('convert-bank-pdf', async (event, filePath) => {
     return res;
   } catch (err) {
     engine.log('error', `❌ Bank Conversion Error: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+});
+
+// NaraRouter AI Narration Categorizer Handler
+ipcMain.handle('ai-classify-narrations', async (event, transactions) => {
+  try {
+    engine.log('info', `🤖 Running NaraRouter AI on ${transactions.length} transactions...`);
+    const results = await aiRouter.classifyNarrations(transactions);
+    engine.log('success', `✅ AI Categorized ${results.length} narrations into Tally Ledgers!`);
+    return { success: true, classifications: results };
+  } catch (err) {
+    engine.log('warn', `⚠️ AI Categorizer note: ${err.message}`);
     return { success: false, error: err.message };
   }
 });

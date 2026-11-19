@@ -12,7 +12,7 @@ class NaraRouterAI {
   constructor(apiKey = 'sk-nry--zwACm-Lwgf6szqLndzACvNqQcUHa3CoNH4EyfFvogg', baseUrl = 'https://router.bynara.id/v1') {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
-    this.model = 'google/gemini-2.0-flash'; // or 'openai/gpt-4o-mini' or 'auto/bynara'
+    this.model = 'deepseek-v4.1-flash-fast'; // Fast & optimized for Indian accounting narrations
   }
 
   request(endpoint, postData) {
@@ -119,3 +119,4 @@ Return ONLY a valid JSON array of objects with keys:
 }
 
 module.exports = NaraRouterAI;
+

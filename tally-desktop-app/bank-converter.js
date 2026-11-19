@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const pdfParse = require('pdf-parse');
+const pdfParseModule = require('pdf-parse');
 const XLSX = require('xlsx');
 
 class BankStatementConverter {
@@ -21,6 +21,63 @@ class BankStatementConverter {
       { name: 'Punjab National Bank', test: /PUNJAB\s*NATIONAL\s*BANK|PNB/i },
       { name: 'Canara Bank', test: /CANARA\s*BANK/i }
     ];
+  }
+
+  /**
+   * Universal PDF Text Extractor compatible with pdf-parse v1.x, v2.x (class-based), and CJS/ESM
+   */
+  async extractTextFromPdf(dataBuffer) {
+    let lastError = null;
+
+    // 1. Check pdf-parse v2.x (Mehmet Kozan class export: { PDFParse })
+    if (pdfParseModule && typeof pdfParseModule.PDFParse === 'function') {
+      try {
+        const parser = new pdfParseModule.PDFParse({ data: dataBuffer });
+        const res = await parser.getText();
+        if (typeof parser.destroy === 'function') {
+          try { await parser.destroy(); } catch (e) {}
+        }
+        if (res && typeof res.text === 'string' && res.text.trim().length > 0) {
+          return res.text;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn('PDFParse class extraction notice:', err.message);
+      }
+    }
+
+    // 2. Check pdf-parse v1.x (function export: fn(dataBuffer))
+    if (typeof pdfParseModule === 'function') {
+      try {
+        const res = await pdfParseModule(dataBuffer);
+        if (res && typeof res.text === 'string' && res.text.trim().length > 0) {
+          return res.text;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn('pdfParse function extraction notice:', err.message);
+      }
+    }
+
+    // 3. Check default export (ESM interop)
+    if (pdfParseModule && typeof pdfParseModule.default === 'function') {
+      try {
+        const res = await pdfParseModule.default(dataBuffer);
+        if (res && typeof res.text === 'string' && res.text.trim().length > 0) {
+          return res.text;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn('pdfParse default extraction notice:', err.message);
+      }
+    }
+
+    // Friendly error messaging for password-protected or encrypted PDFs
+    if (lastError && /password|decrypt|encrypted/i.test(lastError.message)) {
+      throw new Error('This PDF is password-protected. Please open the PDF in Chrome or Adobe Reader, unlock it with your password, and save/print as an unencrypted PDF.');
+    }
+
+    throw new Error(lastError ? `Could not extract text: ${lastError.message}` : 'Empty text extracted. The PDF may be a scanned image without selectable text.');
   }
 
   detectBank(text) {
@@ -51,8 +108,8 @@ class BankStatementConverter {
     const lines = fullText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     const transactions = [];
 
-    // Common Date Regex: DD/MM/YYYY, DD-MM-YYYY, DD-MMM-YYYY
-    const dateRegex = /^(\d{1,2}[\/\-\.](\d{1,2}|[a-zA-Z]{3})[\/\-\.]\d{2,4})/;
+    // Common Date Regex: DD/MM/YYYY, DD-MM-YYYY, DD-MMM-YYYY, with optional leading serial no (e.g. 1 12/03/2026)
+    const dateRegex = /^(?:\d{1,4}\s+)?(\d{1,2}[\/\-\.\s](\d{1,2}|[a-zA-Z]{3})[\/\-\.\s]\d{2,4})/;
     // Amount Regex: matches numbers with decimals like 1,250.00, 50000.00, 150.50
     const amountRegex = /(\d{1,3}(,\d{2,3})*(\.\d{2}))/g;
 
@@ -74,8 +131,8 @@ class BankStatementConverter {
           transactions.push(currentTx);
         }
 
-        const dateStr = dateMatch[0];
-        const restOfLine = line.slice(dateStr.length).trim();
+        const dateStr = dateMatch[1] || dateMatch[0];
+        const restOfLine = line.slice(dateMatch.index + dateMatch[0].length).trim();
 
         // Extract all amounts in the line
         const amountsFound = restOfLine.match(amountRegex) || [];
@@ -169,10 +226,10 @@ class BankStatementConverter {
     }
 
     const dataBuffer = fs.readFileSync(pdfPath);
-    const pdfData = await pdfParse(dataBuffer);
+    const extractedText = await this.extractTextFromPdf(dataBuffer);
 
-    const bankName = this.detectBank(pdfData.text);
-    const transactions = this.parseStatementText(pdfData.text);
+    const bankName = this.detectBank(extractedText);
+    const transactions = this.parseStatementText(extractedText);
 
     if (!transactions.length) {
       throw new Error('No tabular transactions detected in this PDF. It may be password-protected or a scanned image.');

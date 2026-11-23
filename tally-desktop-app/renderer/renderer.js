@@ -107,9 +107,12 @@ async function processBankPdf(filePath) {
 
     currentBankTransactions = res.transactions || [];
 
-    // Populate Preview Table with AI Ledger Column
+    // Populate Preview Table with AI Ledger Column & Tally Status
     if (resPreviewBody) {
-      resPreviewBody.innerHTML = currentBankTransactions.map((tx, idx) => `
+      resPreviewBody.innerHTML = currentBankTransactions.map((tx, idx) => {
+        const isDebit = Number(tx.debit || 0) > 0;
+        const vchTag = isDebit ? '<span style="background:rgba(244,63,94,0.15); color:#fda4af; padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;">PAYMENT</span>' : '<span style="background:rgba(16,185,129,0.15); color:#6ee7b7; padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;">RECEIPT</span>';
+        return `
         <tr>
           <td>${tx.date}</td>
           <td title="${tx.narration}">${tx.narration.slice(0, 42)}...</td>
@@ -122,10 +125,17 @@ async function processBankPdf(filePath) {
           </td>
           <td>₹ ${Number(tx.balance || 0).toLocaleString('en-IN')}</td>
           <td id="txLedgerCell_${idx}">
-            <span style="color: var(--text-dim); font-size: 0.76rem; background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px;">Pending AI Tag</span>
+            <div style="display:flex; align-items:center; gap:4px;">
+              ${vchTag}
+              <span style="color: var(--text-dim); font-size: 0.74rem;">${isDebit ? 'Sundry Creditors' : 'Sundry Debtors'}</span>
+            </div>
+          </td>
+          <td id="txStatusCell_${idx}">
+            <span style="color: var(--text-dim); font-size: 0.74rem; background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px;">Ready</span>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     appendLog({
@@ -152,12 +162,21 @@ btnAiClassify?.addEventListener('click', async () => {
     const aiRes = await window.api?.classifyBankNarrations(currentBankTransactions);
     if (aiRes && aiRes.success && Array.isArray(aiRes.classifications)) {
       aiRes.classifications.forEach(c => {
+        if (currentBankTransactions[c.index]) {
+          currentBankTransactions[c.index].suggestedLedger = c.suggestedLedger;
+          currentBankTransactions[c.index].voucherType = c.voucherType;
+        }
         const cell = document.getElementById(`txLedgerCell_${c.index}`);
         if (cell) {
+          const vType = (c.voucherType || 'Payment').toUpperCase();
+          const badgeColor = vType === 'RECEIPT' ? 'rgba(16,185,129,0.2); color:#6ee7b7;' : (vType === 'CONTRA' ? 'rgba(245,158,11,0.2); color:#fcd34d;' : 'rgba(99,102,241,0.2); color:#a5b4fc;');
           cell.innerHTML = `
-            <span style="background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">
-              ${c.suggestedLedger}
-            </span>`;
+            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+              <span style="background:${badgeColor} padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;">${vType}</span>
+              <span style="background: rgba(99,102,241,0.15); color: #c7d2fe; border: 1px solid rgba(99,102,241,0.25); padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.74rem;">
+                ${c.suggestedLedger}
+              </span>
+            </div>`;
         }
       });
       alert(`✅ Success: AI tagged ${aiRes.classifications.length} bank transactions into Tally Ledgers!`);
@@ -174,6 +193,75 @@ btnAiClassify?.addEventListener('click', async () => {
   } finally {
     btnAiClassify.disabled = false;
     btnAiClassify.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI Auto-Tag Ledgers';
+  }
+});
+
+// 2c. Suvit-Style Direct Auto-Posting to TallyPrime (Port 9000)
+const btnPushBankToTally = document.getElementById('btnPushBankToTally');
+const bankLedgerInput = document.getElementById('bankLedgerInput');
+const bankLedgerList = document.getElementById('bankLedgerList');
+
+// Auto-populate Tally Bank Ledgers
+async function populateTallyBankLedgers() {
+  try {
+    const list = await window.api?.getTallyBankLedgers();
+    if (Array.isArray(list) && list.length && bankLedgerList) {
+      bankLedgerList.innerHTML = list.map(b => `<option value="${b}">`).join('');
+      if (list[0] && bankLedgerInput && !bankLedgerInput.value) {
+        bankLedgerInput.value = list[0];
+      }
+    }
+  } catch (e) {}
+}
+populateTallyBankLedgers();
+
+btnPushBankToTally?.addEventListener('click', async () => {
+  if (!currentBankTransactions || !currentBankTransactions.length) {
+    alert('Please select and convert a bank statement first.');
+    return;
+  }
+
+  const bankLedger = (bankLedgerInput?.value || 'HDFC Bank Ltd').trim();
+  const confirmed = confirm(`Are you sure you want to Auto-Post ${currentBankTransactions.length} transactions directly into TallyPrime (Port 9000)?\n\nBank Ledger: ${bankLedger}\nVouchers: Payment, Receipt & Contra with auto-created ledgers.`);
+  if (!confirmed) return;
+
+  btnPushBankToTally.disabled = true;
+  btnPushBankToTally.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Auto-Posting to Tally...';
+
+  // Mark all rows as Syncing
+  currentBankTransactions.forEach((_, idx) => {
+    const cell = document.getElementById(`txStatusCell_${idx}`);
+    if (cell) cell.innerHTML = '<span style="color:#38bdf8; font-size:0.74rem;"><i class="fa-solid fa-circle-notch fa-spin"></i> Posting...</span>';
+  });
+
+  try {
+    const res = await window.api?.postBankTxsToTally({
+      transactions: currentBankTransactions,
+      bankLedger: bankLedger
+    });
+
+    if (res && res.success) {
+      if (Array.isArray(res.results)) {
+        res.results.forEach(r => {
+          const cell = document.getElementById(`txStatusCell_${r.index}`);
+          if (cell) {
+            if (r.success) {
+              cell.innerHTML = '<span style="color:#10b981; font-weight:700; font-size:0.74rem;"><i class="fa-solid fa-check"></i> Posted</span>';
+            } else {
+              cell.innerHTML = `<span style="color:#f43f5e; font-size:0.74rem;" title="${r.error || ''}"><i class="fa-solid fa-triangle-exclamation"></i> Error</span>`;
+            }
+          }
+        });
+      }
+      alert(`🎉 Suvit-Style Tally Sync Complete!\n\n✅ ${res.posted} Vouchers posted into Tally DayBook for "${res.company}".\n⚠️ ${res.failed} Failed.`);
+    } else {
+      alert(`❌ Tally Sync Failed: ${res?.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  } finally {
+    btnPushBankToTally.disabled = false;
+    btnPushBankToTally.innerHTML = '<i class="fa-solid fa-bolt"></i> Auto-Post to Tally (Suvit Style)';
   }
 });
 

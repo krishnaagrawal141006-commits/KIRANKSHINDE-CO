@@ -31,6 +31,8 @@ const AdminCRM = {
       this.loadTallyQueue();
     }, 10000);
     this.setupTabNavigation();
+    this.setupGstReconciliation();
+    this.setupWebBankToTallyPush();
     this.setupModals();
     this.setupMobileMenu();
     this.loadGmbReviewLink();
@@ -2136,6 +2138,311 @@ const AdminCRM = {
     });
     this.loadTallyQueue();
   },
+
+  // ================= 8. GSTR-2B VS TALLY PURCHASE AUTO-RECONCILIATION =================
+  setupGstReconciliation() {
+    this.gstEngine = new window.GstReconciliationEngine();
+    let gstr2bList = [];
+    let tallyList = [];
+
+    const dropGstr2b = document.getElementById('dropzoneGstr2b');
+    const inputGstr2b = document.getElementById('inputGstr2b');
+    const fileInfoGstr2b = document.getElementById('fileInfoGstr2b');
+
+    const dropTally = document.getElementById('dropzoneTally');
+    const inputTally = document.getElementById('inputTallyPurchase');
+    const fileInfoTally = document.getElementById('fileInfoTally');
+
+    const btnRun = document.getElementById('btnRunReconciliation');
+    const btnDemo = document.getElementById('btnGstLoadDemo');
+    const btnExport = document.getElementById('btnGstExportExcel');
+    const searchInput = document.getElementById('gstSearchInput');
+
+    const handleGstr2bFile = (file) => {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          gstr2bList = this.gstEngine.parseGstr2bJson(e.target.result);
+          if (fileInfoGstr2b) {
+            fileInfoGstr2b.style.display = 'block';
+            fileInfoGstr2b.innerHTML = `<i class="fa-solid fa-check"></i> ${file.name} (${gstr2bList.length} B2B Invoices Loaded)`;
+          }
+        } catch (err) {
+          alert('Error parsing GSTR-2B JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    const handleTallyFile = (file) => {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const wb = window.XLSX.read(data, { type: 'array' });
+          tallyList = this.gstEngine.parseTallyPurchaseExcel(wb);
+          if (fileInfoTally) {
+            fileInfoTally.style.display = 'block';
+            fileInfoTally.innerHTML = `<i class="fa-solid fa-check"></i> ${file.name} (${tallyList.length} Purchase Invoices Loaded)`;
+          }
+        } catch (err) {
+          alert('Error parsing Tally Purchase Excel: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    inputGstr2b?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) handleGstr2bFile(e.target.files[0]);
+    });
+
+    inputTally?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) handleTallyFile(e.target.files[0]);
+    });
+
+    // Drag and drop for GSTR-2B
+    if (dropGstr2b) {
+      dropGstr2b.addEventListener('dragover', (e) => { e.preventDefault(); dropGstr2b.style.background = '#eef2ff'; });
+      dropGstr2b.addEventListener('dragleave', (e) => { e.preventDefault(); dropGstr2b.style.background = '#f8fafc'; });
+      dropGstr2b.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropGstr2b.style.background = '#f8fafc';
+        if (e.dataTransfer?.files?.[0]) handleGstr2bFile(e.dataTransfer.files[0]);
+      });
+    }
+
+    // Drag and drop for Tally
+    if (dropTally) {
+      dropTally.addEventListener('dragover', (e) => { e.preventDefault(); dropTally.style.background = '#f0f9ff'; });
+      dropTally.addEventListener('dragleave', (e) => { e.preventDefault(); dropTally.style.background = '#f8fafc'; });
+      dropTally.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropTally.style.background = '#f8fafc';
+        if (e.dataTransfer?.files?.[0]) handleTallyFile(e.dataTransfer.files[0]);
+      });
+    }
+
+    btnRun?.addEventListener('click', () => {
+      if (!gstr2bList.length && !tallyList.length) {
+        alert('Please upload your GSTR-2B JSON and/or Tally Purchase Register first, or click "Load CA Sample Data" to test with demo data.');
+        return;
+      }
+      const res = this.gstEngine.reconcile(gstr2bList, tallyList);
+      this.renderGstReconResults(res);
+    });
+
+    btnDemo?.addEventListener('click', () => {
+      const res = this.gstEngine.loadSampleDataset();
+      gstr2bList = this.gstEngine.gstr2bInvoices;
+      tallyList = this.gstEngine.tallyInvoices;
+      if (fileInfoGstr2b) {
+        fileInfoGstr2b.style.display = 'block';
+        fileInfoGstr2b.innerHTML = `<i class="fa-solid fa-check"></i> Sample_GSTR2B_Oct2026.json (${gstr2bList.length} Invoices)`;
+      }
+      if (fileInfoTally) {
+        fileInfoTally.style.display = 'block';
+        fileInfoTally.innerHTML = `<i class="fa-solid fa-check"></i> Sample_Tally_Purchase_Register.xlsx (${tallyList.length} Invoices)`;
+      }
+      this.renderGstReconResults(res);
+    });
+
+    btnExport?.addEventListener('click', () => {
+      this.gstEngine.exportToExcel();
+    });
+
+    // Filter Buttons
+    const filterBtns = document.querySelectorAll('.gst-filter-btn');
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => {
+          b.classList.remove('active');
+          b.style.background = '#fff';
+          b.style.color = '#334155';
+        });
+        btn.classList.add('active');
+        btn.style.background = '#0f172a';
+        btn.style.color = '#fff';
+        this.gstEngine.activeFilter = btn.getAttribute('data-filter') || 'all';
+        this.renderGstReconRows();
+      });
+    });
+
+    // Search input
+    searchInput?.addEventListener('input', (e) => {
+      this.gstEngine.searchQuery = (e.target.value || '').toLowerCase().trim();
+      this.renderGstReconRows();
+    });
+  },
+
+  renderGstReconResults(res) {
+    if (!res) res = this.gstEngine?.reconciliationResults;
+    if (!res) return;
+
+    const resultsSection = document.getElementById('gstReconResultsSection');
+    if (resultsSection) resultsSection.style.display = 'block';
+
+    const setVal = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    setVal('kpi2bTax', `₹ ${Number(res.kpis.total2bTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
+    setVal('kpi2bCount', `${res.kpis.total2bCount} Invoices in GSTR-2B`);
+    setVal('kpiTallyTax', `₹ ${Number(res.kpis.totalTallyTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
+    setVal('kpiTallyCount', `${res.kpis.totalTallyCount} Invoices in Tally`);
+    setVal('kpiMatchedTax', `₹ ${Number(res.kpis.matchedTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
+    setVal('kpiMatchedCount', `${res.kpis.matchedCount} Invoices 100% Matched`);
+    setVal('kpiAtRiskTax', `₹ ${Number(res.kpis.atRiskTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
+    setVal('kpiAtRiskCount', `${res.kpis.atRiskCount} Invoices Blocked u/s 16(2)(aa)`);
+    setVal('kpiUnclaimedTax', `₹ ${Number(res.kpis.unclaimedTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
+    setVal('kpiUnclaimedCount', `${res.kpis.unclaimedCount} Invoices Missed in Tally`);
+
+    setVal('countFilterAll', res.all.length);
+    setVal('countFilterAtRisk', res.missingIn2B.length);
+    setVal('countFilterMatched', res.matched.length);
+    setVal('countFilterMissingTally', res.missingInTally.length);
+    setVal('countFilterMismatch', res.taxMismatch.length);
+
+    this.renderGstReconRows();
+  },
+
+  renderGstReconRows() {
+    const res = this.gstEngine?.reconciliationResults;
+    const tbody = document.getElementById('gstReconTableBody');
+    if (!res || !tbody) return;
+
+    let items = [];
+    const filter = this.gstEngine.activeFilter;
+    if (filter === 'at_risk') items = res.missingIn2B;
+    else if (filter === 'matched') items = res.matched;
+    else if (filter === 'missing_in_tally') items = res.missingInTally;
+    else if (filter === 'mismatch') items = res.taxMismatch;
+    else items = res.all;
+
+    const query = this.gstEngine.searchQuery;
+    if (query) {
+      items = items.filter(it => {
+        const p = it.tally || it.gstr2b;
+        return (
+          (p.supplierName && p.supplierName.toLowerCase().includes(query)) ||
+          (p.gstin && p.gstin.toLowerCase().includes(query)) ||
+          (p.invoiceNo && p.invoiceNo.toLowerCase().includes(query))
+        );
+      });
+    }
+
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#64748b;">No matching invoices found in this view.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(item => {
+      const isMatched = item.status === 'MATCHED';
+      const isAtRisk = item.status === 'MISSING_IN_2B';
+      const isMissingTally = item.status === 'MISSING_IN_TALLY';
+      const isMismatch = item.status === 'TAX_MISMATCH';
+
+      const data = item.tally || item.gstr2b;
+      const badgeHtml = isMatched
+        ? '<span style="background:#ecfdf5; color:#065f46; font-weight:800; font-size:0.72rem; padding:3px 8px; border-radius:4px; border:1px solid #a7f3d0;"><i class="fa-solid fa-check"></i> 100% MATCHED</span>'
+        : (isAtRisk
+          ? '<span style="background:#fef2f2; color:#991b1b; font-weight:800; font-size:0.72rem; padding:3px 8px; border-radius:4px; border:1px solid #fecaca;"><i class="fa-solid fa-triangle-exclamation"></i> MISSING IN 2B</span>'
+          : (isMissingTally
+            ? '<span style="background:#fffbeb; color:#92400e; font-weight:800; font-size:0.72rem; padding:3px 8px; border-radius:4px; border:1px solid #fde68a;"><i class="fa-solid fa-lightbulb"></i> NOT IN TALLY</span>'
+            : '<span style="background:#eff6ff; color:#1e40af; font-weight:800; font-size:0.72rem; padding:3px 8px; border-radius:4px; border:1px solid #bfdbfe;"><i class="fa-solid fa-arrows-split-up-and-left"></i> TAX MISMATCH</span>'));
+
+      const taxAmount = Number(data.totalTax || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      const taxableAmount = Number(data.taxableValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      const grossAmount = Number(data.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+      let actionHtml = '';
+      if (isAtRisk) {
+        const waUrl = this.gstEngine.generateWhatsAppReminderUrl(item);
+        actionHtml = `
+          <a href="${waUrl}" target="_blank" class="btn-admin" style="background:#25d366; color:#fff; text-decoration:none; font-weight:700; font-size:0.75rem; padding:4px 10px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;">
+            <i class="fa-brands fa-whatsapp" style="font-size:0.9rem;"></i> WhatsApp Vendor
+          </a>`;
+      } else if (isMatched) {
+        actionHtml = '<span style="color:#059669; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-circle-check"></i> Safe ITC Claimed</span>';
+      } else if (isMissingTally) {
+        actionHtml = '<span style="color:#d97706; font-size:0.75rem;"><i class="fa-solid fa-plus-circle"></i> Book in Tally</span>';
+      } else {
+        actionHtml = `<span style="color:#2563eb; font-size:0.75rem;" title="Tax Diff: ₹${item.taxDiff}"><i class="fa-solid fa-triangle-exclamation"></i> Verify Bill</span>`;
+      }
+
+      return `
+        <tr style="${isAtRisk ? 'background:rgba(254, 242, 242, 0.4);' : ''}">
+          <td>${badgeHtml}</td>
+          <td>
+            <strong>${data.supplierName || 'Unknown Vendor'}</strong>
+            ${item.remarks ? `<br><small style="color:${isAtRisk ? '#dc2626' : '#64748b'};">${item.remarks}</small>` : ''}
+          </td>
+          <td><code style="background:#f1f5f9; padding:2px 5px; border-radius:4px; font-size:0.75rem;">${data.gstin || '-'}</code></td>
+          <td><strong>${data.invoiceNo || '-'}</strong></td>
+          <td>${data.invoiceDate || '-'}</td>
+          <td>₹ ${taxableAmount}</td>
+          <td style="color:${isAtRisk ? '#dc2626' : (isMatched ? '#16a34a' : 'inherit')}; font-weight:700;">₹ ${taxAmount}</td>
+          <td>₹ ${grossAmount}</td>
+          <td>${actionHtml}</td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  // 9. Web Bank Converter to Tally Queue Push
+  setupWebBankToTallyPush() {
+    const btn = document.getElementById('btnPushWebBankToTally');
+    btn?.addEventListener('click', async () => {
+      const res = window.currentBankResult;
+      if (!res || !Array.isArray(res.transactions) || !res.transactions.length) {
+        alert('Please convert a bank statement PDF first.');
+        return;
+      }
+
+      const confirmed = confirm(`Are you sure you want to push all ${res.transactions.length} converted bank transactions into the Tally Sync Queue?\n\nBank: ${res.bankName}\nYour office desktop connector will automatically pick them up and create Payment/Receipt/Contra vouchers in Tally.`);
+      if (!confirmed) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enqueueing for Tally...';
+
+      try {
+        const token = await this.adminToken();
+        const payload = {
+          items: res.transactions.map(tx => ({
+            sourceType: 'bank_statement',
+            sourceId: tx.refNo || `BNK-${Date.now().toString().slice(-4)}`,
+            clientName: tx.narration ? tx.narration.slice(0, 32) : 'Bank Party',
+            amount: Number(tx.debit > 0 ? tx.debit : tx.credit),
+            date: tx.date,
+            voucherType: tx.debit > 0 ? 'Payment' : 'Receipt',
+            narration: `${tx.narration} | Ref: ${tx.refNo || '-'}`,
+            bankLedger: res.bankName || 'HDFC Bank Ltd',
+            partyLedger: tx.suggestedLedger || (tx.debit > 0 ? 'Sundry Creditors' : 'Sundry Debtors')
+          }))
+        };
+
+        const postRes = await fetch('/api/tally/queue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await postRes.json();
+        if (postRes.ok) {
+          alert(`🎉 Successfully queued ${res.transactions.length} bank transactions for TallyPrime!\n\nYour Desktop Connector will automatically post them as Payment and Receipt vouchers.`);
+          this.loadTallyQueue();
+        } else {
+          alert(`Error queueing: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert('Failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Push to Tally Sync Queue';
+      }
+    });
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {

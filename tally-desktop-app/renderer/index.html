@@ -171,7 +171,7 @@
               <h4 id="resFileName" style="margin: 6px 0 2px;">Statement_Converted.xlsx</h4>
               <small id="resFilePath" style="color: var(--text-dim); word-break: break-all;"></small>
             </div>
-            <div class="result-actions">
+            <div class="result-actions" style="flex-wrap: wrap; gap: 8px; align-items: center;">
               <button class="btn btn-toggle-sync" id="btnOpenExcelFile">
                 <i class="fa-solid fa-file-excel"></i> Open in Excel
               </button>
@@ -181,6 +181,20 @@
               <button class="btn btn-primary" id="btnAiClassify" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; color: #fff;">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> AI Auto-Tag Ledgers
               </button>
+              <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);">
+                <label for="bankLedgerInput" style="font-size: 0.78rem; color: var(--text-dim); white-space: nowrap;"><i class="fa-solid fa-building-columns"></i> Tally Bank:</label>
+                <input type="text" id="bankLedgerInput" list="bankLedgerList" value="HDFC Bank Ltd" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.8rem; width: 140px;">
+                <datalist id="bankLedgerList">
+                  <option value="HDFC Bank Ltd">
+                  <option value="State Bank of India">
+                  <option value="ICICI Bank Ltd">
+                  <option value="Axis Bank">
+                  <option value="Bank Account">
+                </datalist>
+                <button class="btn" id="btnPushBankToTally" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; border: none; font-weight: 700; padding: 6px 14px; font-size: 0.84rem; box-shadow: 0 4px 12px rgba(16,185,129,0.3); cursor: pointer; white-space: nowrap;">
+                  <i class="fa-solid fa-bolt"></i> Auto-Post to Tally (Suvit Style)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -210,7 +224,8 @@
                   <th>Debit (₹)</th>
                   <th>Credit (₹)</th>
                   <th>Balance (₹)</th>
-                  <th>AI Tally Ledger</th>
+                  <th>Tally Ledger &amp; Type</th>
+                  <th>Tally Status</th>
                 </tr>
               </thead>
               <tbody id="resPreviewBody">

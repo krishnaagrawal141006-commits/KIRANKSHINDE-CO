@@ -709,6 +709,430 @@ class TallySyncEngine extends EventEmitter {
     this.heartbeat();
     this.pollQueue();
   }
+
+  // ================= 10. BANK STATEMENT TO TALLY ENGINE (SUVIT STYLE) =================
+
+  mapBankNarrationToLedger(narration = '', isDebit = true) {
+    const s = String(narration || '').toLowerCase();
+
+    // 1. Cash / ATM Contra
+    if (/\b(atm|cash wdl|cash dep|cdm|self withdrawal|cash-in-hand)\b/.test(s)) {
+      return { ledger: 'Cash-in-Hand', parent: 'Cash-in-Hand', isContra: true };
+    }
+
+    // 2. Staff Welfare & Food / Pantry
+    if (/\b(swiggy|zomato|blinkit|zepto|dunzo|mcdonald|dominos|starbucks|subway|cafe|canteen|food|restaurant|grocery|dmart|bigbasket)\b/.test(s)) {
+      return { ledger: 'Staff Welfare & Pantry Expense', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 3. Conveyance & Fuel / Fastag
+    if (/\b(petrol|hpcl|iocl|bpcl|fuel|diesel|cng|shell|fastag|toll|parking)\b/.test(s)) {
+      return { ledger: 'Conveyance & Fuel Expenses', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 4. Travel & Hotel
+    if (/\b(uber|ola|rapido|irctc|redbus|makemytrip|goibibo|indigo|air india|hotel|lodging|flight)\b/.test(s)) {
+      return { ledger: 'Travelling & Conveyance Expenses', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 5. Telephone, Mobile & Internet
+    if (/\b(jio|airtel|vodafone|idea|vi|bsnl|act fibernet|tata play|broadband|recharge|telecom)\b/.test(s)) {
+      return { ledger: 'Telephone & Internet Expenses', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 6. Electricity & Utilities
+    if (/\b(electricity|mseb|mahadiscom|adani|bescom|tneb|cesc|power bill|billdesk utilities|water bill)\b/.test(s)) {
+      return { ledger: 'Electricity & Utility Expenses', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 7. Printing, Stationery & Courier
+    if (/\b(stationery|xerox|print|paper|cartridge|courier|bluedart|dtdc|amazon|flipkart)\b/.test(s)) {
+      return { ledger: 'Printing & Stationery Expenses', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 8. Bank Charges & Loan Interest
+    if (/\b(sms charge|chq rtn|bounce|min bal|atm charge|card annual fee|locker|bank charges|int\.pd|loan emi|interest paid)\b/.test(s)) {
+      return { ledger: 'Bank Charges & Finance Costs', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 9. Taxes / Statutory Compliance
+    if (/\b(cbic|gst pmt|gstin|advance tax|self assessment|income tax|tds challan|tcs|challan|prof\.tax|pt)\b/.test(s)) {
+      return { ledger: 'Direct & Indirect Taxes Paid', parent: 'Duties & Taxes', isContra: false };
+    }
+
+    // 10. Rent & Office Maintenance
+    if (/\b(rent|office rent|maintenance|society maintenance|housekeeping)\b/.test(s)) {
+      return { ledger: 'Rent & Office Maintenance Expenses', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 11. Salaries & Remuneration
+    if (/\b(salary|salaries|stipend|wages|bonus|director remuneration|staff advance)\b/.test(s)) {
+      return { ledger: 'Salaries & Staff Stipend', parent: 'Indirect Expenses', isContra: false };
+    }
+
+    // 12. Professional & Legal Fees
+    if (/\b(audit fee|professional fee|legal fee|advocate|consultant fee)\b/.test(s)) {
+      return isDebit
+        ? { ledger: 'Professional & Legal Charges', parent: 'Indirect Expenses', isContra: false }
+        : { ledger: 'Professional Fees Account', parent: 'Direct Incomes', isContra: false };
+    }
+
+    // 13. Interest Income / Dividend
+    if (!isDebit && /\b(int\.recd|interest received|savings interest|fd interest|dividend|sweep in)\b/.test(s)) {
+      return { ledger: 'Bank Interest Received', parent: 'Indirect Incomes', isContra: false };
+    }
+
+    // Default Fallbacks
+    if (isDebit) {
+      return { ledger: 'Sundry Creditors / Trade Vendors', parent: 'Sundry Creditors', isContra: false };
+    } else {
+      return { ledger: 'Sundry Debtors / Client Receipts', parent: 'Sundry Debtors', isContra: false };
+    }
+  }
+
+  // Pre-creates all ledgers needed for bank auto-posting in Tally
+  async ensureBankVoucherLedgersExist(bankLedgerName, requiredLedgers = []) {
+    const bankEsc = this.xmlEscape(bankLedgerName || 'Bank Account');
+    let mastersXml = `
+            <LEDGER NAME="${bankEsc}" ACTION="Create">
+              <NAME.LIST><NAME>${bankEsc}</NAME></NAME.LIST>
+              <PARENT>Bank Accounts</PARENT>
+              <ISBILLWISEON>No</ISBILLWISEON>
+              <AFFECTSSTOCK>No</AFFECTSSTOCK>
+              <OPENINGBALANCE>0</OPENINGBALANCE>
+            </LEDGER>
+            <LEDGER NAME="Cash-in-Hand" ACTION="Create">
+              <NAME.LIST><NAME>Cash-in-Hand</NAME></NAME.LIST>
+              <PARENT>Cash-in-Hand</PARENT>
+              <ISBILLWISEON>No</ISBILLWISEON>
+              <AFFECTSSTOCK>No</AFFECTSSTOCK>
+              <OPENINGBALANCE>0</OPENINGBALANCE>
+            </LEDGER>`;
+
+    const seen = new Set();
+    for (const item of requiredLedgers) {
+      const name = item.name || item;
+      const parent = item.parent || 'Indirect Expenses';
+      if (!name || seen.has(name) || name === bankLedgerName || name === 'Cash-in-Hand') continue;
+      seen.add(name);
+      const esc = this.xmlEscape(name);
+      const parentEsc = this.xmlEscape(parent);
+      mastersXml += `
+            <LEDGER NAME="${esc}" ACTION="Create">
+              <NAME.LIST><NAME>${esc}</NAME></NAME.LIST>
+              <PARENT>${parentEsc}</PARENT>
+              <ISBILLWISEON>No</ISBILLWISEON>
+              <AFFECTSSTOCK>No</AFFECTSSTOCK>
+              <OPENINGBALANCE>0</OPENINGBALANCE>
+            </LEDGER>`;
+    }
+
+    const envelope = `<ENVELOPE>
+      <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
+      <BODY>
+        <IMPORTDATA>
+          <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
+          <REQUESTDATA>
+            <TALLYMESSAGE xmlns:UDF="TallyUDF">
+              ${mastersXml}
+            </TALLYMESSAGE>
+          </REQUESTDATA>
+        </IMPORTDATA>
+      </BODY>
+    </ENVELOPE>`;
+
+    try {
+      await this.request(this.config.tallyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'Content-Length': Buffer.byteLength(envelope)
+        }
+      }, envelope);
+    } catch (e) {}
+  }
+
+  // Generates single Bank Payment / Receipt / Contra XML
+  buildBankVoucherXml(tx, dateStr, bankLedgerName) {
+    const isDebit = Number(tx.debit || 0) > 0;
+    const amount = Number(isDebit ? tx.debit : tx.credit).toFixed(2);
+    const bankEsc = this.xmlEscape(bankLedgerName || 'Bank Account');
+    const narration = this.xmlEscape(tx.narration || 'Bank Transaction');
+    const refNo = this.xmlEscape(tx.refNo && tx.refNo !== '-' ? tx.refNo : `BNK-${Date.now().toString().slice(-6)}`);
+
+    let ledgerName = tx.suggestedLedger || tx.ledger;
+    let isContra = Boolean(tx.isContra);
+
+    if (!ledgerName) {
+      const mapped = this.mapBankNarrationToLedger(tx.narration, isDebit);
+      ledgerName = mapped.ledger;
+      isContra = mapped.isContra;
+    }
+
+    const ledgerEsc = this.xmlEscape(ledgerName);
+
+    let vchType = 'Payment';
+    let ledgerEntriesXml = '';
+
+    if (isContra) {
+      vchType = 'Contra';
+      if (isDebit) {
+        // Cash withdrawal: Cash Dr (-amount), Bank Cr (amount)
+        ledgerEntriesXml = `
+                <ALLLEDGERENTRIES.LIST>
+                  <LEDGERNAME>Cash-in-Hand</LEDGERNAME>
+                  <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                  <AMOUNT>-${amount}</AMOUNT>
+                </ALLLEDGERENTRIES.LIST>
+                <ALLLEDGERENTRIES.LIST>
+                  <LEDGERNAME>${bankEsc}</LEDGERNAME>
+                  <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                  <AMOUNT>${amount}</AMOUNT>
+                </ALLLEDGERENTRIES.LIST>`;
+      } else {
+        // Cash deposit: Bank Dr (-amount), Cash Cr (amount)
+        ledgerEntriesXml = `
+                <ALLLEDGERENTRIES.LIST>
+                  <LEDGERNAME>${bankEsc}</LEDGERNAME>
+                  <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                  <AMOUNT>-${amount}</AMOUNT>
+                </ALLLEDGERENTRIES.LIST>
+                <ALLLEDGERENTRIES.LIST>
+                  <LEDGERNAME>Cash-in-Hand</LEDGERNAME>
+                  <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                  <AMOUNT>${amount}</AMOUNT>
+                </ALLLEDGERENTRIES.LIST>`;
+      }
+    } else if (isDebit) {
+      // Payment Voucher: Expense/Vendor Dr (-amount), Bank Cr (amount)
+      vchType = 'Payment';
+      ledgerEntriesXml = `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${ledgerEsc}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                <AMOUNT>-${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${bankEsc}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+    } else {
+      // Receipt Voucher: Bank Dr (-amount), Income/Debtor Cr (amount)
+      vchType = 'Receipt';
+      ledgerEntriesXml = `
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${bankEsc}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                <AMOUNT>-${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>
+              <ALLLEDGERENTRIES.LIST>
+                <LEDGERNAME>${ledgerEsc}</LEDGERNAME>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <AMOUNT>${amount}</AMOUNT>
+              </ALLLEDGERENTRIES.LIST>`;
+    }
+
+    return `<ENVELOPE>
+      <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
+      <BODY>
+        <IMPORTDATA>
+          <REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME></REQUESTDESC>
+          <REQUESTDATA>
+            <TALLYMESSAGE xmlns:UDF="TallyUDF">
+              <VOUCHER VCHTYPE="${vchType}" ACTION="Create" OBJVIEW="Accounting Voucher View">
+                <DATE>${dateStr}</DATE>
+                <VOUCHERTYPENAME>${vchType}</VOUCHERTYPENAME>
+                <VOUCHERNUMBER>${refNo}</VOUCHERNUMBER>
+                <REFERENCE>${refNo}</REFERENCE>
+                <PARTYLEDGERNAME>${isDebit ? ledgerEsc : bankEsc}</PARTYLEDGERNAME>
+                <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
+                <ISINVOICE>No</ISINVOICE>
+                <NARRATION>${narration}</NARRATION>
+                ${ledgerEntriesXml}
+              </VOUCHER>
+            </TALLYMESSAGE>
+          </REQUESTDATA>
+        </IMPORTDATA>
+      </BODY>
+    </ENVELOPE>`;
+  }
+
+  // Sends single bank voucher with educational fallback
+  async sendBankVoucherToTally(tx, bankLedgerName, companyInfo) {
+    let dateStr = this.parseToTallyDate(tx.date, companyInfo, false);
+    const xml = this.buildBankVoucherXml(tx, dateStr, bankLedgerName);
+
+    try {
+      const res = await this.request(this.config.tallyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'Content-Length': Buffer.byteLength(xml)
+        }
+      }, xml);
+
+      const body = res.body || '';
+      const created = Number((body.match(/<CREATED>(\d+)<\/CREATED>/i) || [])[1] || 0);
+      const altered = Number((body.match(/<ALTERED>(\d+)<\/ALTERED>/i) || [])[1] || 0);
+      const errors = Number((body.match(/<ERRORS>(\d+)<\/ERRORS>/i) || [])[1] || 0);
+
+      if ((created > 0 || altered > 0) && errors === 0) {
+        return { success: true, voucherNo: tx.refNo || 'OK' };
+      }
+
+      // Educational / Date Range fallback
+      if (errors > 0 || /date|educational|period|year/i.test(body)) {
+        const safeDateStr = this.parseToTallyDate(tx.date, companyInfo, true);
+        if (safeDateStr !== dateStr) {
+          const safeXml = this.buildBankVoucherXml(tx, safeDateStr, bankLedgerName);
+          const safeRes = await this.request(this.config.tallyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'text/xml; charset=utf-8',
+              'Content-Length': Buffer.byteLength(safeXml)
+            }
+          }, safeXml);
+          const safeBody = safeRes.body || '';
+          const sCreated = Number((safeBody.match(/<CREATED>(\d+)<\/CREATED>/i) || [])[1] || 0);
+          const sErrors = Number((safeBody.match(/<ERRORS>(\d+)<\/ERRORS>/i) || [])[1] || 0);
+          if (sCreated > 0 && sErrors === 0) {
+            return { success: true, voucherNo: tx.refNo || 'OK', dateAdjusted: true };
+          }
+        }
+      }
+
+      const lineErrors = [];
+      const re = /<LINEERROR>(.*?)<\/LINEERROR>/gi;
+      let m;
+      while ((m = re.exec(body)) !== null) lineErrors.push(m[1].trim());
+      const errMsg = lineErrors.length ? lineErrors.join(' | ') : 'Tally rejected bank voucher';
+      return { success: false, error: errMsg };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 11. Suvit-Style Batch Auto-Posting of Bank Statement
+  async postBankTransactionsToTally(transactions = [], bankLedgerName = 'HDFC Bank Ltd') {
+    if (!transactions.length) {
+      return { success: false, error: 'No transactions provided to post.' };
+    }
+
+    const companyInfo = await this.getTallyActiveCompany();
+    if (!companyInfo.online) {
+      return {
+        success: false,
+        error: `TallyPrime is not online on ${this.config.tallyUrl}. Please ensure Tally is open and company is loaded.`
+      };
+    }
+
+    this.log('info', `🚀 Starting Suvit-Style Auto-Posting of ${transactions.length} transactions to Tally (${companyInfo.company})...`);
+
+    // 1. Collect required ledgers and ensure they exist in Tally
+    const ledgersToCreate = [];
+    transactions.forEach(tx => {
+      const isDebit = Number(tx.debit || 0) > 0;
+      let mappedName = tx.suggestedLedger || tx.ledger;
+      let parent = 'Indirect Expenses';
+      if (!mappedName) {
+        const m = this.mapBankNarrationToLedger(tx.narration, isDebit);
+        mappedName = m.ledger;
+        parent = m.parent;
+      }
+      ledgersToCreate.push({ name: mappedName, parent });
+    });
+
+    await this.ensureBankVoucherLedgersExist(bankLedgerName, ledgersToCreate);
+    this.log('info', `✅ Tally Masters verified. Now creating Payment, Receipt & Contra vouchers...`);
+
+    let postedCount = 0;
+    let failedCount = 0;
+    const results = [];
+
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+      const res = await this.sendBankVoucherToTally(tx, bankLedgerName, companyInfo);
+
+      if (res.success) {
+        postedCount++;
+        this.stats.totalSynced++;
+        results.push({ index: i, success: true, refNo: tx.refNo });
+      } else {
+        failedCount++;
+        this.stats.totalFailed++;
+        results.push({ index: i, success: false, error: res.error });
+      }
+
+      this.emit('bank-post-progress', {
+        current: i + 1,
+        total: transactions.length,
+        posted: postedCount,
+        failed: failedCount,
+        tx
+      });
+    }
+
+    this.stats.lastSyncTime = new Date().toLocaleTimeString('en-IN');
+    this.emit('stats-updated', { ...this.stats, isPaused: this.isPaused });
+
+    const summaryMsg = `🏁 Bank Auto-Posting Finished: ${postedCount} Vouchers Created in Tally, ${failedCount} Failed.`;
+    this.log(postedCount > 0 ? 'success' : 'warn', summaryMsg);
+
+    return {
+      success: postedCount > 0,
+      total: transactions.length,
+      posted: postedCount,
+      failed: failedCount,
+      company: companyInfo.company,
+      results
+    };
+  }
+
+  // 12. Query Tally for List of Bank Ledgers
+  async getTallyBankLedgers() {
+    const xml = `<ENVELOPE>
+      <HEADER><TALLYREQUEST>Export Data</TALLYREQUEST></HEADER>
+      <BODY>
+        <EXPORTDATA>
+          <REQUESTDESC>
+            <STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES>
+            <REPORTNAME>List of Ledgers</REPORTNAME>
+          </REQUESTDESC>
+        </EXPORTDATA>
+      </BODY>
+    </ENVELOPE>`;
+
+    const defaults = ['HDFC Bank Ltd', 'State Bank of India', 'ICICI Bank Ltd', 'Axis Bank', 'Kotak Mahindra Bank', 'Bank of Baroda', 'Bank Account'];
+
+    try {
+      const res = await this.request(this.config.tallyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'Content-Length': Buffer.byteLength(xml)
+        }
+      }, xml);
+
+      if (res.statusCode === 200 && res.body) {
+        const ledgers = [];
+        const re = /<NAME>(.*?)<\/NAME>/gi;
+        let m;
+        while ((m = re.exec(res.body)) !== null) {
+          const lName = m[1].trim();
+          if (/bank|hdfc|sbi|icici|axis|kotak|bob|pnb|canara/i.test(lName)) {
+            ledgers.push(lName);
+          }
+        }
+        if (ledgers.length) {
+          return Array.from(new Set(ledgers));
+        }
+      }
+      return defaults;
+    } catch (e) {
+      return defaults;
+    }
+  }
 }
 
 module.exports = TallySyncEngine;

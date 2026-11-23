@@ -168,9 +168,44 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // POST: Enqueue new invoice/voucher
+  // POST: Enqueue new invoice/voucher (Single or Batch)
   if (req.method === 'POST') {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+
+    // Batch Support for Bank Statements / Multi-Vouchers
+    if (Array.isArray(body.items) && body.items.length) {
+      const rows = body.items.map(item => {
+        const clientName = String(item.clientName || item.client || item.partyLedger || item.suggestedLedger || 'Sundry Debtors').trim();
+        const amount = Number(item.amount || (item.debit > 0 ? item.debit : item.credit) || 0);
+        return {
+          source_type: item.sourceType || 'bank_statement',
+          source_id: item.sourceId || item.refNo || item.id || null,
+          client_name: clientName,
+          voucher_type: item.voucherType || (Number(item.debit || 0) > 0 ? 'Payment' : 'Receipt'),
+          amount: amount,
+          date: toISODate(item.date),
+          narration: item.narration || 'Bank Transaction',
+          sales_ledger: item.salesLedger || item.bankLedger || 'HDFC Bank Ltd',
+          party_ledger: item.partyLedger || clientName,
+          status: 'PENDING',
+          error_message: null
+        };
+      }).filter(r => r.amount > 0);
+
+      try {
+        const r = await fetch(`${url}/rest/v1/tally_sync_queue`, {
+          method: 'POST',
+          headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify(rows)
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) return res.status(r.status).json({ error: data.message || 'Failed to batch enqueue for Tally' });
+        return res.status(201).json({ ok: true, queuedCount: rows.length, queued: data });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     const clientName = String(body.clientName || body.client || '').trim();
     const amount = Number(body.amount || 0);
 

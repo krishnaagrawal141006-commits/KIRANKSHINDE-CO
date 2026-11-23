@@ -49,6 +49,14 @@ engine.on('stats-updated', (stats) => {
   }
 });
 
+engine.on('bank-post-progress', (progress) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send('bank-post-progress', progress);
+    } catch (e) {}
+  }
+});
+
 engine.on('voucher-synced', (data) => {
   try {
     if (Notification.isSupported()) {
@@ -252,6 +260,24 @@ ipcMain.handle('ai-classify-narrations', async (event, transactions) => {
   } catch (err) {
     engine.log('warn', `⚠️ AI Categorizer note: ${err.message}`);
     return { success: false, error: err.message };
+  }
+});
+
+// Suvit-Style Bank Statement Direct Auto-Posting to Tally
+ipcMain.handle('post-bank-txs-to-tally', async (event, { transactions, bankLedger }) => {
+  try {
+    return await engine.postBankTransactionsToTally(transactions, bankLedger);
+  } catch (err) {
+    engine.log('error', `❌ Bank Post Error: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('get-tally-bank-ledgers', async () => {
+  try {
+    return await engine.getTallyBankLedgers();
+  } catch (e) {
+    return ['HDFC Bank Ltd', 'State Bank of India', 'ICICI Bank Ltd', 'Bank Account'];
   }
 });
 

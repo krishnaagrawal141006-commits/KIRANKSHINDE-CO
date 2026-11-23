@@ -327,6 +327,10 @@ window.api?.onStats((stats) => {
   updateStatsUI(stats);
 });
 
+window.api?.onLog((logData) => {
+  appendLog(logData);
+});
+
 // 8. Client Document Vault Manager
 const btnRefreshVault = document.getElementById('btnRefreshVault');
 const btnOpenVaultRoot = document.getElementById('btnOpenVaultRoot');

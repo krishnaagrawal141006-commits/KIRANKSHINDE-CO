@@ -687,13 +687,110 @@ const AdminCRM = {
     alert(`Task sent back to ${task.assigned || 'employee'} for revision.`);
   },
 
-  // 5. Actions: Mark Invoice Paid
-  async markInvoicePaid(invoiceId) {
+  // 5. Actions: Open Payment Modal to Record Payment & Post Tally Receipt
+  markInvoicePaid(invoiceId) {
     const inv = this.state.invoices.find(i => i.id === invoiceId);
-    if (inv) {
-      inv.status = 'Paid';
+    if (!inv) return;
+
+    const idInput = document.getElementById('payModalInvoiceId');
+    const nameInput = document.getElementById('payModalClientName');
+    const refDisplay = document.getElementById('payModalInvoiceRef');
+    const clientDisplay = document.getElementById('payModalClientDisplay');
+    const amountInput = document.getElementById('payModalAmount');
+    const dateInput = document.getElementById('payModalDate');
+    const refInput = document.getElementById('payModalRef');
+    const modal = document.getElementById('paymentReceiptModal');
+
+    if (idInput) idInput.value = inv.id;
+    if (nameInput) nameInput.value = inv.client;
+    if (refDisplay) refDisplay.textContent = inv.id;
+    if (clientDisplay) clientDisplay.textContent = inv.client;
+
+    const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
+    if (amountInput) amountInput.value = cleanAmount || 0;
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+    if (refInput) refInput.value = '';
+
+    if (modal) modal.classList.add('active');
+  },
+
+  async handleRecordPaymentSubmit(e) {
+    e.preventDefault();
+    const invoiceId = document.getElementById('payModalInvoiceId').value;
+    const clientName = document.getElementById('payModalClientName').value;
+    const amount = Number(document.getElementById('payModalAmount').value || 0);
+    const payDate = document.getElementById('payModalDate').value || new Date().toISOString().slice(0, 10);
+    const payMode = document.getElementById('payModalMode').value || 'UPI';
+    const depositBank = document.getElementById('payModalBank').value || 'HDFC Bank Account';
+    const refNo = document.getElementById('payModalRef').value.trim();
+    const postToTally = document.getElementById('payModalPostTally').checked;
+
+    const btnSubmit = document.getElementById('btnSubmitPayment');
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    }
+
+    try {
+      const token = await this.adminToken();
+
+      // 1. Mark Invoice as Paid in Supabase
+      if (token) {
+        await fetch('/api/admin/invoice', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: invoiceId, status: 'Paid' })
+        });
+      }
+
+      // Update local state
+      const inv = this.state.invoices.find(i => i.id === invoiceId);
+      if (inv) inv.status = 'Paid';
       this.renderInvoicesTable();
-      const token = await this.adminToken(); if (token) await fetch('/api/admin/invoice', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: invoiceId, status: 'Paid' }) });
+      this.renderMetrics();
+
+      // 2. Queue Receipt Voucher to Tally
+      if (postToTally && token) {
+        const narration = `Being professional fee received via ${payMode} against Invoice ${invoiceId} ${refNo ? `(Ref: ${refNo})` : ''} - Kiran K. Shinde & Co.`;
+        const qRes = await fetch('/api/tally/queue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            sourceType: 'receipt',
+            sourceId: `REC-${invoiceId}`,
+            clientName: clientName,
+            amount: amount,
+            date: this.toISODate(payDate),
+            voucherType: 'Receipt',
+            partyLedger: clientName,
+            salesLedger: depositBank,
+            narration: narration
+          })
+        });
+
+        if (qRes.ok) {
+          alert(`✅ PAYMENT RECORDED & RECEIPT QUEUED!\n\n• Invoice ${invoiceId} marked as Paid.\n• Receipt of ₹${amount.toLocaleString('en-IN')} queued for TallyPrime.\n• Bank (${depositBank}) will be Debited and Client (${clientName}) will be Credited!\n\nYour Desktop App will auto-post it into Tally!`);
+        } else {
+          const errData = await qRes.json().catch(() => ({}));
+          alert(`Invoice marked Paid, but Receipt queueing returned: ${errData.error || 'Server error'}`);
+        }
+      } else {
+        alert(`✅ Invoice ${invoiceId} marked as Paid!`);
+      }
+
+      document.getElementById('paymentReceiptModal').classList.remove('active');
+      this.loadTallyQueue();
+      this.checkTallyConnectorStatus();
+    } catch (err) {
+      alert('Error recording payment: ' + err.message);
+    } finally {
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-check"></i> Confirm Payment & Post Receipt';
+      }
     }
   },
 
@@ -1306,6 +1403,11 @@ const AdminCRM = {
           alert(`Document follow-up scheduled for ${clientName}!`);
         }
       });
+    }
+
+    const recordPaymentForm = document.getElementById('recordPaymentForm');
+    if (recordPaymentForm) {
+      recordPaymentForm.addEventListener('submit', (e) => AdminCRM.handleRecordPaymentSubmit(e));
     }
   },
 

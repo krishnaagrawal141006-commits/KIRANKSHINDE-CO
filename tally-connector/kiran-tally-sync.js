@@ -138,17 +138,22 @@ async function getTallyActiveCompany() {
   }
 }
 
-// 2. Auto-Create Master Ledgers in Tally (Sundry Debtors, Direct Incomes & Tax Ledgers)
+// 2. Auto-Create Master Ledgers in Tally (Sundry Debtors, Direct Incomes, Bank Accounts & Tax Ledgers)
 async function ensureTallyLedgersExist(partyName, salesLedgerName, extraLedgers = []) {
   const party = xmlEscape(partyName || 'Sundry Debtors');
   const sales = xmlEscape(salesLedgerName || 'Professional Fees Account');
+
+  const isBank = /bank|hdfc|sbi|icici|axis|kotak|bob|pnb/i.test(salesLedgerName || '');
+  const isCash = /cash/i.test(salesLedgerName || '');
+  const salesParent = isBank ? 'Bank Accounts' : (isCash ? 'Cash-in-Hand' : 'Direct Incomes');
 
   let extraXml = '';
   const uniqueLedgers = Array.from(new Set(extraLedgers.filter(Boolean)));
   for (const lName of uniqueLedgers) {
     const esc = xmlEscape(lName);
     const isTax = /cgst|sgst|igst|tax/i.test(lName);
-    const parent = isTax ? 'Duties &amp; Taxes' : 'Direct Incomes';
+    const isExtraBank = /bank|hdfc|sbi|icici|axis|kotak/i.test(lName);
+    const parent = isTax ? 'Duties &amp; Taxes' : (isExtraBank ? 'Bank Accounts' : 'Direct Incomes');
     extraXml += `
           <LEDGER NAME="${esc}" ACTION="Create">
             <NAME.LIST><NAME>${esc}</NAME></NAME.LIST>
@@ -183,7 +188,7 @@ async function ensureTallyLedgersExist(partyName, salesLedgerName, extraLedgers 
             <NAME.LIST>
               <NAME>${sales}</NAME>
             </NAME.LIST>
-            <PARENT>Direct Incomes</PARENT>
+            <PARENT>${salesParent}</PARENT>
             <ISBILLWISEON>No</ISBILLWISEON>
             <AFFECTSSTOCK>No</AFFECTSSTOCK>
             <OPENINGBALANCE>0</OPENINGBALANCE>
@@ -281,14 +286,30 @@ function buildVoucherXml(item, dateStr) {
     } catch (e) {}
   }
 
-  const isOptional = Boolean(item.is_optional || item.voucher_type === 'Proforma' || (metadata && metadata.isOptional));
-  const vchType = xmlEscape(item.voucher_type === 'Proforma' ? 'Sales' : (item.voucher_type || 'Sales'));
-  const invoiceNo = xmlEscape(item.source_id || `INV-${Date.now().toString().slice(-4)}`);
+  const isReceipt = String(item.voucher_type || '').toLowerCase() === 'receipt';
+  const isOptional = isReceipt ? false : Boolean(item.is_optional || item.voucher_type === 'Proforma' || (metadata && metadata.isOptional));
+  const vchType = xmlEscape(isReceipt ? 'Receipt' : (item.voucher_type === 'Proforma' ? 'Sales' : (item.voucher_type || 'Sales')));
+  const invoiceNo = xmlEscape(item.source_id || (isReceipt ? `REC-${Date.now().toString().slice(-4)}` : `INV-${Date.now().toString().slice(-4)}`));
   const narration = xmlEscape(rawNarration);
 
   let ledgerEntriesXml = '';
 
-  if (metadata && Array.isArray(metadata.items) && metadata.items.length > 0) {
+  if (isReceipt) {
+    // Receipt Voucher:
+    // Bank / Cash Account is DEBITED (ISDEEMEDPOSITIVE: Yes, AMOUNT: -amount)
+    // Client / Party Account is CREDITED (ISDEEMEDPOSITIVE: No, AMOUNT: amount)
+    ledgerEntriesXml = `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${defaultSalesLedger}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${amount}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${party}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${amount}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>`;
+  } else if (metadata && Array.isArray(metadata.items) && metadata.items.length > 0) {
     // 1. Debit: Client / Party Ledger with total amount
     ledgerEntriesXml += `
             <ALLLEDGERENTRIES.LIST>

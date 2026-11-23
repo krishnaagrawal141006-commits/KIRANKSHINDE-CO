@@ -866,6 +866,92 @@
     </div>
   </div>
 
+  <!-- ================= RECORD PAYMENT & POST TALLY RECEIPT MODAL ================= -->
+  <div class="admin-modal-overlay" id="paymentReceiptModal">
+    <div class="admin-modal" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:38px; height:38px; border-radius:8px; background:rgba(16,185,129,0.12); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:1.15rem;">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:1.05rem; color:#0f172a;">Record Client Fee Payment</h3>
+            <span style="font-size:0.78rem; color:#64748b;">Mark bill as settled and auto-post Receipt Voucher to TallyPrime</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('paymentReceiptModal').classList.remove('active')">&times;</button>
+      </div>
+
+      <form id="recordPaymentForm">
+        <input type="hidden" id="payModalInvoiceId">
+        <input type="hidden" id="payModalClientName">
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:#64748b; font-size:0.82rem;">Invoice Reference:</span>
+            <strong id="payModalInvoiceRef" style="color:#0f172a; font-size:0.85rem;">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:#64748b; font-size:0.82rem;">Client / Unit:</span>
+            <strong id="payModalClientDisplay" style="color:#0f172a; font-size:0.85rem;">-</strong>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group-admin">
+            <label class="form-label-admin">Amount Received (₹) *</label>
+            <input type="number" id="payModalAmount" class="form-input-admin" step="any" required>
+          </div>
+          <div class="form-group-admin">
+            <label class="form-label-admin">Payment Date *</label>
+            <input type="date" id="payModalDate" class="form-input-admin" required>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group-admin">
+            <label class="form-label-admin">Payment Mode *</label>
+            <select id="payModalMode" class="form-input-admin">
+              <option value="UPI">UPI / QR Code</option>
+              <option value="NEFT/RTGS">NEFT / RTGS</option>
+              <option value="IMPS">IMPS Instant</option>
+              <option value="Cheque">Cheque Deposit</option>
+              <option value="Cash">Cash in Hand</option>
+            </select>
+          </div>
+          <div class="form-group-admin">
+            <label class="form-label-admin">Deposit Into Ledger *</label>
+            <select id="payModalBank" class="form-input-admin">
+              <option value="HDFC Bank Account">HDFC Bank Account</option>
+              <option value="ICICI Bank Account">ICICI Bank Account</option>
+              <option value="State Bank of India">State Bank of India</option>
+              <option value="Cash in Hand">Cash in Hand</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group-admin">
+          <label class="form-label-admin">UTR / Cheque / Transaction Ref (Optional)</label>
+          <input type="text" id="payModalRef" class="form-input-admin" placeholder="e.g. UPI/501239848123 or Chq #004123">
+        </div>
+
+        <div style="background:rgba(217,119,6,0.06); border:1px solid rgba(217,119,6,0.25); border-radius:8px; padding:10px 12px; margin-top:10px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" id="payModalPostTally" checked style="width:16px; height:16px; cursor:pointer;">
+          <label for="payModalPostTally" style="font-size:0.82rem; color:#92400e; cursor:pointer; font-weight:600; margin:0;">
+            ⚡ Auto-Post Receipt Voucher to TallyPrime (Bank Dr / Client Cr)
+          </label>
+        </div>
+
+        <div style="margin-top: 18px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-admin btn-admin-outline" onclick="document.getElementById('paymentReceiptModal').classList.remove('active')">Cancel</button>
+          <button type="submit" class="btn-admin btn-admin-primary" style="background:#16a34a; border-color:#16a34a;" id="btnSubmitPayment">
+            <i class="fa-solid fa-check"></i> Confirm Payment & Post Receipt
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="../team-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js"></script>

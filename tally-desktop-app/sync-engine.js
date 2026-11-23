@@ -121,8 +121,23 @@ class TallySyncEngine extends EventEmitter {
         const startingFrom = startMatch ? startMatch[1].trim() : null;
         const endingAt = endMatch ? endMatch[1].trim() : null;
 
-        let startingYear = startingFrom && startingFrom.length >= 4 ? parseInt(startingFrom.slice(0, 4), 10) : null;
-        let endingYear = endingAt && endingAt.length >= 4 ? parseInt(endingAt.slice(0, 4), 10) : null;
+        const extractYear = (str) => {
+          if (!str) return null;
+          const s = String(str).trim();
+          if (/^\d{8}$/.test(s)) return parseInt(s.slice(0, 4), 10);
+          const m4 = s.match(/\b(20\d\d|19\d\d)\b/);
+          if (m4) return parseInt(m4[1], 10);
+          const m2 = s.match(/[-/\s](\d{2})$/);
+          if (m2) return 2000 + parseInt(m2[1], 10);
+          return null;
+        };
+
+        let startingYear = extractYear(startingFrom);
+        let endingYear = extractYear(endingAt);
+
+        // Default to active company starting year (2026) if not explicitly detected
+        if (!startingYear || startingYear < 2000) startingYear = 2026;
+        if (!endingYear || endingYear < 2000) endingYear = startingYear + 1;
 
         return {
           online: true,
@@ -236,12 +251,22 @@ class TallySyncEngine extends EventEmitter {
     let y, m, d;
     const str = String(dateVal || '').trim();
 
-    if (str.includes('/')) {
+    const monthNames = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+    const textMatch = str.match(/^(\d{1,2})[\s\-]+([a-zA-Z]{3,9})[\s\-]+['"]?(\d{2,4})$/);
+
+    if (textMatch) {
+      d = textMatch[1].padStart(2, '0');
+      const monStr = textMatch[2].toLowerCase().slice(0, 3);
+      m = monthNames[monStr] || '01';
+      y = textMatch[3].length === 2 ? `20${textMatch[3]}` : textMatch[3];
+    } else if (str.includes('/')) {
       const parts = str.split('/');
       if (parts.length === 3) {
         d = parts[0].padStart(2, '0');
-        m = parts[1].padStart(2, '0');
+        const monStr = parts[1].toLowerCase().slice(0, 3);
+        m = monthNames[monStr] || parts[1].padStart(2, '0');
         y = parts[2].trim();
+        if (y.length === 2) y = `20${y}`;
       }
     } else if (str.includes('-')) {
       const parts = str.split('-');
@@ -252,8 +277,10 @@ class TallySyncEngine extends EventEmitter {
           d = parts[2].padStart(2, '0');
         } else {
           d = parts[0].padStart(2, '0');
-          m = parts[1].padStart(2, '0');
-          y = parts[2];
+          const monStr = parts[1].toLowerCase().slice(0, 3);
+          m = monthNames[monStr] || parts[1].padStart(2, '0');
+          y = parts[2].trim();
+          if (y.length === 2) y = `20${y}`;
         }
       }
     }
@@ -265,11 +292,13 @@ class TallySyncEngine extends EventEmitter {
       d = String(now.getDate()).padStart(2, '0');
     }
 
-    if (companyInfo && companyInfo.startingYear && companyInfo.endingYear) {
-      const numY = parseInt(y, 10);
-      if (numY < companyInfo.startingYear || numY > companyInfo.endingYear) {
-        y = String(companyInfo.startingYear);
-      }
+    // Force date within company starting/ending year
+    const targetStartYear = (companyInfo && companyInfo.startingYear && companyInfo.startingYear >= 2000) ? companyInfo.startingYear : 2026;
+    const targetEndYear = (companyInfo && companyInfo.endingYear && companyInfo.endingYear >= 2000) ? companyInfo.endingYear : targetStartYear + 1;
+
+    const numY = parseInt(y, 10);
+    if (numY < targetStartYear || numY > targetEndYear) {
+      y = String(targetStartYear);
     }
 
     if (forceEducationalDay) {
@@ -514,10 +543,13 @@ class TallySyncEngine extends EventEmitter {
         res.error.toLowerCase().includes('date') ||
         res.error.toLowerCase().includes('educational') ||
         res.error.toLowerCase().includes('period') ||
-        res.error.toLowerCase().includes('year')
+        res.error.toLowerCase().includes('year') ||
+        res.error.toLowerCase().includes('out of range')
     )) {
       this.log('warn', `Retrying with Educational/Period Safe Date (Day 01)...`);
-      const safeDateStr = this.parseToTallyDate(item.date, companyInfo, true);
+      const targetYear = (companyInfo && companyInfo.startingYear && companyInfo.startingYear >= 2000) ? companyInfo.startingYear : 2026;
+      const targetMonth = dateStr.length >= 6 ? dateStr.slice(4, 6) : '04';
+      const safeDateStr = `${targetYear}${targetMonth}01`;
       if (safeDateStr !== dateStr) {
         res = await this.sendVoucherXml(item, safeDateStr);
       }
@@ -982,8 +1014,10 @@ class TallySyncEngine extends EventEmitter {
       }
 
       // Educational / Date Range fallback
-      if (errors > 0 || /date|educational|period|year/i.test(body)) {
-        const safeDateStr = this.parseToTallyDate(tx.date, companyInfo, true);
+      if (errors > 0 || /date|educational|period|year|out of range/i.test(body)) {
+        const targetYear = (companyInfo && companyInfo.startingYear && companyInfo.startingYear >= 2000) ? companyInfo.startingYear : 2026;
+        const targetMonth = dateStr.length >= 6 ? dateStr.slice(4, 6) : '04';
+        const safeDateStr = `${targetYear}${targetMonth}01`;
         if (safeDateStr !== dateStr) {
           const safeXml = this.buildBankVoucherXml(tx, safeDateStr, bankLedgerName);
           const safeRes = await this.request(this.config.tallyUrl, {

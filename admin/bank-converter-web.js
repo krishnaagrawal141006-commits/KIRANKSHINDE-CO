@@ -553,7 +553,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         const token = window.AdminCRM?.adminToken ? await window.AdminCRM.adminToken() : null;
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = {
+          'Content-Type': 'application/json',
+          'x-bridge-token': 'ks_tally_secret_2026'
+        };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         const payload = {

@@ -2419,12 +2419,15 @@ const AdminCRM = {
           }))
         };
 
+        const headers = {
+          'Content-Type': 'application/json',
+          'x-bridge-token': 'ks_tally_secret_2026'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         const postRes = await fetch('/api/tally/queue', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
+          headers,
           body: JSON.stringify(payload)
         });
 

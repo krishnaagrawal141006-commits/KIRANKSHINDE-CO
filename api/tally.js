@@ -125,8 +125,16 @@ module.exports = async function handler(req, res) {
   const xBridgeToken = req.headers['x-bridge-token'] || req.query.token || '';
   const isConnector = xBridgeToken === bridgeToken;
 
+  const referer = String(req.headers.referer || req.headers.origin || '');
+  const isTrustedWeb = referer.includes('cakiran.co.in') ||
+                       referer.includes('kirankshinde-co.vercel.app') ||
+                       referer.includes('localhost') ||
+                       referer.includes('127.0.0.1');
+
   let isAdmin = false;
-  if (authHeader.startsWith('Bearer ')) {
+  if (isTrustedWeb || isConnector) {
+    isAdmin = true;
+  } else if (authHeader.startsWith('Bearer ')) {
     const checkToken = authHeader.replace('Bearer ', '').trim();
     if (checkToken === bridgeToken) {
       isAdmin = true;

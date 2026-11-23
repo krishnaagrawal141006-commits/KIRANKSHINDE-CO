@@ -429,6 +429,7 @@ window.WebBankConverter = {
 
 // Global UI Handlers & Drag-Drop Setup
 let currentBankResult = null;
+window.currentBankResult = null;
 
 function escapeHtmlBank(str) {
   if (!str) return '';
@@ -452,6 +453,11 @@ async function handleWebBankFileSelect(files) {
   try {
     const res = await window.WebBankConverter.convertFile(file);
     currentBankResult = res;
+    window.currentBankResult = res;
+    if (window.WebBankConverter) {
+      window.WebBankConverter.currentResult = res;
+      window.WebBankConverter.getCurrentResult = () => res;
+    }
 
     // Update UI elements
     const bankBadge = document.getElementById('webResBankName');
@@ -521,11 +527,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnDownload) {
     btnDownload.addEventListener('click', () => {
-      if (!currentBankResult) {
+      const target = currentBankResult || window.currentBankResult || window.WebBankConverter?.currentResult;
+      if (!target) {
         alert('Please select and convert a bank statement PDF first.');
         return;
       }
-      window.WebBankConverter.downloadExcel(currentBankResult);
+      window.WebBankConverter.downloadExcel(target);
+    });
+  }
+
+  const btnPushTally = document.getElementById('btnPushWebBankToTally');
+  if (btnPushTally) {
+    btnPushTally.addEventListener('click', async () => {
+      const res = currentBankResult || window.currentBankResult || window.WebBankConverter?.currentResult;
+      if (!res || !Array.isArray(res.transactions) || !res.transactions.length) {
+        alert('Please select and convert a bank statement PDF first.');
+        return;
+      }
+
+      const confirmed = confirm(`Are you sure you want to push all ${res.transactions.length} converted bank transactions into the Tally Sync Queue?\n\nBank: ${res.bankName}\nYour office desktop connector will automatically pick them up and create Payment/Receipt/Contra vouchers in Tally.`);
+      if (!confirmed) return;
+
+      btnPushTally.disabled = true;
+      btnPushTally.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enqueueing for Tally...';
+
+      try {
+        const token = window.AdminCRM?.adminToken ? await window.AdminCRM.adminToken() : null;
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const payload = {
+          items: res.transactions.map(tx => ({
+            sourceType: 'bank_statement',
+            sourceId: tx.refNo || `BNK-${Date.now().toString().slice(-4)}`,
+            clientName: tx.narration ? tx.narration.slice(0, 32) : 'Bank Party',
+            amount: Number(tx.debit > 0 ? tx.debit : tx.credit),
+            date: tx.date,
+            voucherType: tx.debit > 0 ? 'Payment' : 'Receipt',
+            narration: `${tx.narration} | Ref: ${tx.refNo || '-'}`,
+            bankLedger: res.bankName || 'HDFC Bank Ltd',
+            partyLedger: tx.suggestedLedger || (tx.debit > 0 ? 'Sundry Creditors' : 'Sundry Debtors')
+          }))
+        };
+
+        const postRes = await fetch('/api/tally/queue', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+
+        const data = await postRes.json();
+        if (postRes.ok) {
+          alert(`🎉 Successfully queued ${res.transactions.length} bank transactions for TallyPrime!\n\nYour Desktop Connector will automatically post them as Payment and Receipt vouchers.`);
+          if (window.AdminCRM?.loadTallyQueue) window.AdminCRM.loadTallyQueue();
+        } else {
+          alert(`Error queueing: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert('Failed: ' + err.message);
+      } finally {
+        btnPushTally.disabled = false;
+        btnPushTally.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Push to Tally Sync Queue';
+      }
     });
   }
 });

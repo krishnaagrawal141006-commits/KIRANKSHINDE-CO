@@ -2391,7 +2391,7 @@ const AdminCRM = {
   setupWebBankToTallyPush() {
     const btn = document.getElementById('btnPushWebBankToTally');
     btn?.addEventListener('click', async () => {
-      const res = window.currentBankResult;
+      const res = window.currentBankResult || window.WebBankConverter?.currentResult || (window.WebBankConverter?.getCurrentResult ? window.WebBankConverter.getCurrentResult() : null);
       if (!res || !Array.isArray(res.transactions) || !res.transactions.length) {
         alert('Please convert a bank statement PDF first.');
         return;

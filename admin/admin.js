@@ -622,6 +622,197 @@ const AdminCRM = {
     await this.loadCloudInvoices();
   },
 
+  numberToWordsINR(amount) {
+    const num = Math.round(Number(amount || 0));
+    if (num <= 0) return 'INR Zero Only';
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return 'INR ' + num + ' Only';
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+    return ('INR ' + str.trim() + ' Only').replace(/\s+/g, ' ');
+  },
+
+  renderTallyAuthenticInvoiceHtml(inv) {
+    const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+    const formattedAmount = cleanAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const inWords = this.numberToWordsINR(cleanAmount);
+    const vchNo = inv.tallyVoucherNo || inv.id.replace('INV-', '') || '529';
+    const invDate = inv.date || new Date().toLocaleDateString('en-IN');
+    const companyName = 'CA KIRAN K. SHINDE & CO.';
+
+    return `
+      <div class="tally-sheet" style="background:#fff; border:2px solid #000; color:#000; font-family:'Segoe UI', Arial, sans-serif; font-size:12px; line-height:1.35; width:100%; box-sizing:border-box;">
+        <!-- Top Title Bar -->
+        <div style="text-align:center; font-weight:800; font-size:15px; letter-spacing:1px; padding:6px 0; border-bottom:1px solid #000; text-transform:uppercase;">
+          INVOICE
+        </div>
+
+        <!-- Upper Section: 2 Columns -->
+        <div style="display:flex; border-bottom:1px solid #000;">
+          <!-- Left Column (Company & Buyer) -->
+          <div style="width:52%; border-right:1px solid #000; display:flex; flex-direction:column;">
+            <div style="padding:8px 10px; border-bottom:1px solid #000;">
+              <strong style="font-size:13px; text-transform:uppercase;">${companyName}</strong><br>
+              <span style="font-size:11px;">Chartered Accountants &bull; FRN: 147829W</span><br>
+              <span style="font-size:11px;">State Name: Maharashtra, Code: 27</span>
+            </div>
+            <div style="padding:6px 10px; border-bottom:1px solid #000; font-size:11px; background:#fafafa;">
+              <span style="color:#666;">Consignee (Ship to)</span><br>
+              <strong>Same as Buyer</strong>
+            </div>
+            <div style="padding:8px 10px; flex:1;">
+              <span style="color:#666; font-size:11px;">Buyer (Bill to)</span><br>
+              <strong style="font-size:13px; color:#000;">${inv.client}</strong><br>
+              <span style="font-size:11px;">State Name: Maharashtra, Code: 27</span><br>
+              <span style="font-size:10px; color:#666;">GSTIN/UIN: Unregistered / CA Client</span>
+            </div>
+          </div>
+
+          <!-- Right Column (Tally Voucher Details Meta Table) -->
+          <table style="width:48%; border-collapse:collapse; font-size:11px;">
+            <tr>
+              <td style="border-bottom:1px solid #000; border-right:1px solid #000; padding:4px 6px; width:50%; vertical-align:top;">
+                <span style="color:#666;">Invoice No.</span><br>
+                <strong style="font-size:12px;">${vchNo}</strong>
+              </td>
+              <td style="border-bottom:1px solid #000; padding:4px 6px; width:50%; vertical-align:top;">
+                <span style="color:#666;">Dated</span><br>
+                <strong>${invDate}</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-bottom:1px solid #000; border-right:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Delivery Note</span><br>&nbsp;
+              </td>
+              <td style="border-bottom:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Mode/Terms of Payment</span><br>
+                <strong>Immediate / Due</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-bottom:1px solid #000; border-right:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Reference No. &amp; Date</span><br>
+                <strong>${inv.id} dt. ${invDate}</strong>
+              </td>
+              <td style="border-bottom:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Other References</span><br>
+                <span>TallyPrime Synced</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-bottom:1px solid #000; border-right:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Buyer's Order No.</span><br>&nbsp;
+              </td>
+              <td style="border-bottom:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Dated</span><br>&nbsp;
+              </td>
+            </tr>
+            <tr>
+              <td style="border-bottom:1px solid #000; border-right:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Dispatch Doc No.</span><br>&nbsp;
+              </td>
+              <td style="border-bottom:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Delivery Note Date</span><br>&nbsp;
+              </td>
+            </tr>
+            <tr>
+              <td style="border-right:1px solid #000; padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Dispatched through</span><br>
+                <strong>Office / Electronic</strong>
+              </td>
+              <td style="padding:4px 6px; vertical-align:top;">
+                <span style="color:#666;">Destination</span><br>
+                <strong>Pune / Online</strong>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Middle Section: Main Particulars Grid -->
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="background:#fafafa; border-bottom:1px solid #000;">
+              <th style="border-right:1px solid #000; padding:6px 4px; width:6%; text-align:center; font-size:11px;">Sl No.</th>
+              <th style="border-right:1px solid #000; padding:6px 8px; width:48%; text-align:left; font-size:11px;">Description of Goods / Services</th>
+              <th style="border-right:1px solid #000; padding:6px 6px; width:12%; text-align:center; font-size:11px;">HSN/SAC</th>
+              <th style="border-right:1px solid #000; padding:6px 4px; width:8%; text-align:center; font-size:11px;">Quantity</th>
+              <th style="border-right:1px solid #000; padding:6px 4px; width:9%; text-align:right; font-size:11px;">Rate</th>
+              <th style="border-right:1px solid #000; padding:6px 4px; width:5%; text-align:center; font-size:11px;">per</th>
+              <th style="padding:6px 8px; width:12%; text-align:right; font-size:11px;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="height:140px; vertical-align:top;">
+              <td style="border-right:1px solid #000; padding:8px 4px; text-align:center;">1</td>
+              <td style="border-right:1px solid #000; padding:8px 8px;">
+                <strong style="font-size:12.5px;">Professional Fees Account</strong><br>
+                <div style="font-size:11px; color:#333; margin-top:4px;">${inv.service}</div>
+                <div style="font-size:10px; color:#666; margin-top:2px;">(CA Statutory Audit, Taxation &amp; Regulatory Consultancy)</div>
+              </td>
+              <td style="border-right:1px solid #000; padding:8px 6px; text-align:center; font-family:monospace;">998231</td>
+              <td style="border-right:1px solid #000; padding:8px 4px; text-align:center;">1 NOS</td>
+              <td style="border-right:1px solid #000; padding:8px 4px; text-align:right;">${formattedAmount}</td>
+              <td style="border-right:1px solid #000; padding:8px 4px; text-align:center;">NOS</td>
+              <td style="padding:8px 8px; text-align:right; font-weight:700;">${formattedAmount}</td>
+            </tr>
+            <!-- Total Row -->
+            <tr style="border-top:1px solid #000; border-bottom:1px solid #000; font-weight:800; background:#fafafa;">
+              <td colspan="6" style="border-right:1px solid #000; padding:6px 10px; text-align:right; text-transform:uppercase;">
+                Total
+              </td>
+              <td style="padding:6px 8px; text-align:right; font-size:13px;">
+                ₹ ${formattedAmount}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Amount Chargeable in Words Box -->
+        <div style="padding:7px 10px; border-bottom:1px solid #000; font-size:11.5px;">
+          <span style="color:#555;">Amount Chargeable (in words)</span><br>
+          <strong style="font-size:12px; color:#000;">${inWords}</strong>
+        </div>
+
+        <!-- Lower Section: Declaration + Authorised Signatory -->
+        <div style="display:flex; border-bottom:1px solid #000;">
+          <!-- Left: Declaration & Bank Info -->
+          <div style="width:58%; border-right:1px solid #000; padding:8px 10px; font-size:10.5px;">
+            <strong style="text-decoration:underline;">Declaration</strong><br>
+            <span style="color:#333;">We declare that this invoice shows the actual price of the goods/services described and that all particulars are true and correct.</span>
+            
+            <div style="margin-top:8px; padding:6px 8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; font-size:10px;">
+              <strong style="color:#166534;"><i class="fa-solid fa-building-columns"></i> Bank &amp; UPI Details for Payment:</strong><br>
+              <strong>Bank:</strong> HDFC Bank Ltd &bull; <strong>A/C:</strong> 50200067891234 &bull; <strong>IFSC:</strong> HDFC0000123<br>
+              <strong>UPI ID:</strong> 7506647791@hdfcbank (GPay / PhonePe / Paytm)
+            </div>
+          </div>
+
+          <!-- Right: For Company / Authorised Signatory -->
+          <div style="width:42%; padding:8px 10px; text-align:right; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="font-size:11px;">
+              for <strong>${companyName}</strong>
+            </div>
+            <div style="margin-top:35px;">
+              <div style="border-top:1px dashed #777; width:160px; margin-left:auto; margin-bottom:4px;"></div>
+              <span style="font-size:11px; font-weight:700;">Authorised Signatory</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Footer -->
+        <div style="text-align:center; font-size:10px; padding:4px 0; color:#555;">
+          This is a Computer Generated Invoice &bull; Synchronized with TallyPrime (Port 9000)
+        </div>
+      </div>
+    `;
+  },
+
   viewTallyProformaModal(invoiceId) {
     const inv = this.state.invoices.find(i => i.id === invoiceId);
     if (!inv) return;
@@ -633,88 +824,8 @@ const AdminCRM = {
     const voucherRef = inv.tallyVoucherNo ? `#${inv.tallyVoucherNo}` : 'Pending Sync';
     const cleanAmount = inv.amount;
 
-    container.innerHTML = `
-      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; font-family:Inter, Arial, sans-serif;">
-        <!-- Firm Header -->
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:14px; margin-bottom:16px;">
-          <div>
-            <h2 style="margin:0; font-size:1.3rem; color:#0f172a; letter-spacing:-0.5px;">CA KIRAN K. SHINDE &amp; CO.</h2>
-            <div style="font-size:0.82rem; color:#475569; font-weight:600; margin-top:2px;">Chartered Accountants &bull; FRN: 147829W</div>
-            <div style="font-size:0.78rem; color:#64748b; margin-top:4px;">Office: Pune, Maharashtra | Tel: +91 75066 47791 | Email: cakiranshinde@gmail.com</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="background:#0f172a; color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:4px; display:inline-block; text-transform:uppercase; letter-spacing:0.5px;">
-              PROFORMA INVOICE
-            </div>
-            <div style="margin-top:6px; font-size:0.8rem; color:#059669; font-weight:700;">
-              <i class="fa-solid fa-bolt"></i> Tally Voucher: <span style="font-size:0.95rem; color:#0f172a;">${voucherRef}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Meta Grid -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; background:#f8fafc; padding:12px 14px; border-radius:8px; font-size:0.82rem;">
-          <div>
-            <div style="color:#64748b; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Billed To (Client):</div>
-            <div style="font-size:1rem; font-weight:800; color:#0f172a; margin-top:2px;">${inv.client}</div>
-            <div style="color:#64748b; margin-top:4px;">GSTIN/PAN: Unregistered / Verified Client</div>
-          </div>
-          <div style="text-align:right;">
-            <div><strong style="color:#64748b;">Invoice Ref:</strong> <span style="font-family:monospace; font-weight:700; color:#0f172a;">${inv.id}</span></div>
-            <div><strong style="color:#64748b;">Date:</strong> ${inv.date || 'Today'}</div>
-            <div><strong style="color:#64748b;">Financial Year:</strong> FY 2026-27</div>
-            <div style="margin-top:3px;"><strong style="color:#64748b;">Tally Status:</strong> <span style="color:#059669; font-weight:700;">${inv.tallyStatus === 'SYNCED' ? '✓ Synced in TallyPrime' : 'Pending'}</span></div>
-          </div>
-        </div>
-
-        <!-- Particulars Table -->
-        <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:0.85rem;">
-          <thead>
-            <tr style="background:#f1f5f9; border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">
-              <th style="padding:10px; text-align:left; color:#334155;">#</th>
-              <th style="padding:10px; text-align:left; color:#334155;">Service Particulars</th>
-              <th style="padding:10px; text-align:center; color:#334155;">SAC Code</th>
-              <th style="padding:10px; text-align:right; color:#334155;">Amount (INR)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom:1px solid #e2e8f0;">
-              <td style="padding:12px 10px; vertical-align:top;">1</td>
-              <td style="padding:12px 10px; vertical-align:top;">
-                <strong>${inv.service}</strong>
-                <div style="font-size:0.76rem; color:#64748b; margin-top:3px;">Professional CA Fees, Statutory Compliance &amp; Regulatory Consultancy</div>
-              </td>
-              <td style="padding:12px 10px; text-align:center; vertical-align:top; font-family:monospace;">998231</td>
-              <td style="padding:12px 10px; text-align:right; vertical-align:top; font-weight:700; color:#0f172a;">${cleanAmount}</td>
-            </tr>
-            <tr style="background:#f8fafc; font-weight:800; border-top:2px solid #0f172a;">
-              <td colspan="3" style="padding:10px; text-align:right;">TOTAL AMOUNT DUE:</td>
-              <td style="padding:10px; text-align:right; font-size:1.05rem; color:#0f172a;">${cleanAmount}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Payment & Bank Info -->
-        <div style="display:grid; grid-template-columns:1.2fr 0.8fr; gap:16px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:0.78rem;">
-          <div>
-            <div style="font-weight:800; color:#1e40af; margin-bottom:4px;"><i class="fa-solid fa-building-columns"></i> Bank Transfer / RTGS / NEFT Details:</div>
-            <div><strong>Bank:</strong> HDFC Bank Ltd</div>
-            <div><strong>A/C Name:</strong> Kiran K. Shinde &amp; Co.</div>
-            <div><strong>A/C No.:</strong> 50200067891234 (Current A/C)</div>
-            <div><strong>IFSC Code:</strong> HDFC0000123</div>
-          </div>
-          <div>
-            <div style="font-weight:800; color:#1e40af; margin-bottom:4px;"><i class="fa-solid fa-qrcode"></i> Instant UPI / QR:</div>
-            <div><strong>UPI ID:</strong> 7506647791@hdfcbank</div>
-            <div style="color:#64748b; margin-top:4px;">Scan &amp; Pay via GPay / PhonePe / Paytm</div>
-          </div>
-        </div>
-
-        <div style="margin-top:12px; font-size:0.72rem; color:#64748b; text-align:center; font-style:italic;">
-          * Note: This is an official Proforma Bill generated via Kiran K. Shinde &amp; Co. Smart Office &amp; synced with TallyPrime (Voucher Ref: ${voucherRef}). Final Tax Invoice issued upon receipt.
-        </div>
-      </div>
-    `;
+    // Render authentic 1:1 Tally invoice layout
+    container.innerHTML = this.renderTallyAuthenticInvoiceHtml(inv);
 
     // Setup action buttons
     const btnPrint = document.getElementById('btnProformaPrint');
@@ -723,7 +834,7 @@ const AdminCRM = {
     }
     const btnWhatsApp = document.getElementById('btnProformaWhatsApp');
     if (btnWhatsApp) {
-      const msg = `Dear ${inv.client},\n\nPlease find Proforma Bill details from CA Kiran K. Shinde & Co.:\n\n📄 Proforma Ref: ${inv.id}\n⚡ Tally Voucher Ref: ${voucherRef}\n💼 Service: ${inv.service}\n💰 Amount Due: ${cleanAmount}\n\nBank Transfer Details:\nBank: HDFC Bank Ltd\nA/C Name: Kiran K. Shinde & Co.\nA/C No: 50200067891234\nIFSC: HDFC0000123\nUPI ID: 7506647791@hdfcbank\n\nKindly confirm payment once processed.\nThank you!`;
+      const msg = `Dear ${inv.client},\n\nPlease find your official Invoice details from CA Kiran K. Shinde & Co.:\n\n📄 Invoice Ref: ${inv.id}\n⚡ Tally Voucher Ref: ${voucherRef}\n💼 Particulars: ${inv.service}\n💰 Amount Due: ${cleanAmount}\n\nBank Payment Details:\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nUPI ID: 7506647791@hdfcbank\n\nThank you!\nCA Kiran K. Shinde & Co.`;
       btnWhatsApp.onclick = () => window.open(`https://wa.me/917506647791?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
@@ -733,125 +844,32 @@ const AdminCRM = {
   downloadInvoicePdf(invoiceId) {
     const inv = this.state.invoices.find(i => i.id === invoiceId);
     if (!inv) return;
-    const voucherRef = inv.tallyVoucherNo ? `#${inv.tallyVoucherNo}` : 'Pending Sync';
-    const cleanAmount = inv.amount;
 
-    const popup = window.open('', '_blank', 'width=850,height=950');
+    const popup = window.open('', '_blank', 'width=880,height=960');
     if (!popup) return alert('Allow pop-ups to print / download invoice PDF.');
+
+    const tallyHtml = this.renderTallyAuthenticInvoiceHtml(inv);
 
     popup.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Proforma Invoice - ${inv.id} - CA Kiran K. Shinde & Co.</title>
+  <title>Tally Invoice - ${inv.tallyVoucherNo || inv.id} - ${inv.client}</title>
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #0f172a; margin: 0; background: #fff; line-height: 1.5; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; }
-    .firm-name { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
-    .firm-sub { font-size: 13px; color: #475569; font-weight: 600; margin-top: 3px; }
-    .firm-contact { font-size: 12px; color: #64748b; margin-top: 5px; }
-    .badge-doc { background: #0f172a; color: #fff; font-size: 12px; font-weight: 800; padding: 6px 14px; border-radius: 4px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
-    .meta-box { display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-size: 13px; }
-    .meta-col { flex: 1; }
-    .meta-col.right { text-align: right; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px; }
-    th { background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; padding: 12px; text-align: left; color: #334155; }
-    td { border-bottom: 1px solid #e2e8f0; padding: 14px 12px; }
-    .total-row { background: #f8fafc; font-weight: 800; border-top: 2px solid #0f172a; }
-    .bank-box { display: flex; justify-content: space-between; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; font-size: 13px; margin-bottom: 24px; }
-    .sign-block { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
-    .sign-box { text-align: right; }
-    .sign-line { width: 220px; border-top: 1px solid #0f172a; margin-top: 50px; }
-    .print-btn { background: #2563eb; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: 700; border-radius: 6px; cursor: pointer; margin-bottom: 20px; }
+    body { font-family: Arial, sans-serif; padding: 24px; margin: 0; background: #fff; }
+    .print-bar { margin-bottom: 16px; text-align: right; }
+    .btn-print { background: #0f172a; color: #fff; border: none; padding: 8px 18px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 13px; }
     @media print {
-      .print-btn { display: none; }
-      body { padding: 0; }
+      .print-bar { display: none !important; }
+      body { padding: 0 !important; }
     }
   </style>
 </head>
 <body>
-  <button class="print-btn" onclick="window.print()">🖨️ Click to Print / Save as PDF</button>
-
-  <div class="header">
-    <div>
-      <h1 class="firm-name">CA KIRAN K. SHINDE &amp; CO.</h1>
-      <div class="firm-sub">Chartered Accountants &bull; FRN: 147829W</div>
-      <div class="firm-contact">Office: Pune, Maharashtra | Tel: +91 75066 47791 | Email: cakiranshinde@gmail.com</div>
-    </div>
-    <div style="text-align: right;">
-      <div class="badge-doc">PROFORMA INVOICE</div>
-      <div style="margin-top: 8px; font-size: 13px; color: #059669; font-weight: 700;">
-        Tally Voucher Ref: <span style="font-size: 15px; color: #0f172a;">${voucherRef}</span>
-      </div>
-      <div style="font-size: 11px; color: #64748b; margin-top: 2px;">TallyPrime Synced (Port 9000)</div>
-    </div>
+  <div class="print-bar">
+    <button class="btn-print" onclick="window.print()">🖨️ Click to Print / Save as PDF</button>
   </div>
-
-  <div class="meta-box">
-    <div class="meta-col">
-      <div style="color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700;">Billed To:</div>
-      <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px;">${inv.client}</div>
-      <div style="color: #64748b; margin-top: 4px;">GSTIN/PAN: Unregistered / Verified Client</div>
-    </div>
-    <div class="meta-col right">
-      <div><strong>Proforma Invoice No:</strong> ${inv.id}</div>
-      <div><strong>Date:</strong> ${inv.date || 'Today'}</div>
-      <div><strong>Financial Year:</strong> FY 2026-27</div>
-      <div><strong>Payment Status:</strong> <span style="color: #d97706; font-weight: 700;">${inv.status}</span></div>
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 40px;">#</th>
-        <th>Particulars &amp; Service Description</th>
-        <th style="text-align: center; width: 100px;">SAC Code</th>
-        <th style="text-align: right; width: 140px;">Amount (INR)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td>
-        <td>
-          <strong>${inv.service}</strong>
-          <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Professional CA Consultancy, Statutory Compliance &amp; Verification</div>
-        </td>
-        <td style="text-align: center; font-family: monospace;">998231</td>
-        <td style="text-align: right; font-weight: 700;">${cleanAmount}</td>
-      </tr>
-      <tr class="total-row">
-        <td colspan="3" style="text-align: right; padding: 14px;">TOTAL AMOUNT DUE:</td>
-        <td style="text-align: right; font-size: 17px; color: #0f172a; padding: 14px;">${cleanAmount}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="bank-box">
-    <div>
-      <div style="font-weight: 800; color: #1e40af; margin-bottom: 6px;">Bank Transfer / RTGS / NEFT Details:</div>
-      <div><strong>Bank:</strong> HDFC Bank Ltd</div>
-      <div><strong>A/C Name:</strong> Kiran K. Shinde &amp; Co.</div>
-      <div><strong>A/C No.:</strong> 50200067891234 (Current Account)</div>
-      <div><strong>IFSC Code:</strong> HDFC0000123</div>
-    </div>
-    <div style="text-align: right;">
-      <div style="font-weight: 800; color: #1e40af; margin-bottom: 6px;">Instant UPI / QR:</div>
-      <div><strong>UPI ID:</strong> 7506647791@hdfcbank</div>
-      <div style="color: #64748b; margin-top: 4px; font-size: 12px;">Google Pay / PhonePe / Paytm</div>
-    </div>
-  </div>
-
-  <div class="sign-block">
-    <div style="font-size: 12px; color: #64748b; max-width: 360px;">
-      * Terms: This is a system-generated Proforma Bill issued for payment processing and synchronized with TallyPrime (Voucher #${voucherRef}). Final Tax Invoice will be issued upon payment confirmation.
-    </div>
-    <div class="sign-box">
-      <div style="font-weight: 700; font-size: 13px;">For CA Kiran K. Shinde &amp; Co.</div>
-      <div class="sign-line"></div>
-      <div style="font-size: 12px; color: #475569; margin-top: 6px;">Authorized Signatory / Partner</div>
-    </div>
-  </div>
+  ${tallyHtml}
 </body>
 </html>`);
     popup.document.close();

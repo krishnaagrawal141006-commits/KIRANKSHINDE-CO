@@ -952,6 +952,40 @@
     </div>
   </div>
 
+  <!-- ================= TALLY PROFORMA INVOICE MODAL ================= -->
+  <div class="admin-modal-overlay" id="tallyProformaModal">
+    <div class="admin-modal" style="max-width: 700px; padding: 26px;">
+      <div class="modal-header" style="border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 18px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:42px; height:42px; border-radius:10px; background:rgba(37,99,235,0.1); color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:1.15rem; color:#0f172a;">TallyPrime Proforma Bill &amp; Write-Back</h3>
+            <p style="margin:2px 0 0; font-size:0.78rem; color:#64748b;">Synchronized with Office TallyPrime (Port 9000)</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('tallyProformaModal').classList.remove('active')">&times;</button>
+      </div>
+
+      <div id="proformaModalContent">
+        <!-- Injected via AdminCRM.viewTallyProformaModal(invoiceId) -->
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <button type="button" class="btn-admin btn-admin-outline" onclick="document.getElementById('tallyProformaModal').classList.remove('active')">Close</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn-admin" id="btnProformaWhatsApp" style="background:#25d366; color:#fff; border:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-brands fa-whatsapp"></i> Send Bill on WhatsApp
+          </button>
+          <button type="button" class="btn-admin btn-admin-primary" id="btnProformaPrint" style="display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-print"></i> Print / PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../team-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js"></script>
@@ -959,7 +993,7 @@
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="bank-converter-web.js?v=v5"></script>
-  <script src="admin.js?v=tally_v4"></script>
+  <script src="admin.js?v=tally_v5"></script>
 </body>
 </html>
 

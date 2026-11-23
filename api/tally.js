@@ -149,9 +149,9 @@ module.exports = async function handler(req, res) {
   // GET: Sync queue
   if (req.method === 'GET') {
     const statusFilter = req.query.status;
-    let endpoint = `${url}/rest/v1/tally_sync_queue?select=*&order=created_at.desc&limit=50`;
+    let endpoint = `${url}/rest/v1/tally_sync_queue?select=*&order=created_at.desc&limit=100`;
     if (statusFilter === 'pending') {
-      endpoint = `${url}/rest/v1/tally_sync_queue?select=*&status=eq.PENDING&order=created_at.asc&limit=20`;
+      endpoint = `${url}/rest/v1/tally_sync_queue?select=*&status=eq.PENDING&order=created_at.asc&limit=50`;
     }
 
     try {
@@ -227,7 +227,25 @@ module.exports = async function handler(req, res) {
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) return res.status(r.status).json({ error: data.message || 'Failed to update queue item' });
-      return res.status(200).json({ ok: true, updated: data[0] });
+
+      const updatedItem = data && data[0] ? data[0] : null;
+
+      // Write back to invoices table if source_id is present and status is SYNCED
+      if (updatedItem && updatedItem.source_id && updatedItem.status === 'SYNCED') {
+        try {
+          await fetch(`${url}/rest/v1/invoices?id=eq.${encodeURIComponent(updatedItem.source_id)}`, {
+            method: 'PATCH',
+            headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tally_voucher_no: body.tallyVoucherNo || null,
+              tally_status: 'SYNCED',
+              tally_synced_at: new Date().toISOString()
+            })
+          }).catch(() => {});
+        } catch (_) {}
+      }
+
+      return res.status(200).json({ ok: true, updated: updatedItem });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }

@@ -213,7 +213,55 @@ const AdminCRM = {
     client.channel('admin-compliance-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'compliance_tasks' }, () => this.loadCloudWorkflow()).subscribe();
   },
 
-  async loadCloudInvoices() { const token = await this.adminToken?.(); if (!token) return; const response = await fetch('/api/admin/invoice', { headers: { Authorization: `Bearer ${token}` } }); const result = await response.json().catch(() => ({})); const data = result.invoices; if (Array.isArray(data)) { this.state.invoices = data.map(i => ({ id: i.id, client: i.client_name, service: i.service, amount: `₹ ${Number(i.amount || 0).toLocaleString('en-IN')}`, date: i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN') : '', createdAt: i.created_at, status: i.status })); this.renderInvoicesTable(); this.renderMetrics(); } },
+  async loadCloudInvoices() {
+    const token = await this.adminToken?.();
+    if (!token) return;
+    try {
+      const [invRes, tallyRes] = await Promise.all([
+        fetch('/api/admin/invoice', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/tally/queue', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+      ]);
+      const result = await invRes.json().catch(() => ({}));
+      const tallyData = tallyRes ? await tallyRes.json().catch(() => ({})) : {};
+
+      const queueList = Array.isArray(tallyData.queue) ? tallyData.queue : [];
+      const tallyMap = {};
+      queueList.forEach(q => {
+        if (q.source_id) {
+          // Keep the latest or SYNCED entry for this invoice
+          if (!tallyMap[q.source_id] || q.status === 'SYNCED') {
+            tallyMap[q.source_id] = q;
+          }
+        }
+      });
+      this.state.tallyQueueMap = tallyMap;
+
+      const data = result.invoices;
+      if (Array.isArray(data)) {
+        this.state.invoices = data.map(i => {
+          const tItem = tallyMap[i.id] || {};
+          return {
+            id: i.id,
+            client: i.client_name,
+            service: i.service,
+            amount: `₹ ${Number(i.amount || 0).toLocaleString('en-IN')}`,
+            rawAmount: Number(i.amount || 0),
+            date: i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN') : '',
+            createdAt: i.created_at,
+            status: i.status,
+            tallyVoucherNo: tItem.tally_voucher_no || i.tally_voucher_no || null,
+            tallyStatus: tItem.status || i.tally_status || (tItem.tally_voucher_no ? 'SYNCED' : null),
+            tallySyncedAt: tItem.synced_at || null,
+            tallyVoucherType: tItem.voucher_type || 'Sales'
+          };
+        });
+        this.renderInvoicesTable();
+        this.renderMetrics();
+      }
+    } catch (err) {
+      console.warn('loadCloudInvoices error:', err);
+    }
+  },
 
   renderDeadlinesTable() {
     const body = document.getElementById('deadlinesTableBody');
@@ -504,28 +552,310 @@ const AdminCRM = {
 
     tbody.innerHTML = this.state.invoices.map(inv => `
       <tr>
-        <td><strong>${inv.id}</strong></td>
+        <td>
+          <strong>${inv.id}</strong>
+          ${inv.tallyVoucherNo ? `
+            <div style="margin-top:4px;">
+              <span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:4px; padding:2px 7px; font-size:0.72rem; font-weight:700;" title="TallyPrime Proforma Voucher #${inv.tallyVoucherNo}">
+                <i class="fa-solid fa-bolt" style="color:#10b981;"></i> Tally: #${inv.tallyVoucherNo}
+              </span>
+            </div>
+          ` : (inv.tallyStatus === 'PENDING' ? `
+            <div style="margin-top:4px;">
+              <span style="display:inline-flex; align-items:center; gap:4px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; border-radius:4px; padding:2px 7px; font-size:0.72rem; font-weight:700;">
+                <i class="fa-solid fa-clock"></i> In Tally Queue
+              </span>
+            </div>
+          ` : '')}
+        </td>
         <td><strong>${inv.client}</strong></td>
         <td>${inv.service}</td>
         <td><strong style="color: #0f172a;">${inv.amount}</strong></td>
         <td>${inv.date}</td>
-        <td><span class="status-pill ${inv.status === 'Paid' ? 'status-completed' : 'status-pending'}">${inv.status}</span></td>
+        <td>
+          <span class="status-pill ${inv.status === 'Paid' ? 'status-completed' : 'status-pending'}">${inv.status}</span>
+          ${inv.tallyVoucherNo ? `
+            <div style="font-size:0.72rem; color:#059669; font-weight:600; margin-top:4px; display:flex; align-items:center; gap:4px;">
+              <i class="fa-solid fa-file-invoice"></i> Tally Proforma Synced
+            </div>
+          ` : ''}
+        </td>
         <td>
           <button class="action-icon-btn" onclick="AdminCRM.editInvoice('${inv.id}')" title="Edit invoice"><i class="fa-solid fa-pen"></i></button>
-          <button class="action-icon-btn" onclick="AdminCRM.downloadInvoicePdf('${inv.id}')" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></button>
-          <button onclick="AdminCRM.syncInvoiceToTally('${inv.id}')" title="Sync to Tally Prime" style="color:#ffffff; background:#d97706; padding:4px 9px; border-radius:5px; font-weight:700; font-size:0.75rem; border:none; cursor:pointer; margin:0 4px;"><i class="fa-solid fa-bolt"></i> Tally</button>
+          <button class="action-icon-btn" onclick="AdminCRM.downloadInvoicePdf('${inv.id}')" title="Print / Download Proforma Bill PDF"><i class="fa-solid fa-file-pdf"></i></button>
+          ${inv.tallyVoucherNo ? `
+            <button onclick="AdminCRM.viewTallyProformaModal('${inv.id}')" title="View Tally Proforma Bill Details" style="color:#047857; background:#ecfdf5; border:1px solid #a7f3d0; padding:4px 9px; border-radius:5px; font-weight:700; font-size:0.75rem; cursor:pointer; margin:0 3px;">
+              <i class="fa-solid fa-file-circle-check"></i> Tally #${inv.tallyVoucherNo}
+            </button>
+          ` : `
+            <button onclick="AdminCRM.syncInvoiceToTally('${inv.id}')" title="Sync to Tally Prime" style="color:#ffffff; background:#d97706; padding:4px 9px; border-radius:5px; font-weight:700; font-size:0.75rem; border:none; cursor:pointer; margin:0 3px;">
+              <i class="fa-solid fa-bolt"></i> Tally
+            </button>
+          `}
           ${inv.status === 'Pending' ? `
-            <a href="https://wa.me/917506647791?text=Payment%20Reminder%20for%20Invoice%20${inv.id}" target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Fee Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</a>
-            <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Mark Paid"><i class="fa-solid fa-circle-check"></i></button>
+            <a href="https://wa.me/917506647791?text=${encodeURIComponent(`Payment Reminder from CA Kiran K. Shinde & Co.\nInvoice: ${inv.id}${inv.tallyVoucherNo ? ` (Tally Proforma Ref: #${inv.tallyVoucherNo})` : ''}\nClient: ${inv.client}\nAmount: ${inv.amount}\nService: ${inv.service}\nKindly arrange payment at your earliest convenience.`)}" target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Fee Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</a>
+            <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Record Payment / Post Tally Receipt"><i class="fa-solid fa-circle-check"></i></button>
           ` : '<span style="font-size: 0.78rem; color: #16a34a;"><i class="fa-solid fa-check"></i> Settled</span>'}
         </td>
       </tr>
     `).join('');
   },
 
-  async editInvoice(invoiceId) { const inv = this.state.invoices.find(i => i.id === invoiceId); if (!inv) return; const clientName = prompt('Client name:', inv.client); if (clientName === null) return; const service = prompt('Service / description:', inv.service); if (service === null) return; const amount = prompt('Fee amount (₹):', String(inv.amount).replace(/[^0-9.]/g, '')); if (amount === null || isNaN(Number(amount))) return alert('Enter a valid amount.'); const token = await this.adminToken(); if (!token) return; const response = await fetch('/api/admin/invoice', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: invoiceId, clientName, service, amount }) }); const result = await response.json().catch(() => ({})); if (!response.ok) return alert(result.error || 'Invoice update failed'); await this.loadCloudInvoices(); },
+  async editInvoice(invoiceId) {
+    const inv = this.state.invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+    const clientName = prompt('Client name:', inv.client);
+    if (clientName === null) return;
+    const service = prompt('Service / description:', inv.service);
+    if (service === null) return;
+    const amount = prompt('Fee amount (₹):', String(inv.amount).replace(/[^0-9.]/g, ''));
+    if (amount === null || isNaN(Number(amount))) return alert('Enter a valid amount.');
+    const token = await this.adminToken();
+    if (!token) return;
+    const response = await fetch('/api/admin/invoice', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: invoiceId, clientName, service, amount })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return alert(result.error || 'Invoice update failed');
+    await this.loadCloudInvoices();
+  },
 
-  downloadInvoicePdf(invoiceId) { const inv = this.state.invoices.find(i => i.id === invoiceId); if (!inv) return; const popup = window.open('', '_blank', 'width=800,height=900'); if (!popup) return alert('Allow pop-ups to download invoice PDF.'); popup.document.write(`<html><head><title>${inv.id}</title><style>body{font-family:Arial;padding:48px;color:#172235}h1{color:#142840}table{width:100%;border-collapse:collapse;margin-top:30px}td,th{border:1px solid #dbe3ed;padding:14px;text-align:left}button{padding:10px 18px;margin-top:30px}@media print{button{display:none}}</style></head><body><h1>Kiran K. Shinde &amp; Co.</h1><p>Chartered Accountants</p><hr><h2>Invoice ${inv.id}</h2><p><b>Client:</b> ${inv.client}</p><table><tr><th>Service</th><th>Amount</th></tr><tr><td>${inv.service}</td><td>${inv.amount}</td></tr></table><p>Status: ${inv.status}</p><button onclick="window.print()">Print / Save as PDF</button></body></html>`); popup.document.close(); },
+  viewTallyProformaModal(invoiceId) {
+    const inv = this.state.invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+
+    const modal = document.getElementById('tallyProformaModal');
+    const container = document.getElementById('proformaModalContent');
+    if (!modal || !container) return;
+
+    const voucherRef = inv.tallyVoucherNo ? `#${inv.tallyVoucherNo}` : 'Pending Sync';
+    const cleanAmount = inv.amount;
+
+    container.innerHTML = `
+      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; font-family:Inter, Arial, sans-serif;">
+        <!-- Firm Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:14px; margin-bottom:16px;">
+          <div>
+            <h2 style="margin:0; font-size:1.3rem; color:#0f172a; letter-spacing:-0.5px;">CA KIRAN K. SHINDE &amp; CO.</h2>
+            <div style="font-size:0.82rem; color:#475569; font-weight:600; margin-top:2px;">Chartered Accountants &bull; FRN: 147829W</div>
+            <div style="font-size:0.78rem; color:#64748b; margin-top:4px;">Office: Pune, Maharashtra | Tel: +91 75066 47791 | Email: cakiranshinde@gmail.com</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="background:#0f172a; color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:4px; display:inline-block; text-transform:uppercase; letter-spacing:0.5px;">
+              PROFORMA INVOICE
+            </div>
+            <div style="margin-top:6px; font-size:0.8rem; color:#059669; font-weight:700;">
+              <i class="fa-solid fa-bolt"></i> Tally Voucher: <span style="font-size:0.95rem; color:#0f172a;">${voucherRef}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meta Grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; background:#f8fafc; padding:12px 14px; border-radius:8px; font-size:0.82rem;">
+          <div>
+            <div style="color:#64748b; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Billed To (Client):</div>
+            <div style="font-size:1rem; font-weight:800; color:#0f172a; margin-top:2px;">${inv.client}</div>
+            <div style="color:#64748b; margin-top:4px;">GSTIN/PAN: Unregistered / Verified Client</div>
+          </div>
+          <div style="text-align:right;">
+            <div><strong style="color:#64748b;">Invoice Ref:</strong> <span style="font-family:monospace; font-weight:700; color:#0f172a;">${inv.id}</span></div>
+            <div><strong style="color:#64748b;">Date:</strong> ${inv.date || 'Today'}</div>
+            <div><strong style="color:#64748b;">Financial Year:</strong> FY 2026-27</div>
+            <div style="margin-top:3px;"><strong style="color:#64748b;">Tally Status:</strong> <span style="color:#059669; font-weight:700;">${inv.tallyStatus === 'SYNCED' ? '✓ Synced in TallyPrime' : 'Pending'}</span></div>
+          </div>
+        </div>
+
+        <!-- Particulars Table -->
+        <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:0.85rem;">
+          <thead>
+            <tr style="background:#f1f5f9; border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">
+              <th style="padding:10px; text-align:left; color:#334155;">#</th>
+              <th style="padding:10px; text-align:left; color:#334155;">Service Particulars</th>
+              <th style="padding:10px; text-align:center; color:#334155;">SAC Code</th>
+              <th style="padding:10px; text-align:right; color:#334155;">Amount (INR)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #e2e8f0;">
+              <td style="padding:12px 10px; vertical-align:top;">1</td>
+              <td style="padding:12px 10px; vertical-align:top;">
+                <strong>${inv.service}</strong>
+                <div style="font-size:0.76rem; color:#64748b; margin-top:3px;">Professional CA Fees, Statutory Compliance &amp; Regulatory Consultancy</div>
+              </td>
+              <td style="padding:12px 10px; text-align:center; vertical-align:top; font-family:monospace;">998231</td>
+              <td style="padding:12px 10px; text-align:right; vertical-align:top; font-weight:700; color:#0f172a;">${cleanAmount}</td>
+            </tr>
+            <tr style="background:#f8fafc; font-weight:800; border-top:2px solid #0f172a;">
+              <td colspan="3" style="padding:10px; text-align:right;">TOTAL AMOUNT DUE:</td>
+              <td style="padding:10px; text-align:right; font-size:1.05rem; color:#0f172a;">${cleanAmount}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Payment & Bank Info -->
+        <div style="display:grid; grid-template-columns:1.2fr 0.8fr; gap:16px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:0.78rem;">
+          <div>
+            <div style="font-weight:800; color:#1e40af; margin-bottom:4px;"><i class="fa-solid fa-building-columns"></i> Bank Transfer / RTGS / NEFT Details:</div>
+            <div><strong>Bank:</strong> HDFC Bank Ltd</div>
+            <div><strong>A/C Name:</strong> Kiran K. Shinde &amp; Co.</div>
+            <div><strong>A/C No.:</strong> 50200067891234 (Current A/C)</div>
+            <div><strong>IFSC Code:</strong> HDFC0000123</div>
+          </div>
+          <div>
+            <div style="font-weight:800; color:#1e40af; margin-bottom:4px;"><i class="fa-solid fa-qrcode"></i> Instant UPI / QR:</div>
+            <div><strong>UPI ID:</strong> 7506647791@hdfcbank</div>
+            <div style="color:#64748b; margin-top:4px;">Scan &amp; Pay via GPay / PhonePe / Paytm</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; font-size:0.72rem; color:#64748b; text-align:center; font-style:italic;">
+          * Note: This is an official Proforma Bill generated via Kiran K. Shinde &amp; Co. Smart Office &amp; synced with TallyPrime (Voucher Ref: ${voucherRef}). Final Tax Invoice issued upon receipt.
+        </div>
+      </div>
+    `;
+
+    // Setup action buttons
+    const btnPrint = document.getElementById('btnProformaPrint');
+    if (btnPrint) {
+      btnPrint.onclick = () => this.downloadInvoicePdf(invoiceId);
+    }
+    const btnWhatsApp = document.getElementById('btnProformaWhatsApp');
+    if (btnWhatsApp) {
+      const msg = `Dear ${inv.client},\n\nPlease find Proforma Bill details from CA Kiran K. Shinde & Co.:\n\n📄 Proforma Ref: ${inv.id}\n⚡ Tally Voucher Ref: ${voucherRef}\n💼 Service: ${inv.service}\n💰 Amount Due: ${cleanAmount}\n\nBank Transfer Details:\nBank: HDFC Bank Ltd\nA/C Name: Kiran K. Shinde & Co.\nA/C No: 50200067891234\nIFSC: HDFC0000123\nUPI ID: 7506647791@hdfcbank\n\nKindly confirm payment once processed.\nThank you!`;
+      btnWhatsApp.onclick = () => window.open(`https://wa.me/917506647791?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    modal.classList.add('active');
+  },
+
+  downloadInvoicePdf(invoiceId) {
+    const inv = this.state.invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+    const voucherRef = inv.tallyVoucherNo ? `#${inv.tallyVoucherNo}` : 'Pending Sync';
+    const cleanAmount = inv.amount;
+
+    const popup = window.open('', '_blank', 'width=850,height=950');
+    if (!popup) return alert('Allow pop-ups to print / download invoice PDF.');
+
+    popup.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Proforma Invoice - ${inv.id} - CA Kiran K. Shinde & Co.</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #0f172a; margin: 0; background: #fff; line-height: 1.5; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; }
+    .firm-name { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+    .firm-sub { font-size: 13px; color: #475569; font-weight: 600; margin-top: 3px; }
+    .firm-contact { font-size: 12px; color: #64748b; margin-top: 5px; }
+    .badge-doc { background: #0f172a; color: #fff; font-size: 12px; font-weight: 800; padding: 6px 14px; border-radius: 4px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .meta-box { display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-size: 13px; }
+    .meta-col { flex: 1; }
+    .meta-col.right { text-align: right; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px; }
+    th { background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; padding: 12px; text-align: left; color: #334155; }
+    td { border-bottom: 1px solid #e2e8f0; padding: 14px 12px; }
+    .total-row { background: #f8fafc; font-weight: 800; border-top: 2px solid #0f172a; }
+    .bank-box { display: flex; justify-content: space-between; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; font-size: 13px; margin-bottom: 24px; }
+    .sign-block { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .sign-box { text-align: right; }
+    .sign-line { width: 220px; border-top: 1px solid #0f172a; margin-top: 50px; }
+    .print-btn { background: #2563eb; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: 700; border-radius: 6px; cursor: pointer; margin-bottom: 20px; }
+    @media print {
+      .print-btn { display: none; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨️ Click to Print / Save as PDF</button>
+
+  <div class="header">
+    <div>
+      <h1 class="firm-name">CA KIRAN K. SHINDE &amp; CO.</h1>
+      <div class="firm-sub">Chartered Accountants &bull; FRN: 147829W</div>
+      <div class="firm-contact">Office: Pune, Maharashtra | Tel: +91 75066 47791 | Email: cakiranshinde@gmail.com</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="badge-doc">PROFORMA INVOICE</div>
+      <div style="margin-top: 8px; font-size: 13px; color: #059669; font-weight: 700;">
+        Tally Voucher Ref: <span style="font-size: 15px; color: #0f172a;">${voucherRef}</span>
+      </div>
+      <div style="font-size: 11px; color: #64748b; margin-top: 2px;">TallyPrime Synced (Port 9000)</div>
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div class="meta-col">
+      <div style="color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700;">Billed To:</div>
+      <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px;">${inv.client}</div>
+      <div style="color: #64748b; margin-top: 4px;">GSTIN/PAN: Unregistered / Verified Client</div>
+    </div>
+    <div class="meta-col right">
+      <div><strong>Proforma Invoice No:</strong> ${inv.id}</div>
+      <div><strong>Date:</strong> ${inv.date || 'Today'}</div>
+      <div><strong>Financial Year:</strong> FY 2026-27</div>
+      <div><strong>Payment Status:</strong> <span style="color: #d97706; font-weight: 700;">${inv.status}</span></div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 40px;">#</th>
+        <th>Particulars &amp; Service Description</th>
+        <th style="text-align: center; width: 100px;">SAC Code</th>
+        <th style="text-align: right; width: 140px;">Amount (INR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>
+          <strong>${inv.service}</strong>
+          <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Professional CA Consultancy, Statutory Compliance &amp; Verification</div>
+        </td>
+        <td style="text-align: center; font-family: monospace;">998231</td>
+        <td style="text-align: right; font-weight: 700;">${cleanAmount}</td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="3" style="text-align: right; padding: 14px;">TOTAL AMOUNT DUE:</td>
+        <td style="text-align: right; font-size: 17px; color: #0f172a; padding: 14px;">${cleanAmount}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="bank-box">
+    <div>
+      <div style="font-weight: 800; color: #1e40af; margin-bottom: 6px;">Bank Transfer / RTGS / NEFT Details:</div>
+      <div><strong>Bank:</strong> HDFC Bank Ltd</div>
+      <div><strong>A/C Name:</strong> Kiran K. Shinde &amp; Co.</div>
+      <div><strong>A/C No.:</strong> 50200067891234 (Current Account)</div>
+      <div><strong>IFSC Code:</strong> HDFC0000123</div>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-weight: 800; color: #1e40af; margin-bottom: 6px;">Instant UPI / QR:</div>
+      <div><strong>UPI ID:</strong> 7506647791@hdfcbank</div>
+      <div style="color: #64748b; margin-top: 4px; font-size: 12px;">Google Pay / PhonePe / Paytm</div>
+    </div>
+  </div>
+
+  <div class="sign-block">
+    <div style="font-size: 12px; color: #64748b; max-width: 360px;">
+      * Terms: This is a system-generated Proforma Bill issued for payment processing and synchronized with TallyPrime (Voucher #${voucherRef}). Final Tax Invoice will be issued upon payment confirmation.
+    </div>
+    <div class="sign-box">
+      <div style="font-weight: 700; font-size: 13px;">For CA Kiran K. Shinde &amp; Co.</div>
+      <div class="sign-line"></div>
+      <div style="font-size: 12px; color: #475569; margin-top: 6px;">Authorized Signatory / Partner</div>
+    </div>
+  </div>
+</body>
+</html>`);
+    popup.document.close();
+  },
 
   renderArticlesTable() {
     const tbody = document.getElementById('articlesTableBody');
@@ -1560,10 +1890,35 @@ const AdminCRM = {
           <td>
             ${item.status === 'FAILED' ? `<button class="action-icon-btn" onclick="AdminCRM.retryTallyQueueItem('${item.id}')" title="Retry Sync to Tally"><i class="fa-solid fa-rotate-right"></i> Retry</button>` : ''}
             ${item.status === 'PENDING' ? `<small style="color:#d97706;"><i class="fa-solid fa-spinner fa-spin"></i> Syncing...</small>` : ''}
-            ${item.status === 'SYNCED' ? `<small style="color:#16a34a;"><i class="fa-solid fa-check-double"></i> In Tally</small>` : ''}
+            ${item.status === 'SYNCED' ? `
+              <div style="display:flex; align-items:center; gap:6px;">
+                <small style="color:#16a34a; font-weight:700;"><i class="fa-solid fa-check-double"></i> In Tally</small>
+                ${item.source_id ? `<button onclick="AdminCRM.viewTallyProformaModal('${item.source_id}')" class="btn-admin" style="padding:2px 8px; font-size:0.72rem; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:4px; font-weight:700; cursor:pointer;" title="View Tally Proforma Bill"><i class="fa-solid fa-file-invoice"></i> View</button>` : ''}
+              </div>
+            ` : ''}
           </td>
         </tr>`;
       }).join('');
+
+      // Auto-update Invoices table with newly synced Tally voucher numbers
+      if (this.state.invoices && this.state.invoices.length) {
+        let needsReRender = false;
+        queue.forEach(q => {
+          if (q.source_id && q.status === 'SYNCED' && q.tally_voucher_no) {
+            const targetInv = this.state.invoices.find(inv => inv.id === q.source_id);
+            if (targetInv && (!targetInv.tallyVoucherNo || targetInv.tallyVoucherNo !== q.tally_voucher_no)) {
+              targetInv.tallyVoucherNo = q.tally_voucher_no;
+              targetInv.tallyStatus = 'SYNCED';
+              targetInv.tallySyncedAt = q.synced_at;
+              needsReRender = true;
+            }
+          }
+        });
+        if (needsReRender) {
+          this.renderInvoicesTable();
+          this.renderMetrics();
+        }
+      }
     } catch (e) {
       console.error('Tally queue load error:', e);
     }

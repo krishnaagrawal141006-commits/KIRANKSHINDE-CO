@@ -140,6 +140,30 @@ class TallySyncEngine extends EventEmitter {
     }
   }
 
+  mapServiceToTallyLedger(serviceName) {
+    const s = String(serviceName || '').toLowerCase();
+    if (s.includes('tds') || s.includes('challan') || s.includes('tcs') || s.includes('26q') || s.includes('24q')) {
+      return 'TDS & Challan Compliance Fees';
+    }
+    if (s.includes('gst') || s.includes('gstr') || s.includes('e-way') || s.includes('eway') || s.includes('lut')) {
+      return 'GST Returns & Compliance Fees';
+    }
+    if (s.includes('audit') || s.includes('44ab') || s.includes('statutory')) {
+      return 'Audit & Assurance Fees';
+    }
+    if (s.includes('itr') || s.includes('income tax') || s.includes('computation') || s.includes('44ada')) {
+      return 'Income Tax Filing & Advisory Fees';
+    }
+    if (s.includes('roc') || s.includes('mca') || s.includes('incorporation') || s.includes('company')) {
+      return 'ROC & Company Compliance Fees';
+    }
+    if (s.includes('accounting') || s.includes('bookkeeping') || s.includes('tally')) {
+      return 'Accounting & Bookkeeping Fees';
+    }
+    const clean = String(serviceName || '').split('—')[0].split('-')[0].trim();
+    return clean ? `Professional Fees - ${clean}` : 'Professional Fees Account';
+  }
+
   // 2. Ensure master ledgers exist in Tally (Supports Multi-Service, GST & Bank Accounts)
   async ensureTallyLedgersExist(partyName, salesLedgerName, extraLedgers = []) {
     const party = this.xmlEscape(partyName || 'Sundry Debtors');
@@ -259,7 +283,6 @@ class TallySyncEngine extends EventEmitter {
   buildVoucherXml(item, dateStr) {
     const amount = Number(item.amount || 0).toFixed(2);
     const party = this.xmlEscape(item.party_ledger || item.client_name || 'Sundry Debtors');
-    const defaultSalesLedger = this.xmlEscape(item.sales_ledger || 'Professional Fees Account');
     
     // Parse metadata from narration if present
     let rawNarration = item.narration || `Professional Fees - ${item.client_name}`;
@@ -271,6 +294,19 @@ class TallySyncEngine extends EventEmitter {
         metadata = JSON.parse(parts[1].trim());
       } catch (e) {}
     }
+
+    let serviceDesc = item.service || '';
+    if (metadata && (metadata.service || metadata.description)) {
+      serviceDesc = metadata.service || metadata.description;
+    } else if (rawNarration) {
+      serviceDesc = rawNarration.split('-')[0].trim();
+    }
+
+    let dynamicSalesLedger = item.sales_ledger;
+    if (!dynamicSalesLedger || dynamicSalesLedger === 'Professional Fees Account') {
+      dynamicSalesLedger = this.mapServiceToTallyLedger(serviceDesc || rawNarration);
+    }
+    const defaultSalesLedger = this.xmlEscape(dynamicSalesLedger);
 
     const isReceipt = String(item.voucher_type || '').toLowerCase() === 'receipt';
     const isOptional = isReceipt ? false : Boolean(item.is_optional || item.voucher_type === 'Proforma' || (metadata && metadata.isOptional));
@@ -342,7 +378,7 @@ class TallySyncEngine extends EventEmitter {
               </ALLLEDGERENTRIES.LIST>`;
       }
     } else {
-      // Standard 2-leg voucher
+      // Standard 2-leg voucher with Dynamic Service Ledger & Service Description in Tally
       ledgerEntriesXml = `
               <ALLLEDGERENTRIES.LIST>
                 <LEDGERNAME>${party}</LEDGERNAME>
@@ -353,6 +389,7 @@ class TallySyncEngine extends EventEmitter {
                 <LEDGERNAME>${defaultSalesLedger}</LEDGERNAME>
                 <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
                 <AMOUNT>${amount}</AMOUNT>
+                ${serviceDesc ? `<DESCRIPTION>${this.xmlEscape(serviceDesc)}</DESCRIPTION>` : ''}
               </ALLLEDGERENTRIES.LIST>`;
     }
 
@@ -434,7 +471,22 @@ class TallySyncEngine extends EventEmitter {
   // 6. Inject Voucher into Tally with Auto-Masters and Safe Retry
   async injectVoucherIntoTally(item, companyInfo) {
     const party = item.party_ledger || item.client_name || 'Sundry Debtors';
-    const salesLedger = item.sales_ledger || 'Professional Fees Account';
+
+    let serviceDesc = item.service || '';
+    if (item.narration && item.narration.includes('| JSON:')) {
+      try {
+        const meta = JSON.parse(item.narration.split('| JSON:')[1].trim());
+        if (meta.service) serviceDesc = meta.service;
+        else if (meta.description) serviceDesc = meta.description;
+      } catch (e) {}
+    } else if (item.narration) {
+      serviceDesc = item.narration.split('-')[0].trim();
+    }
+
+    let salesLedger = item.sales_ledger;
+    if (!salesLedger || salesLedger === 'Professional Fees Account') {
+      salesLedger = this.mapServiceToTallyLedger(serviceDesc || item.narration);
+    }
 
     // Collect extra ledgers from metadata if present
     const extraLedgers = [];

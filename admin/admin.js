@@ -622,6 +622,30 @@ const AdminCRM = {
     await this.loadCloudInvoices();
   },
 
+  mapServiceToTallyLedger(serviceName) {
+    const s = String(serviceName || '').toLowerCase();
+    if (s.includes('tds') || s.includes('challan') || s.includes('tcs') || s.includes('26q') || s.includes('24q')) {
+      return 'TDS & Challan Compliance Fees';
+    }
+    if (s.includes('gst') || s.includes('gstr') || s.includes('e-way') || s.includes('eway') || s.includes('lut')) {
+      return 'GST Returns & Compliance Fees';
+    }
+    if (s.includes('audit') || s.includes('44ab') || s.includes('statutory')) {
+      return 'Audit & Assurance Fees';
+    }
+    if (s.includes('itr') || s.includes('income tax') || s.includes('computation') || s.includes('44ada')) {
+      return 'Income Tax Filing & Advisory Fees';
+    }
+    if (s.includes('roc') || s.includes('mca') || s.includes('incorporation') || s.includes('company')) {
+      return 'ROC & Company Compliance Fees';
+    }
+    if (s.includes('accounting') || s.includes('bookkeeping') || s.includes('tally')) {
+      return 'Accounting & Bookkeeping Fees';
+    }
+    const clean = String(serviceName || '').split('—')[0].split('-')[0].trim();
+    return clean ? `Professional Fees - ${clean}` : 'Professional Fees Account';
+  },
+
   numberToWordsINR(amount) {
     const num = Math.round(Number(amount || 0));
     if (num <= 0) return 'INR Zero Only';
@@ -645,6 +669,8 @@ const AdminCRM = {
     const vchNo = inv.tallyVoucherNo || inv.id.replace('INV-', '') || '529';
     const invDate = inv.date || new Date().toLocaleDateString('en-IN');
     const companyName = 'CA KIRAN K. SHINDE & CO.';
+    const salesLedgerName = this.mapServiceToTallyLedger(inv.service);
+    const serviceDesc = inv.service || 'Professional CA Consultancy & Compliance';
 
     return `
       <div class="tally-sheet" style="background:#fff; border:2px solid #000; color:#000; font-family:'Segoe UI', Arial, sans-serif; font-size:12px; line-height:1.35; width:100%; box-sizing:border-box;">
@@ -751,8 +777,8 @@ const AdminCRM = {
             <tr style="height:140px; vertical-align:top;">
               <td style="border-right:1px solid #000; padding:8px 4px; text-align:center;">1</td>
               <td style="border-right:1px solid #000; padding:8px 8px;">
-                <strong style="font-size:12.5px;">Professional Fees Account</strong><br>
-                <div style="font-size:11px; color:#333; margin-top:4px;">${inv.service}</div>
+                <strong style="font-size:12.5px;">${salesLedgerName}</strong><br>
+                <div style="font-size:11px; color:#333; margin-top:4px;">${serviceDesc}</div>
                 <div style="font-size:10px; color:#666; margin-top:2px;">(CA Statutory Audit, Taxation &amp; Regulatory Consultancy)</div>
               </td>
               <td style="border-right:1px solid #000; padding:8px 6px; text-align:center; font-family:monospace;">998231</td>
@@ -2027,6 +2053,7 @@ const AdminCRM = {
     const token = await this.adminToken();
     const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
     const safeDate = this.toISODate(inv.createdAt || inv.date);
+    const dynamicSalesLedger = this.mapServiceToTallyLedger(inv.service);
 
     const res = await fetch('/api/tally/queue', {
       method: 'POST',
@@ -2041,14 +2068,14 @@ const AdminCRM = {
         amount: cleanAmount,
         date: safeDate,
         voucherType: 'Sales',
-        narration: `${inv.service} - Fee Invoice ${inv.id} (Kiran K. Shinde & Co.)`,
-        salesLedger: 'Professional Fees Account'
+        narration: `${inv.service} - Fee Invoice ${inv.id} (Kiran K. Shinde & Co.) | JSON: {"service":"${inv.service}","description":"${inv.service}"}`,
+        salesLedger: dynamicSalesLedger
       })
     });
 
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      alert(`⚡ SUCCESS!\n\nInvoice ${inv.id} (${inv.client} - ₹${cleanAmount.toLocaleString('en-IN')}) has been queued for TallyPrime.\n\nYour Local PC Connector will automatically post it into Tally!`);
+      alert(`⚡ SUCCESS!\n\nInvoice ${inv.id} (${inv.client} - ₹${cleanAmount.toLocaleString('en-IN')})\nLedger: ${dynamicSalesLedger}\n\nhas been queued for TallyPrime.\n\nYour Local PC Connector will automatically post it into Tally!`);
       this.loadTallyQueue();
       this.checkTallyConnectorStatus();
     } else {
@@ -2069,6 +2096,7 @@ const AdminCRM = {
     for (const inv of this.state.invoices) {
       const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
       const safeDate = this.toISODate(inv.createdAt || inv.date);
+      const dynamicSalesLedger = this.mapServiceToTallyLedger(inv.service);
       try {
         await fetch('/api/tally/queue', {
           method: 'POST',
@@ -2083,8 +2111,8 @@ const AdminCRM = {
             amount: cleanAmount,
             date: safeDate,
             voucherType: 'Sales',
-            narration: `${inv.service} - Fee Invoice ${inv.id}`,
-            salesLedger: 'Professional Fees Account'
+            narration: `${inv.service} - Fee Invoice ${inv.id} | JSON: {"service":"${inv.service}","description":"${inv.service}"}`,
+            salesLedger: dynamicSalesLedger
           })
         });
         queuedCount++;

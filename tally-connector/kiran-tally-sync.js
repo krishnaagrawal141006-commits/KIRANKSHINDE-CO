@@ -269,11 +269,34 @@ function parseToTallyDate(dateVal, companyInfo = null, forceEducationalDay = fal
   return `${y}${m}${d}`;
 }
 
+function mapServiceToTallyLedger(serviceName) {
+  const s = String(serviceName || '').toLowerCase();
+  if (s.includes('tds') || s.includes('challan') || s.includes('tcs') || s.includes('26q') || s.includes('24q')) {
+    return 'TDS & Challan Compliance Fees';
+  }
+  if (s.includes('gst') || s.includes('gstr') || s.includes('e-way') || s.includes('eway') || s.includes('lut')) {
+    return 'GST Returns & Compliance Fees';
+  }
+  if (s.includes('audit') || s.includes('44ab') || s.includes('statutory')) {
+    return 'Audit & Assurance Fees';
+  }
+  if (s.includes('itr') || s.includes('income tax') || s.includes('computation') || s.includes('44ada')) {
+    return 'Income Tax Filing & Advisory Fees';
+  }
+  if (s.includes('roc') || s.includes('mca') || s.includes('incorporation') || s.includes('company')) {
+    return 'ROC & Company Compliance Fees';
+  }
+  if (s.includes('accounting') || s.includes('bookkeeping') || s.includes('tally')) {
+    return 'Accounting & Bookkeeping Fees';
+  }
+  const clean = String(serviceName || '').split('—')[0].split('-')[0].trim();
+  return clean ? `Professional Fees - ${clean}` : 'Professional Fees Account';
+}
+
 // 4. Generate Tally Voucher XML (Supports Multi-line Items, GST & Optional Proformas)
 function buildVoucherXml(item, dateStr) {
   const amount = Number(item.amount || 0).toFixed(2);
   const party = xmlEscape(item.party_ledger || item.client_name || 'Sundry Debtors');
-  const defaultSalesLedger = xmlEscape(item.sales_ledger || 'Professional Fees Account');
 
   // Check if narration has structured JSON metadata
   let rawNarration = item.narration || `Professional Fees - ${item.client_name}`;
@@ -285,6 +308,19 @@ function buildVoucherXml(item, dateStr) {
       metadata = JSON.parse(parts[1].trim());
     } catch (e) {}
   }
+
+  let serviceDesc = item.service || '';
+  if (metadata && (metadata.service || metadata.description)) {
+    serviceDesc = metadata.service || metadata.description;
+  } else if (rawNarration) {
+    serviceDesc = rawNarration.split('-')[0].trim();
+  }
+
+  let dynamicSalesLedger = item.sales_ledger;
+  if (!dynamicSalesLedger || dynamicSalesLedger === 'Professional Fees Account') {
+    dynamicSalesLedger = mapServiceToTallyLedger(serviceDesc || rawNarration);
+  }
+  const defaultSalesLedger = xmlEscape(dynamicSalesLedger);
 
   const isReceipt = String(item.voucher_type || '').toLowerCase() === 'receipt';
   const isOptional = isReceipt ? false : Boolean(item.is_optional || item.voucher_type === 'Proforma' || (metadata && metadata.isOptional));
@@ -356,7 +392,7 @@ function buildVoucherXml(item, dateStr) {
             </ALLLEDGERENTRIES.LIST>`;
     }
   } else {
-    // Standard 2-leg voucher
+    // Standard 2-leg voucher with Dynamic Service Ledger & Service Description in Tally
     ledgerEntriesXml = `
             <ALLLEDGERENTRIES.LIST>
               <LEDGERNAME>${party}</LEDGERNAME>
@@ -367,6 +403,7 @@ function buildVoucherXml(item, dateStr) {
               <LEDGERNAME>${defaultSalesLedger}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
               <AMOUNT>${amount}</AMOUNT>
+              ${serviceDesc ? `<DESCRIPTION>${xmlEscape(serviceDesc)}</DESCRIPTION>` : ''}
             </ALLLEDGERENTRIES.LIST>`;
   }
 
@@ -403,7 +440,22 @@ function buildVoucherXml(item, dateStr) {
 // 5. Post Voucher to local TallyPrime with Pre-flight Ledgers & Safe Fallback
 async function injectVoucherIntoTally(item, companyInfo) {
   const party = item.party_ledger || item.client_name || 'Sundry Debtors';
-  const salesLedger = item.sales_ledger || 'Professional Fees Account';
+
+  let serviceDesc = item.service || '';
+  if (item.narration && item.narration.includes('| JSON:')) {
+    try {
+      const meta = JSON.parse(item.narration.split('| JSON:')[1].trim());
+      if (meta.service) serviceDesc = meta.service;
+      else if (meta.description) serviceDesc = meta.description;
+    } catch (e) {}
+  } else if (item.narration) {
+    serviceDesc = item.narration.split('-')[0].trim();
+  }
+
+  let salesLedger = item.sales_ledger;
+  if (!salesLedger || salesLedger === 'Professional Fees Account') {
+    salesLedger = mapServiceToTallyLedger(serviceDesc || item.narration);
+  }
 
   // Collect extra ledgers if present in JSON metadata
   const extraLedgers = [];

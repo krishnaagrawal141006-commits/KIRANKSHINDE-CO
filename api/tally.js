@@ -1,6 +1,27 @@
 // Consolidated Tally API Handler (Queue + Heartbeat)
 // Keeps total serverless functions below Vercel Hobby limits
 
+function toISODate(val) {
+  if (!val) return new Date().toISOString().slice(0, 10);
+  const s = String(val).trim();
+  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (dmy) {
+    const day = dmy[1].padStart(2, '0');
+    const month = dmy[2].padStart(2, '0');
+    const year = dmy[3];
+    return `${year}-${month}-${day}`;
+  }
+  const ymd = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+  if (ymd) {
+    return `${ymd[1]}-${ymd[2].padStart(2, '0')}-${ymd[3].padStart(2, '0')}`;
+  }
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const url = process.env.SUPABASE_URL;
@@ -163,7 +184,7 @@ module.exports = async function handler(req, res) {
       client_name: clientName,
       voucher_type: body.voucherType || 'Sales',
       amount: amount,
-      date: body.date || new Date().toISOString().slice(0, 10),
+      date: toISODate(body.date),
       narration: body.narration || `Professional Fees - ${clientName}`,
       sales_ledger: body.salesLedger || 'Professional Fees Account',
       party_ledger: body.partyLedger || clientName,

@@ -1524,12 +1524,34 @@ const AdminCRM = {
     }
   },
 
+  toISODate(val) {
+    if (!val) return new Date().toISOString().slice(0, 10);
+    const s = String(val).trim();
+    const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+    if (dmy) {
+      const day = dmy[1].padStart(2, '0');
+      const month = dmy[2].padStart(2, '0');
+      const year = dmy[3];
+      return `${year}-${month}-${day}`;
+    }
+    const ymd = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+    if (ymd) {
+      return `${ymd[1]}-${ymd[2].padStart(2, '0')}-${ymd[3].padStart(2, '0')}`;
+    }
+    const parsed = new Date(s);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return new Date().toISOString().slice(0, 10);
+  },
+
   async syncInvoiceToTally(invoiceId) {
     const inv = this.state.invoices.find(i => i.id === invoiceId);
     if (!inv) return;
 
     const token = await this.adminToken();
     const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
+    const safeDate = this.toISODate(inv.createdAt || inv.date);
 
     const res = await fetch('/api/tally/queue', {
       method: 'POST',
@@ -1542,7 +1564,7 @@ const AdminCRM = {
         sourceId: inv.id,
         clientName: inv.client,
         amount: cleanAmount,
-        date: inv.date || new Date().toISOString().slice(0, 10),
+        date: safeDate,
         voucherType: 'Sales',
         narration: `${inv.service} - Fee Invoice ${inv.id} (Kiran K. Shinde & Co.)`,
         salesLedger: 'Professional Fees Account'
@@ -1571,6 +1593,7 @@ const AdminCRM = {
 
     for (const inv of this.state.invoices) {
       const cleanAmount = Number(String(inv.amount || 0).replace(/[^0-9.]/g, ''));
+      const safeDate = this.toISODate(inv.createdAt || inv.date);
       try {
         await fetch('/api/tally/queue', {
           method: 'POST',
@@ -1583,7 +1606,7 @@ const AdminCRM = {
             sourceId: inv.id,
             clientName: inv.client,
             amount: cleanAmount,
-            date: inv.date || new Date().toISOString().slice(0, 10),
+            date: safeDate,
             voucherType: 'Sales',
             narration: `${inv.service} - Fee Invoice ${inv.id}`,
             salesLedger: 'Professional Fees Account'

@@ -1,6 +1,11 @@
 // CA Firm CRM & Admin Panel State Management
 const AdminCRM = {
   editingClientId: null,
+  invoiceFilter: 'all',
+  invoiceSearchQuery: '',
+  currentReminderInv: null,
+  currentReminderTemplateType: 'gentle',
+  currentReminderUpiUrl: '',
   // 1. Initial State Data with realistic Indian CA Firm Data
   state: { clients: [], leads: [], tasks: [], pendingDocs: [], invoices: [], calendarBookings: [], articles: [], deadlines: [] },
 
@@ -548,14 +553,114 @@ const AdminCRM = {
     `).join('');
   },
 
+  setInvoiceFilter(filter) {
+    this.invoiceFilter = filter;
+    const pills = ['invPillAll', 'invPillPending', 'invPillPaid', 'invPillTally'];
+    pills.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    const activeMap = { all: 'invPillAll', pending: 'invPillPending', paid: 'invPillPaid', tally: 'invPillTally' };
+    const target = document.getElementById(activeMap[filter]);
+    if (target) target.classList.add('active');
+    this.renderInvoicesTable();
+  },
+
+  onInvoiceSearchChange(val) {
+    this.invoiceSearchQuery = String(val || '').trim().toLowerCase();
+    this.renderInvoicesTable();
+  },
+
+  getFilteredInvoices() {
+    const list = this.state.invoices || [];
+    return list.filter(inv => {
+      // 1. Status Filter
+      if (this.invoiceFilter === 'pending' && inv.status !== 'Pending') return false;
+      if (this.invoiceFilter === 'paid' && inv.status !== 'Paid') return false;
+      if (this.invoiceFilter === 'tally' && !(inv.tallyVoucherNo || inv.tallyStatus === 'SYNCED')) return false;
+
+      // 2. Search Query Filter
+      if (this.invoiceSearchQuery) {
+        const q = this.invoiceSearchQuery;
+        const idMatch = String(inv.id || '').toLowerCase().includes(q);
+        const clientMatch = String(inv.client || '').toLowerCase().includes(q);
+        const serviceMatch = String(inv.service || '').toLowerCase().includes(q);
+        const vchMatch = String(inv.tallyVoucherNo || '').toLowerCase().includes(q);
+        if (!idMatch && !clientMatch && !serviceMatch && !vchMatch) return false;
+      }
+      return true;
+    });
+  },
+
+  updateInvoiceKpiCards() {
+    const invoices = this.state.invoices || [];
+    let totalBilled = 0;
+    let totalPending = 0;
+    let totalPaid = 0;
+    let pendingCount = 0;
+    let paidCount = 0;
+    let tallySyncedCount = 0;
+    let tallyPendingCount = 0;
+
+    invoices.forEach(inv => {
+      const amt = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+      totalBilled += amt;
+      if (inv.status === 'Paid') {
+        totalPaid += amt;
+        paidCount++;
+      } else {
+        totalPending += amt;
+        pendingCount++;
+      }
+      if (inv.tallyVoucherNo || inv.tallyStatus === 'SYNCED') {
+        tallySyncedCount++;
+      } else if (inv.tallyStatus === 'PENDING') {
+        tallyPendingCount++;
+      }
+    });
+
+    const setTxt = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    setTxt('invKpiTotalBilled', `₹ ${totalBilled.toLocaleString('en-IN')}`);
+    setTxt('invKpiTotalCount', `${invoices.length} Invoices`);
+    setTxt('invKpiOutstanding', `₹ ${totalPending.toLocaleString('en-IN')}`);
+    setTxt('invKpiPendingCount', `${pendingCount} Unpaid Bills`);
+    setTxt('invKpiCollected', `₹ ${totalPaid.toLocaleString('en-IN')}`);
+    setTxt('invKpiSettledCount', `${paidCount} Settled`);
+    setTxt('invKpiTallySynced', tallySyncedCount);
+    setTxt('invKpiTallyPending', `${tallyPendingCount} In Queue`);
+
+    setTxt('invCountAll', invoices.length);
+    setTxt('invCountPending', pendingCount);
+    setTxt('invCountPaid', paidCount);
+    setTxt('invCountTally', tallySyncedCount);
+  },
+
   renderInvoicesTable() {
+    this.updateInvoiceKpiCards();
     const tbody = document.getElementById('invoicesTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = this.state.invoices.map(inv => `
+    const filtered = this.getFilteredInvoices();
+    if (!filtered.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center; padding: 36px 16px; color: #64748b;">
+            <i class="fa-solid fa-file-circle-xmark" style="font-size:2rem; color:#cbd5e1; margin-bottom:10px; display:block;"></i>
+            <strong>No invoices match your active filter / search query.</strong>
+            <p style="margin:4px 0 0; font-size:0.8rem;">Try clearing search or clicking 'All' filter pill.</p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(inv => `
       <tr>
         <td>
-          <strong>${inv.id}</strong>
+          <strong style="color:#0f172a;">${inv.id}</strong>
           ${inv.tallyVoucherNo ? `
             <div style="margin-top:4px;">
               <span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:4px; padding:2px 7px; font-size:0.72rem; font-weight:700;" title="TallyPrime Proforma Voucher #${inv.tallyVoucherNo}">
@@ -570,19 +675,25 @@ const AdminCRM = {
             </div>
           ` : '')}
         </td>
-        <td><strong>${inv.client}</strong></td>
+        <td>
+          <button type="button" onclick="AdminCRM.openClientByName('${encodeURIComponent(inv.client)}')" style="border:0; background:none; padding:0; color:#0f172a; font:inherit; font-weight:700; cursor:pointer; text-align:left; text-decoration:underline;">
+            ${inv.client}
+          </button>
+        </td>
         <td>${inv.service}</td>
-        <td><strong style="color: #0f172a;">${inv.amount}</strong></td>
+        <td><strong style="color: #0f172a; font-size:0.92rem;">${inv.amount}</strong></td>
         <td>${inv.date}</td>
         <td>
-          <span class="status-pill ${inv.status === 'Paid' ? 'status-completed' : 'status-pending'}">${inv.status}</span>
+          <span class="status-pill ${inv.status === 'Paid' ? 'status-completed' : 'status-pending'}">
+            ${inv.status === 'Paid' ? '<i class="fa-solid fa-check"></i> Paid' : '<i class="fa-solid fa-clock"></i> Pending'}
+          </span>
           ${inv.tallyVoucherNo ? `
             <div style="font-size:0.72rem; color:#059669; font-weight:600; margin-top:4px; display:flex; align-items:center; gap:4px;">
               <i class="fa-solid fa-file-invoice"></i> Tally Proforma Synced
             </div>
           ` : ''}
         </td>
-        <td>
+        <td style="white-space: nowrap;">
           <button class="action-icon-btn" onclick="AdminCRM.editInvoice('${inv.id}')" title="Edit invoice"><i class="fa-solid fa-pen"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.downloadInvoicePdf('${inv.id}')" title="Print / Download Proforma Bill PDF"><i class="fa-solid fa-file-pdf"></i></button>
           ${inv.tallyVoucherNo ? `
@@ -595,12 +706,243 @@ const AdminCRM = {
             </button>
           `}
           ${inv.status === 'Pending' ? `
-            <a href="https://wa.me/917506647791?text=${encodeURIComponent(`Payment Reminder from CA Kiran K. Shinde & Co.\nInvoice: ${inv.id}${inv.tallyVoucherNo ? ` (Tally Proforma Ref: #${inv.tallyVoucherNo})` : ''}\nClient: ${inv.client}\nAmount: ${inv.amount}\nService: ${inv.service}\nKindly arrange payment at your earliest convenience.`)}" target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Fee Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</a>
-            <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Record Payment / Post Tally Receipt"><i class="fa-solid fa-circle-check"></i></button>
-          ` : '<span style="font-size: 0.78rem; color: #16a34a;"><i class="fa-solid fa-check"></i> Settled</span>'}
+            <button onclick="AdminCRM.openPaymentReminderModal('${inv.id}')" class="btn-admin" style="background:#10b981; color:#fff; border:none; padding:4px 9px; border-radius:5px; font-weight:700; font-size:0.75rem; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:0 3px;" title="Send WhatsApp Payment Reminder & Dynamic UPI QR">
+              <i class="fa-brands fa-whatsapp" style="font-size:0.9rem;"></i> Remind & Collect
+            </button>
+            <button class="action-icon-btn" onclick="AdminCRM.markInvoicePaid('${inv.id}')" title="Record Payment & Auto-Post Tally Receipt" style="color:#16a34a;"><i class="fa-solid fa-circle-check"></i></button>
+          ` : `
+            <span style="font-size: 0.76rem; color: #16a34a; font-weight:700; display:inline-flex; align-items:center; gap:4px; margin-left:4px;">
+              <i class="fa-solid fa-check-double"></i> Settled
+            </span>
+          `}
         </td>
       </tr>
     `).join('');
+  },
+
+  openClientByName(encodedName) {
+    const rawName = decodeURIComponent(encodedName || '');
+    const client = (this.state.clients || []).find(c => (c.name || '').toLowerCase() === rawName.toLowerCase());
+    if (client) {
+      this.openClientWork(client.id);
+    } else {
+      alert(`Client master record for '${rawName}' not found in active clients list.`);
+    }
+  },
+
+  lookupClientPhone(clientName) {
+    if (!clientName) return '';
+    const norm = String(clientName).trim().toLowerCase();
+    const client = (this.state.clients || []).find(c => {
+      const cn = String(c.name || '').trim().toLowerCase();
+      return cn === norm || cn.includes(norm) || norm.includes(cn);
+    });
+    if (client && client.phone) {
+      return String(client.phone).trim();
+    }
+    return '';
+  },
+
+  lookupClientObj(clientName) {
+    if (!clientName) return null;
+    const norm = String(clientName).trim().toLowerCase();
+    return (this.state.clients || []).find(c => {
+      const cn = String(c.name || '').trim().toLowerCase();
+      return cn === norm || cn.includes(norm) || norm.includes(cn);
+    }) || null;
+  },
+
+  openPaymentReminderModal(invoiceId) {
+    let inv = null;
+    if (invoiceId) {
+      inv = (this.state.invoices || []).find(i => i.id === invoiceId);
+    }
+    if (!inv) {
+      inv = (this.state.invoices || []).find(i => i.status === 'Pending') || (this.state.invoices || [])[0];
+    }
+    if (!inv) {
+      alert('No invoice found to generate payment reminder.');
+      return;
+    }
+
+    this.currentReminderInv = inv;
+    const client = this.lookupClientObj(inv.client);
+    const clientPhone = this.lookupClientPhone(inv.client);
+    const cleanAmount = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+    const formattedAmount = cleanAmount.toLocaleString('en-IN');
+    const voucherRef = inv.tallyVoucherNo ? `Tally #${inv.tallyVoucherNo}` : 'Proforma Ref';
+
+    // Populate summary bar
+    const clientNameEl = document.getElementById('reminderClientName');
+    if (clientNameEl) clientNameEl.textContent = inv.client;
+
+    const clientEntityEl = document.getElementById('reminderClientEntity');
+    if (clientEntityEl) clientEntityEl.textContent = client ? `${client.entity || 'Client Master'} • ${client.pan ? `PAN: ${client.pan}` : 'Registered'}` : 'Verified Client';
+
+    const invRefEl = document.getElementById('reminderInvoiceRef');
+    if (invRefEl) invRefEl.textContent = `${inv.id} (${voucherRef})`;
+
+    const serviceTitleEl = document.getElementById('reminderServiceTitle');
+    if (serviceTitleEl) serviceTitleEl.textContent = inv.service;
+
+    const amtDisplayEl = document.getElementById('reminderAmountDisplay');
+    if (amtDisplayEl) amtDisplayEl.textContent = `₹ ${formattedAmount}`;
+
+    // Phone input & auto-match badge
+    const phoneInput = document.getElementById('reminderPhoneInput');
+    const badge = document.getElementById('reminderPhoneStatusBadge');
+    if (clientPhone) {
+      if (phoneInput) phoneInput.value = clientPhone;
+      if (badge) {
+        badge.textContent = `Auto-matched (${client ? client.name : 'Master'})`;
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#15803d';
+      }
+    } else {
+      if (phoneInput) phoneInput.value = '';
+      if (badge) {
+        badge.textContent = 'Please enter WhatsApp number';
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#b45309';
+      }
+    }
+
+    // Dynamic UPI Intent URI
+    const upiUrl = `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${encodeURIComponent('Fee Inv ' + inv.id)}`;
+    this.currentReminderUpiUrl = upiUrl;
+
+    // QR Code generation via high-res API
+    const qrImageEl = document.getElementById('reminderQrImage');
+    if (qrImageEl) {
+      qrImageEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=4&data=${encodeURIComponent(upiUrl)}`;
+    }
+    const qrAmtText = document.getElementById('reminderQrAmountText');
+    if (qrAmtText) qrAmtText.textContent = `₹ ${formattedAmount}`;
+
+    // Switch to gentle template by default
+    this.switchReminderTemplate('gentle');
+
+    // Open modal
+    const modal = document.getElementById('paymentReminderModal');
+    if (modal) modal.classList.add('active');
+  },
+
+  verifyReminderPhone() {
+    if (!this.currentReminderInv) return;
+    const phone = this.lookupClientPhone(this.currentReminderInv.client);
+    const phoneInput = document.getElementById('reminderPhoneInput');
+    const badge = document.getElementById('reminderPhoneStatusBadge');
+    if (phone) {
+      if (phoneInput) phoneInput.value = phone;
+      if (badge) {
+        badge.textContent = 'Auto-matched from Client Master';
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#15803d';
+      }
+    } else {
+      alert(`No phone number found in client database for '${this.currentReminderInv.client}'. Please enter manually.`);
+    }
+  },
+
+  switchReminderTemplate(type) {
+    this.currentReminderTemplateType = type || 'gentle';
+    ['btnTplGentle', 'btnTplDue', 'btnTplOverdue'].forEach(btnId => {
+      const b = document.getElementById(btnId);
+      if (b) b.classList.remove('active');
+    });
+
+    const activeMap = { gentle: 'btnTplGentle', due: 'btnTplDue', overdue: 'btnTplOverdue' };
+    const activeBtn = document.getElementById(activeMap[this.currentReminderTemplateType]);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    const msg = this.buildReminderMessage(this.currentReminderInv, this.currentReminderTemplateType);
+    const textarea = document.getElementById('reminderMessageText');
+    if (textarea) textarea.value = msg;
+  },
+
+  buildReminderMessage(inv, type) {
+    if (!inv) return '';
+    const cleanAmount = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+    const formattedAmount = cleanAmount.toLocaleString('en-IN');
+    const voucherRef = inv.tallyVoucherNo ? ` (Tally Ref: #${inv.tallyVoucherNo})` : '';
+    const dateStr = inv.date || new Date().toLocaleDateString('en-IN');
+    const upiLink = this.currentReminderUpiUrl || `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${encodeURIComponent('Fee Inv ' + inv.id)}`;
+
+    if (type === 'due') {
+      return `*URGENT COMPLIANCE NOTICE: Fee Payment Pending*\n\nDear *${inv.client}*,\n\nWe hope this reaches you well. Regarding your ongoing statutory compliance and filings (*${inv.service}*):\n\n📄 *Invoice Ref:* ${inv.id}${voucherRef}\n💼 *Compliance / Filing:* ${inv.service}\n💰 *Pending Fees:* ₹${formattedAmount}\n📅 *Billing Date:* ${dateStr}\n⚠️ *Status:* Due for Immediate Settlement\n\nTo ensure uninterrupted filing of your statutory returns (GST / TDS / Tax Audit) before the upcoming statutory cut-off dates, kindly clear this invoice today.\n\n⚡ *Pay Instantly via UPI:* \n👉 *UPI ID:* 7506647791@hdfcbank\n👉 *1-Click UPI Pay Link:* ${upiLink}\n\n*Or Direct Bank Transfer (NEFT/RTGS):*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nA/C Name: Kiran K. Shinde & Co.\n\nPlease share the payment UTR / screenshot once completed so we can update your ledger in Tally.\n\nWith warm regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants • Pune / Palghar\nDirect Office: +91 75066 47791`;
+    }
+
+    if (type === 'overdue') {
+      return `*FINAL REMINDER: Outstanding Professional Fees Overdue*\n\nTo: *${inv.client}*\nAttention: Accounts & Finance Department\n\nDear Sir / Ma'am,\n\nDespite earlier notifications, invoice *${inv.id}* amounting to *₹${formattedAmount}* for *${inv.service}* remains significantly *OVERDUE*.\n\n📌 *Bill Summary:*\n• Invoice No: ${inv.id}${voucherRef}\n• Billing Date: ${dateStr}\n• Particulars: ${inv.service}\n• Net Overdue Balance: *₹${formattedAmount}*\n\nWe request you to arrange immediate settlement within 24 hours to avoid suspension of ongoing audit, advisory, and portal filings.\n\n💳 *Immediate Settlement Options:*\n1. *Instant UPI ID:* 7506647791@hdfcbank\n2. *Direct UPI Pay Link:* ${upiLink}\n3. *NEFT / RTGS Details:*\n   - Beneficiary: CA Kiran K. Shinde & Co.\n   - Bank: HDFC Bank Ltd\n   - Account: 50200067891234\n   - IFSC: HDFC0000123\n\nIf payment has already been transferred in the last 24 hours, kindly reply with the bank UTR confirmation so our accounts team can reconcile your ledger in TallyPrime.\n\nSincerely,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Office: +91 75066 47791`;
+    }
+
+    // Default: gentle
+    return `Namaste *${inv.client}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\nHope you are doing well. This is a gentle reminder regarding our professional fee invoice:\n\n📄 *Invoice No:* ${inv.id}${voucherRef}\n💼 *Service:* ${inv.service}\n💰 *Amount Due:* ₹${formattedAmount}\n📅 *Invoice Date:* ${dateStr}\n\nKindly clear the balance at your convenience via instant UPI:\n👉 *UPI ID:* 7506647791@hdfcbank\n👉 *Direct UPI Pay Link:* ${upiLink}\n\n*Bank NEFT / RTGS Details:*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nName: Kiran K. Shinde & Co.\n\nPlease share the payment screenshot / UTR once done. Thank you for your continued association!\n\nBest regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Mob: +91 75066 47791`;
+  },
+
+  sendWhatsAppPaymentReminderNow() {
+    const phoneInput = document.getElementById('reminderPhoneInput');
+    const msgText = document.getElementById('reminderMessageText');
+    if (!phoneInput || !msgText) return;
+
+    let phone = String(phoneInput.value || '').replace(/[^0-9]/g, '');
+    if (!phone || phone.length < 10) {
+      alert('Please enter a valid 10-digit mobile number for WhatsApp reminder.');
+      phoneInput.focus();
+      return;
+    }
+    // Prepend 91 for standard Indian numbers if not already present
+    if (phone.length === 10) {
+      phone = '91' + phone;
+    }
+
+    const message = msgText.value.trim();
+    if (!message) {
+      alert('Message body cannot be empty.');
+      return;
+    }
+
+    const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  },
+
+  copyReminderMessageText() {
+    const msgText = document.getElementById('reminderMessageText');
+    if (!msgText || !msgText.value) return;
+    navigator.clipboard.writeText(msgText.value).then(() => {
+      alert('✅ Reminder message with UPI details copied to clipboard!');
+    }).catch(() => {
+      msgText.select();
+      document.execCommand('copy');
+      alert('✅ Message copied to clipboard!');
+    });
+  },
+
+  copyReminderUpiLink() {
+    if (!this.currentReminderUpiUrl) {
+      const inv = this.currentReminderInv;
+      if (!inv) return;
+      const cleanAmount = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+      this.currentReminderUpiUrl = `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${encodeURIComponent('Fee Inv ' + inv.id)}`;
+    }
+    navigator.clipboard.writeText(this.currentReminderUpiUrl).then(() => {
+      alert(`✅ UPI Payment Link copied:\n${this.currentReminderUpiUrl}`);
+    }).catch(() => {
+      alert(`UPI Link:\n${this.currentReminderUpiUrl}`);
+    });
+  },
+
+  openUpiIntentTest() {
+    if (!this.currentReminderUpiUrl) return;
+    window.location.href = this.currentReminderUpiUrl;
+  },
+
+  markCurrentReminderPaid() {
+    if (!this.currentReminderInv) return;
+    const invId = this.currentReminderInv.id;
+    const reminderModal = document.getElementById('paymentReminderModal');
+    if (reminderModal) reminderModal.classList.remove('active');
+    this.markInvoicePaid(invId);
   },
 
   async editInvoice(invoiceId) {
@@ -862,8 +1204,11 @@ const AdminCRM = {
     }
     const btnWhatsApp = document.getElementById('btnProformaWhatsApp');
     if (btnWhatsApp) {
-      const msg = `Dear ${inv.client},\n\nPlease find your official Invoice details from CA Kiran K. Shinde & Co.:\n\n📄 Invoice Ref: ${inv.id}\n⚡ Tally Voucher Ref: ${voucherRef}\n💼 Particulars: ${inv.service}\n💰 Amount Due: ${cleanAmount}\n\nBank Payment Details:\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nUPI ID: 7506647791@hdfcbank\n\nThank you!\nCA Kiran K. Shinde & Co.`;
-      btnWhatsApp.onclick = () => window.open(`https://wa.me/917506647791?text=${encodeURIComponent(msg)}`, '_blank');
+      btnWhatsApp.onclick = () => {
+        const m = document.getElementById('tallyProformaModal');
+        if (m) m.classList.remove('active');
+        this.openPaymentReminderModal(invoiceId);
+      };
     }
 
     modal.classList.add('active');

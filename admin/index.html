@@ -439,11 +439,88 @@
 
       <!-- ================= 5. INVOICES & FEES VIEW ================= -->
       <section class="tab-content" id="tab-invoices">
+        <!-- Outstanding Debtors & Collection KPI Summary Cards -->
+        <div class="metrics-grid" style="margin-bottom: 20px;">
+          <div class="metric-card">
+            <div class="metric-data">
+              <span>Total Fees Invoiced</span>
+              <h3 id="invKpiTotalBilled">₹ 0</h3>
+              <small id="invKpiTotalCount" style="color:#64748b; font-size:0.75rem; font-weight:600;">0 Invoices</small>
+            </div>
+            <div class="metric-icon-box icon-blue">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-left: 4px solid #ef4444;">
+            <div class="metric-data">
+              <span>Sundry Debtors (Pending)</span>
+              <h3 id="invKpiOutstanding" style="color:#b91c1c;">₹ 0</h3>
+              <small id="invKpiPendingCount" style="color:#ef4444; font-size:0.75rem; font-weight:700;"><i class="fa-solid fa-clock"></i> 0 Unpaid Bills</small>
+            </div>
+            <div class="metric-icon-box" style="background:#fee2e2; color:#b91c1c;">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-left: 4px solid #10b981;">
+            <div class="metric-data">
+              <span>Total Fees Collected</span>
+              <h3 id="invKpiCollected" style="color:#047857;">₹ 0</h3>
+              <small id="invKpiSettledCount" style="color:#10b981; font-size:0.75rem; font-weight:700;"><i class="fa-solid fa-check-double"></i> 0 Settled</small>
+            </div>
+            <div class="metric-icon-box icon-green">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-left: 4px solid #d97706;">
+            <div class="metric-data">
+              <span>TallyPrime Synced</span>
+              <h3 id="invKpiTallySynced" style="color:#b45309;">0</h3>
+              <small id="invKpiTallyPending" style="color:#d97706; font-size:0.75rem; font-weight:600;">0 In Queue</small>
+            </div>
+            <div class="metric-icon-box icon-amber">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+          </div>
+        </div>
+
         <div class="admin-card">
-          <div class="admin-card-header">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
             <div>
               <h3>Fee Invoices & Payment Ledger</h3>
-              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Track client billings, payments received, and pending balances.</p>
+              <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Track client billings, outstanding sundry debtors, TallyPrime sync status, and automated WhatsApp payment collection.</p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn-admin" onclick="AdminCRM.openPaymentReminderModal(null)" style="background:#10b981; color:#fff; border:none; display:inline-flex; align-items:center; gap:6px; font-weight:700; padding:8px 14px; border-radius:6px; cursor:pointer;">
+                <i class="fa-brands fa-whatsapp"></i> Quick Fee Reminder
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Pills & Search Bar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #f1f5f9;">
+            <!-- Filter Pills -->
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn-admin invoice-filter-pill active" id="invPillAll" onclick="AdminCRM.setInvoiceFilter('all')" style="padding:5px 12px; font-size:0.78rem; border-radius:20px; font-weight:700;">
+                All (<span id="invCountAll">0</span>)
+              </button>
+              <button type="button" class="btn-admin invoice-filter-pill" id="invPillPending" onclick="AdminCRM.setInvoiceFilter('pending')" style="padding:5px 12px; font-size:0.78rem; border-radius:20px; font-weight:700;">
+                ⏳ Pending / Due (<span id="invCountPending">0</span>)
+              </button>
+              <button type="button" class="btn-admin invoice-filter-pill" id="invPillPaid" onclick="AdminCRM.setInvoiceFilter('paid')" style="padding:5px 12px; font-size:0.78rem; border-radius:20px; font-weight:700;">
+                ✅ Settled (<span id="invCountPaid">0</span>)
+              </button>
+              <button type="button" class="btn-admin invoice-filter-pill" id="invPillTally" onclick="AdminCRM.setInvoiceFilter('tally')" style="padding:5px 12px; font-size:0.78rem; border-radius:20px; font-weight:700;">
+                ⚡ Tally Synced (<span id="invCountTally">0</span>)
+              </button>
+            </div>
+
+            <!-- Search Box -->
+            <div style="position:relative; min-width:260px;">
+              <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:0.8rem;"></i>
+              <input type="text" id="invoiceSearchInput" oninput="AdminCRM.onInvoiceSearchChange(this.value)" placeholder="Search client, invoice #, or service..." class="form-input-admin" style="padding-left:30px; font-size:0.8rem; height:34px; border-radius:6px;">
             </div>
           </div>
 
@@ -1138,6 +1215,171 @@
     </div>
   </div>
 
+  <!-- ================= AUTOMATED WHATSAPP PAYMENT REMINDER + DYNAMIC UPI QR MODAL ================= -->
+  <div class="admin-modal-overlay" id="paymentReminderModal">
+    <div class="admin-modal" style="max-width: 860px; width: 95%; max-height: 94vh; overflow-y: auto; padding: 22px;">
+      <div class="modal-header" style="border-bottom: 2px solid #25d366; padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg, #25d366 0%, #128c7e 100%); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.25rem; box-shadow: 0 4px 12px rgba(37,211,102,0.3);">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:1.18rem; color:#0f172a; font-weight:800;">
+              WhatsApp Fee Collection & Dynamic UPI QR
+            </h3>
+            <p style="margin:2px 0 0; font-size:0.78rem; color:#64748b;">
+              Send instant 1-click payment link, verified bank details & real-time UPI QR code directly to client
+            </p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('paymentReminderModal').classList.remove('active')">&times;</button>
+      </div>
+
+      <!-- Bill & Client Summary Pill Bar -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+        <div>
+          <span style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Client / Debtor</span>
+          <div style="font-weight:700; color:#0f172a; font-size:0.95rem; margin-top:2px;" id="reminderClientName">-</div>
+          <small id="reminderClientEntity" style="color:#64748b; font-size:0.75rem;">-</small>
+        </div>
+        <div>
+          <span style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Invoice / Tally Ref</span>
+          <div style="font-weight:700; color:#0f172a; font-size:0.95rem; margin-top:2px;" id="reminderInvoiceRef">-</div>
+          <small id="reminderServiceTitle" style="color:#64748b; font-size:0.75rem;">-</small>
+        </div>
+        <div>
+          <span style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Outstanding Fee</span>
+          <div style="font-weight:800; color:#059669; font-size:1.2rem; margin-top:2px;" id="reminderAmountDisplay">₹ 0</div>
+          <small style="color:#10b981; font-weight:600; font-size:0.75rem;"><i class="fa-solid fa-clock"></i> Pending Settlement</small>
+        </div>
+      </div>
+
+      <!-- Two-Column Layout: Message Editor (Left) & Live Dynamic UPI QR (Right) -->
+      <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 18px; align-items: start;">
+        
+        <!-- Left Column: WhatsApp Phone & Template Config -->
+        <div>
+          <!-- Client Phone Field -->
+          <div style="margin-bottom: 14px;">
+            <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; font-weight:700; color:#1e293b; margin-bottom:6px;">
+              <span><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> Client WhatsApp Number:</span>
+              <span id="reminderPhoneStatusBadge" style="font-size:0.72rem; padding:2px 7px; border-radius:4px; font-weight:600; background:#e0f2fe; color:#0369a1;">
+                Auto-matched
+              </span>
+            </label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="reminderPhoneInput" class="form-input-admin" placeholder="e.g. 9820123456 or 919820123456" style="font-weight:600; letter-spacing:0.5px;">
+              <button type="button" class="btn-admin" onclick="AdminCRM.verifyReminderPhone()" style="padding:0 12px; font-size:0.78rem; background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; white-space:nowrap;" title="Refresh / check phone from client master">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+            </div>
+            <small style="font-size:0.72rem; color:#64748b; margin-top:3px; display:block;">Enter 10-digit mobile number; country code (91) is automatically applied.</small>
+          </div>
+
+          <!-- Template Selection Pills -->
+          <div style="margin-bottom: 12px;">
+            <label style="display:block; font-size:0.82rem; font-weight:700; color:#1e293b; margin-bottom:6px;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color:#6366f1;"></i> Select Message Tone / Template:
+            </label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px;">
+              <button type="button" class="btn-admin reminder-template-btn active" id="btnTplGentle" onclick="AdminCRM.switchReminderTemplate('gentle')" style="padding:6px 8px; font-size:0.75rem; text-align:center;">
+                🕊️ Gentle
+              </button>
+              <button type="button" class="btn-admin reminder-template-btn" id="btnTplDue" onclick="AdminCRM.switchReminderTemplate('due')" style="padding:6px 8px; font-size:0.75rem; text-align:center;">
+                ⏳ Due Date
+              </button>
+              <button type="button" class="btn-admin reminder-template-btn" id="btnTplOverdue" onclick="AdminCRM.switchReminderTemplate('overdue')" style="padding:6px 8px; font-size:0.75rem; text-align:center;">
+                🚨 Urgent Overdue
+              </button>
+            </div>
+          </div>
+
+          <!-- Message Textarea -->
+          <div style="margin-bottom: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-size:0.82rem; font-weight:700; color:#1e293b;">
+                <i class="fa-solid fa-comment-dots" style="color:#0ea5e9;"></i> Editable Message Content:
+              </label>
+              <button type="button" onclick="AdminCRM.copyReminderMessageText()" style="background:none; border:none; color:#2563eb; font-size:0.75rem; font-weight:700; cursor:pointer; padding:0;">
+                <i class="fa-regular fa-copy"></i> Copy Text
+              </button>
+            </div>
+            <textarea id="reminderMessageText" class="form-input-admin" rows="9" style="font-family: monospace; font-size: 0.8rem; line-height: 1.45; resize: vertical; background: #ffffff;"></textarea>
+          </div>
+        </div>
+
+        <!-- Right Column: Dynamic UPI QR Code & Instant Payment Card -->
+        <div style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 4px 16px rgba(16,185,129,0.08);">
+          <div style="display:inline-flex; align-items:center; gap:6px; background:#dcfce7; color:#166534; padding:3px 10px; border-radius:999px; font-size:0.74rem; font-weight:700; margin-bottom:10px;">
+            <i class="fa-solid fa-qrcode"></i> Dynamic UPI QR • Zero Fee
+          </div>
+          <h4 style="margin:0 0 4px; font-size:0.95rem; color:#0f172a; font-weight:800;">CA Kiran K. Shinde & Co.</h4>
+          <p style="margin:0 0 10px; font-size:0.75rem; color:#64748b;">Instant settlement to HDFC Current Account</p>
+
+          <!-- QR Code Container -->
+          <div style="background:#ffffff; border:2px dashed #10b981; border-radius:12px; padding:12px; display:inline-block; margin:0 auto 10px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <img id="reminderQrImage" src="" alt="UPI QR Code" style="width:190px; height:190px; display:block; margin:0 auto; border-radius:6px;">
+            <div style="margin-top:6px; font-weight:800; font-size:1.05rem; color:#0f172a;" id="reminderQrAmountText">₹ 0</div>
+          </div>
+
+          <!-- Supported UPI App Icons -->
+          <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:12px; font-size:0.7rem; font-weight:700; color:#475569;">
+            <span style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px;">GPay</span>
+            <span style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px;">PhonePe</span>
+            <span style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px;">Paytm</span>
+            <span style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px;">BHIM</span>
+            <span style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px;">Cred</span>
+          </div>
+
+          <!-- Firm UPI & Bank Transfer Details -->
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; text-align:left; font-size:0.75rem; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="color:#64748b;">VPA / UPI ID:</span>
+              <strong style="color:#0f172a; font-family:monospace; font-size:0.8rem;">7506647791@hdfcbank</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="color:#64748b;">Bank:</span>
+              <span style="font-weight:600; color:#0f172a;">HDFC Bank Ltd</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="color:#64748b;">A/C No:</span>
+              <strong style="color:#0f172a; font-family:monospace;">50200067891234</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:#64748b;">IFSC Code:</span>
+              <strong style="color:#0f172a; font-family:monospace;">HDFC0000123</strong>
+            </div>
+          </div>
+
+          <!-- Copy UPI Link Button -->
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn-admin btn-admin-outline" onclick="AdminCRM.copyReminderUpiLink()" style="flex:1; padding:6px 8px; font-size:0.75rem; display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+              <i class="fa-solid fa-link"></i> Copy UPI Link
+            </button>
+            <button type="button" class="btn-admin btn-admin-outline" onclick="AdminCRM.openUpiIntentTest()" style="flex:1; padding:6px 8px; font-size:0.75rem; display:inline-flex; align-items:center; justify-content:center; gap:5px;" title="Test UPI intent link">
+              <i class="fa-solid fa-mobile-screen-button"></i> Test UPI Pay
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <button type="button" class="btn-admin btn-admin-outline" onclick="document.getElementById('paymentReminderModal').classList.remove('active')">
+          Close
+        </button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button type="button" class="btn-admin" onclick="AdminCRM.markCurrentReminderPaid()" style="background:#f8fafc; color:#0f172a; border:1px solid #cbd5e1; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Mark as Paid (Tally Receipt)
+          </button>
+          <button type="button" class="btn-admin" onclick="AdminCRM.sendWhatsAppPaymentReminderNow()" style="background:#25d366; color:#ffffff; font-weight:800; border:none; padding:9px 18px; border-radius:6px; display:inline-flex; align-items:center; gap:8px; font-size:0.88rem; box-shadow:0 4px 12px rgba(37,211,102,0.3); cursor:pointer;">
+            <i class="fa-brands fa-whatsapp" style="font-size:1.15rem;"></i> Send Reminder on WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../team-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js"></script>
@@ -1146,7 +1388,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="bank-converter-web.js?v=v6"></script>
   <script src="gst-reconciliation.js?v=v1"></script>
-  <script src="admin.js?v=tally_v9"></script>
+  <script src="admin.js?v=tally_v10"></script>
 </body>
 </html>
 

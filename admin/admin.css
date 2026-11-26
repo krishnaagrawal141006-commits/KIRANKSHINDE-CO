@@ -638,6 +638,43 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+/* ================= Fee Reminder & Payment Styles ================= */
+.invoice-filter-pill {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.invoice-filter-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.invoice-filter-pill.active {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+}
+
+.reminder-template-btn {
+  background: #f8fafc;
+  color: #475569;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reminder-template-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.reminder-template-btn.active {
+  background: #e0e7ff !important;
+  color: #4338ca !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
 /* ================= Responsive ================= */
 @media (max-width: 1100px) {
   .kanban-board {

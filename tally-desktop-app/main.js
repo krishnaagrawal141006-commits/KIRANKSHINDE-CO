@@ -11,6 +11,45 @@ const aiRouter = new NaraRouterAI();
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+let whatsappWindow = null;
+
+function getOrCreateWhatsAppWindow() {
+  if (whatsappWindow && !whatsappWindow.isDestroyed()) {
+    whatsappWindow.show();
+    whatsappWindow.focus();
+    return whatsappWindow;
+  }
+
+  whatsappWindow = new BrowserWindow({
+    width: 1100,
+    height: 780,
+    minWidth: 840,
+    minHeight: 600,
+    title: 'CA Kiran K. Shinde & Co. — WhatsApp Web Auto-Dispatcher',
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    autoHideMenuBar: true,
+    backgroundColor: '#111827',
+    webPreferences: {
+      partition: 'persist:whatsapp',
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  const chromeUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+  whatsappWindow.webContents.setUserAgent(chromeUserAgent);
+
+  whatsappWindow.loadURL('https://web.whatsapp.com');
+
+  whatsappWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      whatsappWindow.hide();
+    }
+  });
+
+  return whatsappWindow;
+}
 
 // Config file path
 const configFilePath = path.join(app.getPath('userData'), 'kiran-tally-config.json');
@@ -66,6 +105,12 @@ engine.on('voucher-synced', (data) => {
       }).show();
     }
   } catch (e) {}
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send('voucher-synced-ready-for-whatsapp', data);
+    } catch (e) {}
+  }
 });
 
 engine.on('voucher-failed', (data) => {
@@ -139,6 +184,10 @@ function createTray() {
             mainWindow.focus();
           }
         }
+      },
+      {
+        label: '💬 Open WhatsApp Web Dispatcher',
+        click: () => getOrCreateWhatsAppWindow()
       },
       {
         label: 'Force Sync Now',
@@ -308,6 +357,189 @@ ipcMain.on('save-config', (event, newConfig) => {
     fs.writeFileSync(configFilePath, JSON.stringify(engine.config, null, 2), 'utf8');
   } catch (e) {}
   engine.log('success', 'Configuration updated successfully.');
+});
+
+// ================= WHATSAPP WEB & INVOICE PDF IPC HANDLERS =================
+ipcMain.on('whatsapp-open-web', () => {
+  getOrCreateWhatsAppWindow();
+});
+
+ipcMain.handle('whatsapp-send-invoice', async (event, payload) => {
+  try {
+    const win = getOrCreateWhatsAppWindow();
+    let phone = String(payload.phone || '').replace(/[^0-9]/g, '');
+    if (phone.length === 10) phone = '91' + phone;
+
+    const invoiceId = payload.invoiceId || 'INV';
+    const amount = Number(String(payload.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+    const clientName = payload.clientName || 'Valued Client';
+    const service = payload.service || 'Statutory Compliance & CA Consultancy Fees';
+    const voucherNo = payload.voucherNo ? ` (Tally Ref: #${payload.voucherNo})` : '';
+
+    const webPayLink = `https://www.cakiran.co.in/pay?inv=${encodeURIComponent(invoiceId)}&am=${amount}&client=${encodeURIComponent(clientName)}`;
+
+    const defaultMsg = `Namaste *${clientName}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\nYour official Tax Invoice & compliance details are ready:\n\n📄 *Invoice No:* ${invoiceId}${voucherNo}\n💼 *Particulars:* ${service}\n💰 *Amount Due:* ₹${amount.toLocaleString('en-IN')}\n\n⚡ *1-Click Pay Online (GPay / PhonePe / Paytm / Any UPI):*\n👉 *Pay Link:* ${webPayLink}\n👉 *UPI ID:* 7506647791@hdfcbank\n\n📄 *View / Download Invoice PDF:* ${webPayLink}&pdf=1\n\n*Bank NEFT / RTGS Details:*\nBank: HDFC Bank Ltd | A/C: 50200067891234 | IFSC: HDFC0000123\n\nPlease share the payment screenshot / UTR once done. Thank you!\n*CA Kiran K. Shinde & Co.* | +91 75066 47791`;
+
+    const message = payload.message || defaultMsg;
+
+    const url = phone
+      ? `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`
+      : `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+
+    win.loadURL(url);
+    win.show();
+    win.focus();
+
+    return { ok: true, phone, message };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('invoice-generate-pdf', async (event, data) => {
+  try {
+    const clientName = data.clientName || 'Client';
+    const invoiceId = data.invoiceId || data.sourceId || 'INV';
+    const amount = data.amount || 0;
+    const cleanAmount = Number(String(amount).replace(/[^0-9.]/g, '')) || 0;
+    const formattedAmount = cleanAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const service = data.service || 'Statutory Compliance & Professional CA Consultancy Fees';
+    const voucherNo = data.voucherNo || invoiceId.replace(/[^0-9]/g, '') || '529';
+    const dateStr = data.date || new Date().toLocaleDateString('en-IN');
+
+    // Create client folder
+    let targetFolder = path.join(app.getPath('userData'), 'invoices');
+    if (engine.clientVault) {
+      const folders = engine.clientVault.ensureClientFolder(clientName, invoiceId);
+      targetFolder = folders.bank || targetFolder;
+    }
+    fs.mkdirSync(targetFolder, { recursive: true });
+
+    const safeInvId = String(invoiceId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const pdfPath = path.join(targetFolder, `Invoice_${safeInvId}.pdf`);
+
+    // Generate HTML for Authentic 1:1 Tally Invoice
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice ${invoiceId}</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 24px; background: #fff; color: #000; font-size: 12px; line-height: 1.35; }
+    .tally-sheet { border: 2px solid #000; }
+    .title-bar { text-align: center; font-weight: 800; font-size: 15px; padding: 6px 0; border-bottom: 1px solid #000; letter-spacing: 1px; }
+    .row-split { display: flex; border-bottom: 1px solid #000; }
+    .col-left { width: 52%; border-right: 1px solid #000; }
+    .col-right { width: 48%; }
+    .cell-pad { padding: 8px 10px; }
+    .cell-border { border-bottom: 1px solid #000; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-right: 1px solid #000; padding: 6px 8px; font-size: 11px; }
+    th:last-child, td:last-child { border-right: none; }
+    th { border-bottom: 1px solid #000; background: #fafafa; font-weight: 700; text-align: left; }
+    .amt { text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="tally-sheet">
+    <div class="title-bar">INVOICE</div>
+    <div class="row-split">
+      <div class="col-left">
+        <div class="cell-pad cell-border">
+          <strong style="font-size: 13px;">CA KIRAN K. SHINDE &amp; CO.</strong><br>
+          <span>Chartered Accountants &bull; FRN: 147829W</span><br>
+          <span>State Name: Maharashtra, Code: 27</span>
+        </div>
+        <div class="cell-pad">
+          <span style="font-size: 10px; color: #555;">Buyer (Bill to):</span><br>
+          <strong style="font-size: 12px;">${clientName}</strong><br>
+          <span>State Name: Maharashtra, Code: 27</span>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="row-split" style="border-bottom: 1px solid #000;">
+          <div style="width: 50%; border-right: 1px solid #000; padding: 6px 8px;">
+            <span style="font-size: 10px; color: #555;">Invoice No.</span><br>
+            <strong>${voucherNo}</strong>
+          </div>
+          <div style="width: 50%; padding: 6px 8px;">
+            <span style="font-size: 10px; color: #555;">Dated</span><br>
+            <strong>${dateStr}</strong>
+          </div>
+        </div>
+        <div class="cell-pad">
+          <span style="font-size: 10px; color: #555;">Reference No. &amp; Date</span><br>
+          <strong>${invoiceId} dt. ${dateStr}</strong>
+        </div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 35px;">Sl</th>
+          <th>Description of Services</th>
+          <th style="width: 70px;">SAC</th>
+          <th class="amt" style="width: 100px;">Amount (INR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="height: 180px; vertical-align: top;">
+          <td>1</td>
+          <td>
+            <strong>Professional Fees Account</strong><br>
+            <span style="color: #444;">${service}</span>
+          </td>
+          <td>998231</td>
+          <td class="amt"><strong>${formattedAmount}</strong></td>
+        </tr>
+        <tr style="border-top: 1px solid #000; font-weight: 700;">
+          <td colspan="3" style="text-align: right; padding: 6px 8px;">Total</td>
+          <td class="amt" style="padding: 6px 8px;">₹ ${formattedAmount}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="cell-pad cell-border">
+      <span style="font-size: 10px; color: #555;">Declaration:</span><br>
+      <span>We declare that this invoice shows the actual price of the services described and that all particulars are true and correct.</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding: 12px 10px 8px;">
+      <div>
+        <span style="font-size: 10px;">Bank: HDFC Bank Ltd | A/C: 50200067891234 | IFSC: HDFC0000123</span><br>
+        <span style="font-size: 10px;">UPI ID: 7506647791@hdfcbank</span>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 11px;">For <strong>CA KIRAN K. SHINDE &amp; CO.</strong></span><br><br>
+        <span style="font-size: 10px;">Authorised Signatory</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    // Render offscreen and print to PDF
+    const printWin = new BrowserWindow({
+      show: false,
+      width: 820,
+      height: 1160,
+      webPreferences: { offscreen: true }
+    });
+
+    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+    const pdfData = await printWin.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 }
+    });
+
+    fs.writeFileSync(pdfPath, pdfData);
+    printWin.destroy();
+
+    engine.log('success', `📄 Invoice PDF generated & saved: ${pdfPath}`);
+    return { ok: true, pdfPath, invoiceId, clientName };
+  } catch (err) {
+    console.error('Invoice PDF generation failed:', err);
+    return { ok: false, error: err.message };
+  }
 });
 
 // App Lifecycle

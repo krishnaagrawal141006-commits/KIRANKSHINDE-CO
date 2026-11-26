@@ -525,3 +525,122 @@ navTabs.forEach(tab => {
   });
 });
 
+// ================= 4. WHATSAPP WEB AUTO-DISPATCHER =================
+const btnLaunchWhatsAppWeb = document.getElementById('btnLaunchWhatsAppWeb');
+const chkAutoDispatch = document.getElementById('chkAutoDispatch');
+const waDispatchTableBody = document.getElementById('waDispatchTableBody');
+
+btnLaunchWhatsAppWeb?.addEventListener('click', () => {
+  window.api?.openWhatsAppWeb();
+});
+
+window.sendInvoiceFromTable = async function(invoiceId, clientName, amount, voucherNo, btn) {
+  const row = btn ? btn.closest('tr') : null;
+  const phoneInput = row ? row.querySelector('.wa-phone-input') : null;
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Opening...';
+  }
+
+  try {
+    // Generate PDF in background first so it is available locally
+    window.api?.generateInvoicePdf({
+      invoiceId,
+      clientName,
+      amount,
+      voucherNo,
+      service: 'Statutory Compliance & Professional CA Consultancy Fees'
+    });
+
+    const res = await window.api?.sendWhatsAppInvoice({
+      phone,
+      invoiceId,
+      clientName,
+      amount,
+      voucherNo
+    });
+
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Dispatched';
+      btn.style.background = '#059669';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Send on WhatsApp';
+        btn.style.background = '#10b981';
+      }, 3000);
+    }
+  } catch (err) {
+    alert('Failed to launch WhatsApp Web: ' + err.message);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Send on WhatsApp';
+    }
+  }
+};
+
+window.generatePdfFromTable = async function(invoiceId, clientName, amount, voucherNo) {
+  try {
+    const res = await window.api?.generateInvoicePdf({
+      invoiceId,
+      clientName,
+      amount,
+      voucherNo,
+      service: 'Statutory Compliance & Professional CA Consultancy Fees'
+    });
+    if (res && res.ok) {
+      alert(`✅ Invoice PDF generated successfully!\n\nSaved at:\n${res.pdfPath}`);
+      window.api?.openFileInExplorer(res.pdfPath);
+    } else {
+      alert('Error generating PDF: ' + (res?.error || 'Unknown'));
+    }
+  } catch (e) {
+    alert('PDF Generation failed: ' + e.message);
+  }
+};
+
+// Listen for auto-synced vouchers from TallyPrime engine
+window.api?.onWhatsAppVoucherReady((data) => {
+  if (!waDispatchTableBody) return;
+  const invId = data.sourceId || 'INV-SYNC';
+  const cName = data.clientName || 'Client';
+  const amt = Number(data.amount || 0);
+  const vch = data.voucherNo || 'Auto';
+
+  // Check if row already exists
+  const existing = Array.from(waDispatchTableBody.querySelectorAll('tr')).find(tr => tr.innerText.includes(invId));
+  if (!existing) {
+    const tr = document.createElement('tr');
+    tr.style.animation = 'fadeIn 0.3s ease';
+    tr.innerHTML = `
+      <td><strong>${invId}</strong><br><small style="color:#10b981;">Tally #${vch}</small></td>
+      <td><strong>${cName}</strong></td>
+      <td><strong style="color:#fff;">₹ ${amt.toLocaleString('en-IN')}</strong></td>
+      <td>
+        <input type="text" class="wa-phone-input" placeholder="Enter mobile" style="padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; font-size:0.78rem; width:130px;">
+      </td>
+      <td style="text-align:right; white-space:nowrap;">
+        <button class="btn btn-secondary" onclick="sendInvoiceFromTable('${invId}', '${cName}', ${amt}, '${vch}', this)" style="padding:5px 10px; font-size:0.75rem; background:#10b981; color:#fff; border:none; border-radius:5px; font-weight:700; cursor:pointer;">
+          <i class="fa-brands fa-whatsapp"></i> Send on WhatsApp
+        </button>
+        <button class="btn btn-secondary" onclick="generatePdfFromTable('${invId}', '${cName}', ${amt}, '${vch}')" style="padding:5px 10px; font-size:0.75rem; margin-left:4px; border-radius:5px; cursor:pointer;" title="Generate & Save Local PDF">
+          <i class="fa-solid fa-file-pdf text-rose"></i> PDF
+        </button>
+      </td>
+    `;
+    waDispatchTableBody.prepend(tr);
+  }
+
+  // If auto-dispatch is checked, generate PDF and open WhatsApp Web immediately!
+  if (chkAutoDispatch && chkAutoDispatch.checked) {
+    window.api?.generateInvoicePdf({
+      invoiceId: invId,
+      clientName: cName,
+      amount: amt,
+      voucherNo: vch,
+      service: 'Statutory Compliance Fees'
+    });
+  }
+});
+

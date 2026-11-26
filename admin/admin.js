@@ -866,18 +866,25 @@ const AdminCRM = {
     const formattedAmount = cleanAmount.toLocaleString('en-IN');
     const voucherRef = inv.tallyVoucherNo ? ` (Tally Ref: #${inv.tallyVoucherNo})` : '';
     const dateStr = inv.date || new Date().toLocaleDateString('en-IN');
-    const upiLink = this.currentReminderUpiUrl || `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${encodeURIComponent('Fee Inv ' + inv.id)}`;
+
+    // WhatsApp ONLY activates links starting with https:// or http:// (upi:// is rendered as plain text)
+    const origin = (typeof window !== 'undefined' && window.location && window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1'))
+      ? window.location.origin
+      : 'https://www.cakiran.co.in';
+
+    const webPayLink = `${origin}/pay?inv=${encodeURIComponent(inv.id)}&am=${cleanAmount}&client=${encodeURIComponent(inv.client)}&desc=${encodeURIComponent(inv.service || '')}`;
+    this.currentReminderWebPayLink = webPayLink;
 
     if (type === 'due') {
-      return `*URGENT COMPLIANCE NOTICE: Fee Payment Pending*\n\nDear *${inv.client}*,\n\nWe hope this reaches you well. Regarding your ongoing statutory compliance and filings (*${inv.service}*):\n\n📄 *Invoice Ref:* ${inv.id}${voucherRef}\n💼 *Compliance / Filing:* ${inv.service}\n💰 *Pending Fees:* ₹${formattedAmount}\n📅 *Billing Date:* ${dateStr}\n⚠️ *Status:* Due for Immediate Settlement\n\nTo ensure uninterrupted filing of your statutory returns (GST / TDS / Tax Audit) before the upcoming statutory cut-off dates, kindly clear this invoice today.\n\n⚡ *Pay Instantly via UPI:* \n👉 *UPI ID:* 7506647791@hdfcbank\n👉 *1-Click UPI Pay Link:* ${upiLink}\n\n*Or Direct Bank Transfer (NEFT/RTGS):*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nA/C Name: Kiran K. Shinde & Co.\n\nPlease share the payment UTR / screenshot once completed so we can update your ledger in Tally.\n\nWith warm regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants • Pune / Palghar\nDirect Office: +91 75066 47791`;
+      return `*URGENT COMPLIANCE NOTICE: Fee Payment Pending*\n\nDear *${inv.client}*,\n\nWe hope this reaches you well. Regarding your ongoing statutory compliance and filings (*${inv.service}*):\n\n📄 *Invoice Ref:* ${inv.id}${voucherRef}\n💼 *Compliance / Filing:* ${inv.service}\n💰 *Pending Fees:* ₹${formattedAmount}\n📅 *Billing Date:* ${dateStr}\n⚠️ *Status:* Due for Immediate Settlement\n\nTo ensure uninterrupted filing of your statutory returns (GST / TDS / Tax Audit) before the upcoming cut-off dates, kindly clear this invoice today.\n\n⚡ *1-Click Pay Online (GPay / PhonePe / Paytm / Any UPI):*\n👉 *Pay Link:* ${webPayLink}\n👉 *UPI ID:* 7506647791@hdfcbank\n\n*Or Direct Bank Transfer (NEFT/RTGS):*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nA/C Name: Kiran K. Shinde & Co.\n\nPlease share the payment UTR / screenshot once completed so we can update your ledger in Tally.\n\nWith warm regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants • Pune / Palghar\nDirect Office: +91 75066 47791`;
     }
 
     if (type === 'overdue') {
-      return `*FINAL REMINDER: Outstanding Professional Fees Overdue*\n\nTo: *${inv.client}*\nAttention: Accounts & Finance Department\n\nDear Sir / Ma'am,\n\nDespite earlier notifications, invoice *${inv.id}* amounting to *₹${formattedAmount}* for *${inv.service}* remains significantly *OVERDUE*.\n\n📌 *Bill Summary:*\n• Invoice No: ${inv.id}${voucherRef}\n• Billing Date: ${dateStr}\n• Particulars: ${inv.service}\n• Net Overdue Balance: *₹${formattedAmount}*\n\nWe request you to arrange immediate settlement within 24 hours to avoid suspension of ongoing audit, advisory, and portal filings.\n\n💳 *Immediate Settlement Options:*\n1. *Instant UPI ID:* 7506647791@hdfcbank\n2. *Direct UPI Pay Link:* ${upiLink}\n3. *NEFT / RTGS Details:*\n   - Beneficiary: CA Kiran K. Shinde & Co.\n   - Bank: HDFC Bank Ltd\n   - Account: 50200067891234\n   - IFSC: HDFC0000123\n\nIf payment has already been transferred in the last 24 hours, kindly reply with the bank UTR confirmation so our accounts team can reconcile your ledger in TallyPrime.\n\nSincerely,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Office: +91 75066 47791`;
+      return `*FINAL REMINDER: Outstanding Professional Fees Overdue*\n\nTo: *${inv.client}*\nAttention: Accounts & Finance Department\n\nDear Sir / Ma'am,\n\nDespite earlier notifications, invoice *${inv.id}* amounting to *₹${formattedAmount}* for *${inv.service}* remains significantly *OVERDUE*.\n\n📌 *Bill Summary:*\n• Invoice No: ${inv.id}${voucherRef}\n• Billing Date: ${dateStr}\n• Particulars: ${inv.service}\n• Net Overdue Balance: *₹${formattedAmount}*\n\nWe request you to arrange immediate settlement within 24 hours to avoid suspension of ongoing audit, advisory, and portal filings.\n\n💳 *1-Click Payment Options:*\n👉 *1-Click Online Pay Link:* ${webPayLink}\n👉 *Instant UPI ID:* 7506647791@hdfcbank\n\n*NEFT / RTGS Details:*\n- Beneficiary: CA Kiran K. Shinde & Co.\n- Bank: HDFC Bank Ltd\n- Account: 50200067891234\n- IFSC: HDFC0000123\n\nIf payment has already been transferred in the last 24 hours, kindly reply with the bank UTR confirmation so our accounts team can reconcile your ledger in TallyPrime.\n\nSincerely,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Office: +91 75066 47791`;
     }
 
     // Default: gentle
-    return `Namaste *${inv.client}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\nHope you are doing well. This is a gentle reminder regarding our professional fee invoice:\n\n📄 *Invoice No:* ${inv.id}${voucherRef}\n💼 *Service:* ${inv.service}\n💰 *Amount Due:* ₹${formattedAmount}\n📅 *Invoice Date:* ${dateStr}\n\nKindly clear the balance at your convenience via instant UPI:\n👉 *UPI ID:* 7506647791@hdfcbank\n👉 *Direct UPI Pay Link:* ${upiLink}\n\n*Bank NEFT / RTGS Details:*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nName: Kiran K. Shinde & Co.\n\nPlease share the payment screenshot / UTR once done. Thank you for your continued association!\n\nBest regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Mob: +91 75066 47791`;
+    return `Namaste *${inv.client}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\nHope you are doing well. This is a gentle reminder regarding our professional fee invoice:\n\n📄 *Invoice No:* ${inv.id}${voucherRef}\n💼 *Service:* ${inv.service}\n💰 *Amount Due:* ₹${formattedAmount}\n📅 *Invoice Date:* ${dateStr}\n\nKindly clear the balance at your convenience via instant 1-click link or UPI:\n👉 *1-Click Pay Link:* ${webPayLink}\n👉 *UPI ID:* 7506647791@hdfcbank\n\n*Bank NEFT / RTGS Details:*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nName: Kiran K. Shinde & Co.\n\nPlease share the payment screenshot / UTR once done. Thank you for your continued association!\n\nBest regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Mob: +91 75066 47791`;
   },
 
   sendWhatsAppPaymentReminderNow() {
@@ -919,16 +926,11 @@ const AdminCRM = {
   },
 
   copyReminderUpiLink() {
-    if (!this.currentReminderUpiUrl) {
-      const inv = this.currentReminderInv;
-      if (!inv) return;
-      const cleanAmount = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
-      this.currentReminderUpiUrl = `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${encodeURIComponent('Fee Inv ' + inv.id)}`;
-    }
-    navigator.clipboard.writeText(this.currentReminderUpiUrl).then(() => {
-      alert(`✅ UPI Payment Link copied:\n${this.currentReminderUpiUrl}`);
+    const link = this.currentReminderWebPayLink || this.currentReminderUpiUrl;
+    navigator.clipboard.writeText(link).then(() => {
+      alert(`✅ 1-Click Clickable Payment Link copied:\n${link}`);
     }).catch(() => {
-      alert(`UPI Link:\n${this.currentReminderUpiUrl}`);
+      alert(`Payment Link:\n${link}`);
     });
   },
 

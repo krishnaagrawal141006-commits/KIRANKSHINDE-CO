@@ -45,6 +45,8 @@ copyRecursiveSync(path.join(SRC, 'tally-desktop-app'), path.join(DEST, 'tally-de
 
 // 3. Core files & batch runners
 const files = [
+  'pay.html',
+  'vercel.json',
   'local-server.js',
   'tally-bridge.js',
   'supabase-config.js',

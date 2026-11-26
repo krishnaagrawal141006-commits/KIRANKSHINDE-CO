@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/pay", "destination": "/pay.html" },
     { "source": "/api/tally/queue", "destination": "/api/tally?action=queue" },
     { "source": "/api/tally/heartbeat", "destination": "/api/tally?action=heartbeat" },
     { "source": "/api/admin/create-deadline", "destination": "/api/admin/deadlines" },

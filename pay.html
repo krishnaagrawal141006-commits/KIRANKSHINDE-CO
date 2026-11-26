@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pay Professional Fees | CA Kiran K. Shinde & Co.</title>
+  <meta name="description" content="Official 1-Click UPI Payment Portal for CA Kiran K. Shinde & Co., Chartered Accountants. Pay securely via GPay, PhonePe, Paytm, or Net Banking.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --success: #10b981;
+      --wa-green: #25d366;
+      --surface: #ffffff;
+      --bg: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 14px;
+    }
+    .pay-card {
+      background: var(--surface);
+      width: 100%;
+      max-width: 520px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12), 0 0 1px 1px rgba(15, 23, 42, 0.05);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .pay-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+    }
+    .verified-seal {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .pay-header h1 {
+      font-size: 1.28rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .pay-header p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .pay-body {
+      padding: 24px;
+    }
+    .bill-summary {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .bill-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.84rem;
+    }
+    .bill-row:last-child {
+      margin-bottom: 0;
+      padding-top: 10px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .bill-label {
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .bill-val {
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+    }
+    .bill-total-val {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #059669;
+    }
+
+    /* Action Buttons */
+    .btn-pay-now {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 15px 20px;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s ease;
+      margin-bottom: 16px;
+      text-align: center;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-pay-now:hover, .btn-pay-now:active {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 24px -6px rgba(16, 185, 129, 0.5);
+    }
+
+    .app-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .app-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 8px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 0.76rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .app-btn:hover {
+      border-color: #2563eb;
+      background: #f8fafc;
+      transform: translateY(-1px);
+    }
+    .app-btn i {
+      font-size: 1.15rem;
+    }
+
+    /* QR Code Section */
+    .qr-container {
+      background: #ffffff;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .qr-container img {
+      width: 200px;
+      height: 200px;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto 10px;
+    }
+    .qr-hint {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Bank Details Card */
+    .bank-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 20px;
+      font-size: 0.8rem;
+    }
+    .bank-box h4 {
+      font-size: 0.84rem;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bank-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .bank-row span {
+      color: var(--muted);
+    }
+    .bank-row strong {
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.84rem;
+    }
+
+    .btn-wa-confirm {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: #ffffff;
+      color: #15803d;
+      border: 1.5px solid #86efac;
+      padding: 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .btn-wa-confirm:hover {
+      background: #f0fdf4;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-top: 16px;
+      line-height: 1.4;
+    }
+    .copy-pill {
+      background: #e2e8f0;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pay-card">
+    <div class="pay-header">
+      <div class="verified-seal">
+        <i class="fa-solid fa-shield-halved"></i> Official Verified Payment Desk
+      </div>
+      <h1>CA Kiran K. Shinde & Co.</h1>
+      <p>Chartered Accountants • FRN: 147829W</p>
+    </div>
+
+    <div class="pay-body">
+      <!-- Bill Summary Card -->
+      <div class="bill-summary">
+        <div class="bill-row">
+          <span class="bill-label">Billed To (Client):</span>
+          <span class="bill-val" id="dispClient">Valued Client</span>
+        </div>
+        <div class="bill-row">
+          <span class="bill-label">Invoice Ref:</span>
+          <span class="bill-val" id="dispInvoice">INV-OFFICIAL</span>
+        </div>
+        <div class="bill-row">
+          <span class="bill-label">Particulars:</span>
+          <span class="bill-val" id="dispService" style="max-width:240px; font-size:0.8rem;">Statutory Compliance & CA Consultancy</span>
+        </div>
+        <div class="bill-row">
+          <span class="bill-label" style="font-size:1rem; font-weight:700;">Total Payable:</span>
+          <span class="bill-total-val" id="dispAmount">₹ 0</span>
+        </div>
+      </div>
+
+      <!-- Prominent 1-Click Pay Button (Mobile Optimized) -->
+      <a href="#" id="mainUpiBtn" class="btn-pay-now">
+        <i class="fa-solid fa-bolt"></i>
+        <span>Pay <span id="btnPayAmount">₹ 0</span> via Any UPI App</span>
+      </a>
+
+      <!-- Quick UPI Apps Grid -->
+      <div class="app-buttons-grid">
+        <a href="#" id="gpayBtn" class="app-btn">
+          <i class="fa-brands fa-google-pay" style="color:#4285f4; font-size:1.4rem;"></i>
+          <span>Google Pay</span>
+        </a>
+        <a href="#" id="phonepeBtn" class="app-btn">
+          <i class="fa-solid fa-mobile-screen" style="color:#5f259f;"></i>
+          <span>PhonePe</span>
+        </a>
+        <a href="#" id="paytmBtn" class="app-btn">
+          <i class="fa-solid fa-wallet" style="color:#00b9f5;"></i>
+          <span>Paytm / BHIM</span>
+        </a>
+      </div>
+
+      <!-- QR Code Container -->
+      <div class="qr-container">
+        <p class="qr-hint">Scan with any UPI Scanner (Google Pay, PhonePe, Paytm, Cred, BHIM)</p>
+        <img id="upiQrImg" src="" alt="Dynamic UPI QR Code">
+        <div style="font-size:0.78rem; font-weight:700; color:#334155;">
+          UPI ID: <span style="font-family:monospace; color:#0f172a;">7506647791@hdfcbank</span>
+          <button type="button" class="copy-pill" onclick="copyUpiId()"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
+      </div>
+
+      <!-- Bank NEFT / RTGS Details -->
+      <div class="bank-box">
+        <h4><i class="fa-solid fa-building-columns" style="color:#2563eb;"></i> Direct Bank Transfer (NEFT / RTGS / IMPS)</h4>
+        <div class="bank-row">
+          <span>Bank Name:</span>
+          <strong>HDFC Bank Ltd</strong>
+        </div>
+        <div class="bank-row">
+          <span>Account Name:</span>
+          <strong>Kiran K. Shinde & Co.</strong>
+        </div>
+        <div class="bank-row">
+          <span>Account Number:</span>
+          <div>
+            <strong>50200067891234</strong>
+            <button type="button" class="copy-pill" onclick="copyText('50200067891234', 'A/C Number')">Copy</button>
+          </div>
+        </div>
+        <div class="bank-row">
+          <span>IFSC Code:</span>
+          <div>
+            <strong>HDFC0000123</strong>
+            <button type="button" class="copy-pill" onclick="copyText('HDFC0000123', 'IFSC Code')">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WhatsApp Confirmation Share -->
+      <a href="#" id="waConfirmBtn" target="_blank" class="btn-wa-confirm">
+        <i class="fa-brands fa-whatsapp" style="font-size:1.15rem; color:#25d366;"></i>
+        <span>Share Payment Confirmation / UTR on WhatsApp</span>
+      </a>
+
+      <div class="footer-note">
+        Direct settlement to CA Kiran K. Shinde & Co. • Synchronized with TallyPrime (Port 9000)<br>
+        For fee queries, call or WhatsApp: <strong>+91 75066 47791</strong>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Extract query parameters
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = params.get('inv') || params.get('id') || 'INV-FEE';
+    const clientName = params.get('client') || params.get('name') || 'Valued Client';
+    const rawAmt = params.get('am') || params.get('amount') || '0';
+    const cleanAmount = Number(String(rawAmt).replace(/[^0-9.]/g, '')) || 0;
+    const formattedAmount = cleanAmount.toLocaleString('en-IN');
+    const serviceName = params.get('desc') || params.get('service') || 'Statutory Compliance, Professional CA Fees & Consultancy';
+
+    // Populate DOM elements
+    document.getElementById('dispClient').textContent = clientName;
+    document.getElementById('dispInvoice').textContent = invoiceId;
+    document.getElementById('dispService').textContent = serviceName;
+    document.getElementById('dispAmount').textContent = `₹ ${formattedAmount}`;
+    document.getElementById('btnPayAmount').textContent = `₹ ${formattedAmount}`;
+
+    // Generate UPI URI
+    const upiNote = encodeURIComponent(`Fee Inv ${invoiceId}`);
+    const upiUrl = `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${upiNote}`;
+
+    // Set buttons
+    const mainBtn = document.getElementById('mainUpiBtn');
+    mainBtn.href = upiUrl;
+
+    document.getElementById('gpayBtn').href = upiUrl;
+    document.getElementById('phonepeBtn').href = upiUrl;
+    document.getElementById('paytmBtn').href = upiUrl;
+
+    // Set QR image
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(upiUrl)}`;
+    document.getElementById('upiQrImg').src = qrUrl;
+
+    // Set WhatsApp confirmation button
+    const waMsg = `Hello CA Kiran K. Shinde & Co.,\n\nI have completed the payment of ₹${formattedAmount} for Invoice ${invoiceId} (${clientName}).\n\nTransaction UTR / Ref No: [Please enter UTR here]\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nKindly update our ledger in TallyPrime. Thank you!`;
+    document.getElementById('waConfirmBtn').href = `https://wa.me/917506647791?text=${encodeURIComponent(waMsg)}`;
+
+    function copyUpiId() {
+      navigator.clipboard.writeText('7506647791@hdfcbank').then(() => {
+        alert('✅ UPI ID (7506647791@hdfcbank) copied to clipboard!');
+      }).catch(() => alert('UPI ID: 7506647791@hdfcbank'));
+    }
+
+    function copyText(val, label) {
+      navigator.clipboard.writeText(val).then(() => {
+        alert(`✅ ${label} (${val}) copied to clipboard!`);
+      }).catch(() => alert(`${label}: ${val}`));
+    }
+  </script>
+</body>
+</html>

@@ -76,7 +76,7 @@ http.createServer((req, res) => {
   const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
   const query = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`).searchParams;
   if (handleLocalStorage(req, res, requestPath, query)) return;
-  const relative = requestPath === '/' ? '/index.html' : requestPath;
+  const relative = requestPath === '/' ? '/index.html' : (requestPath === '/pay' ? '/pay.html' : requestPath);
   const filePath = path.resolve(root, `.${relative}`);
   if (!filePath.startsWith(root + path.sep)) {
     res.writeHead(403); res.end('Forbidden'); return;

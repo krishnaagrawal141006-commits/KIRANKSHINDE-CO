@@ -9,5 +9,6 @@ storage/
 /supabase-config.js
 tally-connector/.venv/
 tally-connector/wa_session_profile/
+tally-connector/generated_invoices/
 __pycache__/
 *.pyc

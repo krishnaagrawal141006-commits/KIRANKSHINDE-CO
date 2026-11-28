@@ -170,20 +170,33 @@ module.exports = async function handler(req, res) {
           return res.status(200).json({ ok: true, queue: [] });
         }
         const rows = await r.json();
-        const mapped = (Array.isArray(rows) ? rows : []).map(row => ({
-          id: row.id,
-          phone: row.party_ledger || '',
-          message: row.narration || '',
-          clientName: row.client_name || '',
-          invoiceId: row.source_id || '',
-          amount: row.amount || 0,
-          pdfUrl: row.sales_ledger || '',
-          status: row.status,
-          sentBy: row.tally_voucher_no || null,
-          errorMessage: row.error_message || null,
-          createdAt: row.created_at,
-          syncedAt: row.synced_at
-        }));
+        const mapped = (Array.isArray(rows) ? rows : []).map(row => {
+          let meta = {};
+          const rawMeta = String(row.sales_ledger || '').trim();
+          if (rawMeta.startsWith('{')) {
+            try { meta = JSON.parse(rawMeta); } catch (_) {}
+          }
+          const amt = Number(row.amount || 0);
+          return {
+            id: row.id,
+            phone: row.party_ledger || '',
+            message: row.narration || '',
+            clientName: row.client_name || '',
+            invoiceId: row.source_id || '',
+            amount: amt,
+            service: meta.service || 'Statutory Compliance & CA Consultancy Fees',
+            date: meta.date || row.date || '',
+            voucherNo: meta.voucherNo || '',
+            payLink: meta.payLink || (rawMeta.startsWith('http') ? rawMeta : ''),
+            attachPdf: meta.attachPdf !== undefined ? Boolean(meta.attachPdf) : (amt > 0),
+            pdfUrl: meta.payLink || rawMeta,
+            status: row.status,
+            sentBy: row.tally_voucher_no || null,
+            errorMessage: row.error_message || null,
+            createdAt: row.created_at,
+            syncedAt: row.synced_at
+          };
+        });
         return res.status(200).json({ ok: true, queue: mapped });
       } catch (e) {
         return res.status(500).json({ error: e.message });
@@ -203,15 +216,25 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'WhatsApp message body is required' });
       }
 
+      const amtNum = Number(String(body.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+      const attachPdf = body.attachPdf !== undefined ? Boolean(body.attachPdf) : (amtNum > 0);
+      const metaPayload = JSON.stringify({
+        payLink: String(body.pdfUrl || body.payLink || '').trim(),
+        service: String(body.service || '').trim(),
+        date: String(body.date || '').trim(),
+        voucherNo: String(body.voucherNo || '').trim(),
+        attachPdf
+      });
+
       const row = {
         source_type: 'whatsapp',
         source_id: body.invoiceId || body.sourceId || `WA-${Date.now()}`,
         client_name: String(body.clientName || body.client || 'WhatsApp Client').trim(),
         voucher_type: 'WhatsApp',
-        amount: Number(String(body.amount || 0).replace(/[^0-9.]/g, '')) || 0,
+        amount: amtNum,
         date: toISODate(new Date()),
         narration: message,
-        sales_ledger: String(body.pdfUrl || body.payLink || 'WHATSAPP_BOT').trim(),
+        sales_ledger: metaPayload,
         party_ledger: phone,
         status: 'WA_PENDING',
         error_message: null

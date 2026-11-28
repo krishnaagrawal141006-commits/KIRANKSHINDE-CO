@@ -819,9 +819,11 @@ const AdminCRM = {
     const qrAmtText = document.getElementById('reminderQrAmountText');
     if (qrAmtText) qrAmtText.textContent = `₹ ${formattedAmount}`;
 
-    // Reset queue banner
+    // Reset queue banner & enable Bill PDF attachment by default for bills
     const banner = document.getElementById('reminderQueueStatusBanner');
     if (banner) banner.style.display = 'none';
+    const chkPdf = document.getElementById('chkReminderAttachPdf');
+    if (chkPdf) chkPdf.checked = cleanAmount > 0;
 
     // Switch to gentle template by default
     this.switchReminderTemplate('gentle');
@@ -930,6 +932,8 @@ const AdminCRM = {
 
     const banner = document.getElementById('reminderQueueStatusBanner');
     if (banner) banner.style.display = 'none';
+    const chkPdf = document.getElementById('chkReminderAttachPdf');
+    if (chkPdf) chkPdf.checked = false;
 
     this.switchReminderTemplate('custom');
     const modal = document.getElementById('paymentReminderModal');
@@ -980,6 +984,8 @@ const AdminCRM = {
 
       const inv = this.currentReminderInv || {};
       const cleanAmount = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+      const chkPdf = document.getElementById('chkReminderAttachPdf');
+      const attachPdf = chkPdf ? Boolean(chkPdf.checked) : (cleanAmount > 0);
 
       const res = await fetch('/api/tally/whatsapp', {
         method: 'POST',
@@ -990,7 +996,11 @@ const AdminCRM = {
           clientName: inv.client || 'Client',
           invoiceId: inv.id || `WA-${Date.now()}`,
           amount: cleanAmount,
-          payLink: this.currentReminderWebPayLink || ''
+          service: inv.service || 'Statutory Compliance & Professional CA Consultancy Fees',
+          date: inv.date || new Date().toLocaleDateString('en-IN'),
+          voucherNo: inv.tallyVoucherNo || '',
+          payLink: this.currentReminderWebPayLink || '',
+          attachPdf
         })
       });
 
@@ -1000,7 +1010,8 @@ const AdminCRM = {
       }
 
       const queuedId = data.queued && data.queued.id;
-      showBanner('#f0fdf4', '#166534', '#86efac', `<i class="fa-solid fa-clock"></i> Queued for <strong>+${phone}</strong>! Office PC Python Bot will send automatically in ~4s...`);
+      const pdfLabel = attachPdf ? ' (with 1:1 Bill PDF)' : '';
+      showBanner('#f0fdf4', '#166534', '#86efac', `<i class="fa-solid fa-clock"></i> Queued${pdfLabel} for <strong>+${phone}</strong>! Office PC Python Bot will send automatically in ~4s...`);
 
       // Poll delivery status for up to 36s
       if (queuedId) {

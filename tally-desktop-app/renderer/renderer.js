@@ -528,11 +528,30 @@ navTabs.forEach(tab => {
 
 // ================= 4. WHATSAPP WEB AUTO-DISPATCHER =================
 const btnLaunchWhatsAppWeb = document.getElementById('btnLaunchWhatsAppWeb');
+const btnLaunchPythonWaBot = document.getElementById('btnLaunchPythonWaBot');
 const chkAutoDispatch = document.getElementById('chkAutoDispatch');
 const waDispatchTableBody = document.getElementById('waDispatchTableBody');
 
 btnLaunchWhatsAppWeb?.addEventListener('click', () => {
   window.api?.openWhatsAppWeb();
+});
+
+btnLaunchPythonWaBot?.addEventListener('click', async () => {
+  btnLaunchPythonWaBot.disabled = true;
+  btnLaunchPythonWaBot.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Launching Python Bot...';
+  try {
+    const res = await window.api?.launchPythonWaBot();
+    if (res && res.ok) {
+      btnLaunchPythonWaBot.innerHTML = '<i class="fa-solid fa-check"></i> Python Bot Running!';
+    } else {
+      alert('Could not launch Python Bot: ' + (res?.error || 'Unknown error'));
+    }
+  } finally {
+    setTimeout(() => {
+      btnLaunchPythonWaBot.disabled = false;
+      btnLaunchPythonWaBot.innerHTML = '<i class="fa-brands fa-python"></i> Start Python Auto-Sender Bot';
+    }, 3000);
+  }
 });
 
 window.sendInvoiceFromTable = async function(invoiceId, clientName, amount, voucherNo, btn) {

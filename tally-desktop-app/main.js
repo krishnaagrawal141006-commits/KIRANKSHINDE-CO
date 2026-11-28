@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, shell, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 const TallySyncEngine = require('./sync-engine');
 const BankStatementConverter = require('./bank-converter');
 const NaraRouterAI = require('./ai-router');
@@ -362,6 +363,46 @@ ipcMain.on('save-config', (event, newConfig) => {
 // ================= WHATSAPP WEB & INVOICE PDF IPC HANDLERS =================
 ipcMain.on('whatsapp-open-web', () => {
   getOrCreateWhatsAppWindow();
+});
+
+ipcMain.handle('whatsapp-launch-python-bot', async () => {
+  try {
+    const candidates = [
+      path.resolve(__dirname, '..', 'START WHATSAPP BOT.bat'),
+      path.resolve(__dirname, '..', '..', 'START WHATSAPP BOT.bat'),
+      path.resolve(process.resourcesPath || '', '..', '..', '..', 'START WHATSAPP BOT.bat'),
+      'E:\\kiran k shinde & co\\START WHATSAPP BOT.bat'
+    ];
+    const batPath = candidates.find(p => p && fs.existsSync(p));
+    if (!batPath) {
+      return { ok: false, error: 'START WHATSAPP BOT.bat not found in workspace folder.' };
+    }
+    const child = spawn('cmd.exe', ['/c', 'start', '""', batPath], {
+      detached: true,
+      stdio: 'ignore',
+      cwd: path.dirname(batPath)
+    });
+    child.unref();
+    engine.log('success', '🐍 Launched Python WhatsApp Auto-Dispatcher Bot!');
+    return { ok: true, batPath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('whatsapp-fetch-cloud-queue', async () => {
+  try {
+    const qUrl = `${engine.config.siteUrl}/api/tally/whatsapp`;
+    const res = await engine.request(qUrl, {
+      method: 'GET',
+      headers: { 'x-bridge-token': engine.config.bridgeToken }
+    });
+    if (res.statusCode !== 200) return { ok: false, queue: [] };
+    const parsed = JSON.parse(res.body || '{}');
+    return { ok: true, queue: parsed.queue || [] };
+  } catch (err) {
+    return { ok: false, queue: [], error: err.message };
+  }
 });
 
 ipcMain.handle('whatsapp-send-invoice', async (event, payload) => {

@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
   const anon = process.env.SUPABASE_ANON_KEY;
   const bridgeToken = process.env.TALLY_BRIDGE_TOKEN || 'ks_tally_secret_2026';
 
-  const action = req.query.action || (req.url.includes('heartbeat') ? 'heartbeat' : 'queue');
+  const action = req.query.action || (req.url.includes('heartbeat') ? 'heartbeat' : (req.url.includes('whatsapp') ? 'whatsapp' : 'queue'));
 
   // ================= 1. HEARTBEAT ACTION =================
   if (action === 'heartbeat') {
@@ -152,6 +152,128 @@ module.exports = async function handler(req, res) {
 
   if (!url || !key) {
     return res.status(500).json({ error: 'Supabase configuration missing' });
+  }
+
+  // ================= 2B. WHATSAPP AUTO-DISPATCH QUEUE =================
+  if (action === 'whatsapp' || action === 'whatsapp-queue') {
+    if (req.method === 'GET') {
+      const statusFilter = String(req.query.status || '').toLowerCase();
+      let endpoint = `${url}/rest/v1/tally_sync_queue?select=*&source_type=eq.whatsapp&order=created_at.desc&limit=50`;
+      if (statusFilter === 'pending') {
+        endpoint = `${url}/rest/v1/tally_sync_queue?select=*&source_type=eq.whatsapp&status=eq.WA_PENDING&order=created_at.asc&limit=20`;
+      }
+      try {
+        const r = await fetch(endpoint, {
+          headers: { apikey: key, Authorization: `Bearer ${key}` }
+        });
+        if (!r.ok) {
+          return res.status(200).json({ ok: true, queue: [] });
+        }
+        const rows = await r.json();
+        const mapped = (Array.isArray(rows) ? rows : []).map(row => ({
+          id: row.id,
+          phone: row.party_ledger || '',
+          message: row.narration || '',
+          clientName: row.client_name || '',
+          invoiceId: row.source_id || '',
+          amount: row.amount || 0,
+          pdfUrl: row.sales_ledger || '',
+          status: row.status,
+          sentBy: row.tally_voucher_no || null,
+          errorMessage: row.error_message || null,
+          createdAt: row.created_at,
+          syncedAt: row.synced_at
+        }));
+        return res.status(200).json({ ok: true, queue: mapped });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
+    if (req.method === 'POST') {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+      let phone = String(body.phone || '').replace(/[^0-9]/g, '');
+      if (phone.length === 10) phone = '91' + phone;
+      const message = String(body.message || '').trim();
+
+      if (!phone || phone.length < 10) {
+        return res.status(400).json({ error: 'Valid 10+ digit WhatsApp phone number required' });
+      }
+      if (!message) {
+        return res.status(400).json({ error: 'WhatsApp message body is required' });
+      }
+
+      const row = {
+        source_type: 'whatsapp',
+        source_id: body.invoiceId || body.sourceId || `WA-${Date.now()}`,
+        client_name: String(body.clientName || body.client || 'WhatsApp Client').trim(),
+        voucher_type: 'WhatsApp',
+        amount: Number(String(body.amount || 0).replace(/[^0-9.]/g, '')) || 0,
+        date: toISODate(new Date()),
+        narration: message,
+        sales_ledger: String(body.pdfUrl || body.payLink || 'WHATSAPP_BOT').trim(),
+        party_ledger: phone,
+        status: 'WA_PENDING',
+        error_message: null
+      };
+
+      try {
+        const r = await fetch(`${url}/rest/v1/tally_sync_queue`, {
+          method: 'POST',
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify(row)
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          return res.status(r.status).json({ error: data.message || 'Failed to queue WhatsApp dispatch' });
+        }
+        return res.status(201).json({ ok: true, queued: data[0] || row });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
+    if (req.method === 'PATCH') {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+      const id = body.id;
+      if (!id) return res.status(400).json({ error: 'Queue item id required' });
+
+      let finalStatus = String(body.status || 'WA_SENT').toUpperCase();
+      if (finalStatus === 'SENT' || finalStatus === 'SYNCED') finalStatus = 'WA_SENT';
+      if (finalStatus === 'FAILED') finalStatus = 'WA_FAILED';
+
+      const updateFields = {
+        status: finalStatus,
+        tally_voucher_no: body.sentBy || 'Python WhatsApp Dispatcher',
+        error_message: body.errorMessage || null,
+        synced_at: finalStatus === 'WA_SENT' ? new Date().toISOString() : null
+      };
+
+      try {
+        const r = await fetch(`${url}/rest/v1/tally_sync_queue?id=eq.${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify(updateFields)
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) return res.status(r.status).json({ error: data.message || 'Failed to update WhatsApp status' });
+        return res.status(200).json({ ok: true, updated: data[0] || updateFields });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
+    return res.status(405).json({ error: 'Method not allowed for whatsapp queue' });
   }
 
   // GET: Sync queue

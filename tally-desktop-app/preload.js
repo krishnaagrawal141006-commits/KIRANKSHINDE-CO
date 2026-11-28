@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('api', {
   getClientVaults: () => ipcRenderer.invoke('client-vault-list'),
   openClientVault: (folderName) => ipcRenderer.send('client-vault-open', folderName),
   openWhatsAppWeb: () => ipcRenderer.send('whatsapp-open-web'),
+  launchPythonWaBot: () => ipcRenderer.invoke('whatsapp-launch-python-bot'),
+  fetchWaCloudQueue: () => ipcRenderer.invoke('whatsapp-fetch-cloud-queue'),
   sendWhatsAppInvoice: (payload) => ipcRenderer.invoke('whatsapp-send-invoice', payload),
   generateInvoicePdf: (payload) => ipcRenderer.invoke('invoice-generate-pdf', payload),
   onLog: (cb) => ipcRenderer.on('engine-log', (_event, value) => cb(value)),

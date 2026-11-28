@@ -3,6 +3,7 @@
     { "source": "/pay", "destination": "/pay.html" },
     { "source": "/api/tally/queue", "destination": "/api/tally?action=queue" },
     { "source": "/api/tally/heartbeat", "destination": "/api/tally?action=heartbeat" },
+    { "source": "/api/tally/whatsapp", "destination": "/api/tally?action=whatsapp" },
     { "source": "/api/admin/create-deadline", "destination": "/api/admin/deadlines" },
     { "source": "/api/admin/update-deadline", "destination": "/api/admin/deadlines" },
     { "source": "/api/admin/delete-deadline", "destination": "/api/admin/deadlines" }

@@ -371,7 +371,7 @@ const AdminCRM = {
         <td>
           <button class="action-icon-btn" onclick="AdminCRM.editClient('${c.id}')" title="Edit client"><i class="fa-solid fa-pen"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.openClientWork('${c.id}')" title="View pending work"><i class="fa-solid fa-list-check"></i></button>
-          <a href="https://wa.me/${c.phone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(c.name)}%2C%20from%20CA%20Kiran%20K.%20Shinde%20%26%20Co." target="_blank" class="action-icon-btn whatsapp-icon" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <button class="action-icon-btn whatsapp-icon" onclick="AdminCRM.openCustomWhatsAppComposer('${String(c.name || '').replace(/'/g, "\\'")}', '${String(c.phone || '').replace(/'/g, "\\'")}', '', 'Direct Client Update')" title="Frame & Auto-Send WhatsApp via Office PC Bot"><i class="fa-brands fa-whatsapp"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.deleteClient('${c.id}')" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
         </td>
       </tr>
@@ -392,7 +392,7 @@ const AdminCRM = {
         <td>${ld.date}</td>
         <td><span class="status-pill ${ld.status === 'New' ? 'status-overdue' : 'status-progress'}">${ld.status}</span></td>
         <td>
-          <a href="https://wa.me/${ld.phone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(ld.name)}%2C%20regarding%20your%20inquiry%20at%20Kiran%20K.%20Shinde%20%26%20Co." target="_blank" class="action-icon-btn whatsapp-icon" title="Reply on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <button class="action-icon-btn whatsapp-icon" onclick="AdminCRM.openCustomWhatsAppComposer('${String(ld.name || '').replace(/'/g, "\\'")}', '${String(ld.phone || '').replace(/'/g, "\\'")}', 'Namaste *${String(ld.name || '').replace(/'/g, "\\'")}* Ji,\n\nThank you for your inquiry with *CA Kiran K. Shinde & Co.* regarding *${String(ld.service || '').replace(/'/g, "\\'")}*.\n\nOur CA team would be happy to assist you. Please let us know a good time to connect!', 'Lead Follow-up')" title="Frame & Auto-Send WhatsApp via Office PC Bot"><i class="fa-brands fa-whatsapp"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.convertLeadToClient('${ld.id}')" title="Convert to Active Client"><i class="fa-solid fa-user-check"></i></button>
         </td>
       </tr>
@@ -478,9 +478,9 @@ const AdminCRM = {
         <td><span class="status-pill ${d.status.includes('Overdue') ? 'status-overdue' : 'status-progress'}">${d.status}</span></td>
         <td>
           <button class="action-icon-btn" onclick="AdminCRM.downloadDocument('${d.id}')" title="Download document"><i class="fa-solid fa-download"></i></button>
-          <a href="https://wa.me/${d.phone.replace(/[^0-9]/g, '')}?text=Dear%20Client%2C%20gentle%20reminder%20from%20CA%20Kiran%20K.%20Shinde%20%26%20Co.%20Please%20provide%20${encodeURIComponent(d.doc)}%20for%20${encodeURIComponent(d.category)}." target="_blank" class="action-icon-btn whatsapp-icon" title="Send WhatsApp Reminder Ping">
+          <button class="action-icon-btn whatsapp-icon" onclick="AdminCRM.openCustomWhatsAppComposer('${String(d.client || '').replace(/'/g, "\\'")}', '${String(d.phone || '').replace(/'/g, "\\'")}', 'Namaste *${String(d.client || '').replace(/'/g, "\\'")}* Ji,\n\nGentle reminder from *CA Kiran K. Shinde & Co.* 🙏\n\nKindly share the pending document:\n📄 *Document:* ${String(d.doc || '').replace(/'/g, "\\'")}\n📁 *Category:* ${String(d.category || '').replace(/'/g, "\\'")}\n\nYou can upload securely via our portal or reply here on WhatsApp.\n\nRegards,\n*CA Kiran K. Shinde & Co.*', 'Document Request: ${String(d.doc || '').replace(/'/g, "\\'")}')" title="Frame & Auto-Send Document Reminder via Office PC Bot">
             <i class="fa-brands fa-whatsapp"></i> Ping WhatsApp
-          </a>
+          </button>
           <button class="action-icon-btn" onclick="AdminCRM.snoozeDocFollowup('${d.id}')" title="Snooze 2 Days"><i class="fa-regular fa-clock"></i></button>
           <button class="action-icon-btn" onclick="AdminCRM.markDocReceived('${d.id}')" title="Mark Received"><i class="fa-solid fa-check"></i></button>
         </td>
@@ -819,6 +819,10 @@ const AdminCRM = {
     const qrAmtText = document.getElementById('reminderQrAmountText');
     if (qrAmtText) qrAmtText.textContent = `₹ ${formattedAmount}`;
 
+    // Reset queue banner
+    const banner = document.getElementById('reminderQueueStatusBanner');
+    if (banner) banner.style.display = 'none';
+
     // Switch to gentle template by default
     this.switchReminderTemplate('gentle');
 
@@ -846,12 +850,12 @@ const AdminCRM = {
 
   switchReminderTemplate(type) {
     this.currentReminderTemplateType = type || 'gentle';
-    ['btnTplGentle', 'btnTplDue', 'btnTplOverdue'].forEach(btnId => {
+    ['btnTplGentle', 'btnTplDue', 'btnTplOverdue', 'btnTplCustom'].forEach(btnId => {
       const b = document.getElementById(btnId);
       if (b) b.classList.remove('active');
     });
 
-    const activeMap = { gentle: 'btnTplGentle', due: 'btnTplDue', overdue: 'btnTplOverdue' };
+    const activeMap = { gentle: 'btnTplGentle', due: 'btnTplDue', overdue: 'btnTplOverdue', custom: 'btnTplCustom' };
     const activeBtn = document.getElementById(activeMap[this.currentReminderTemplateType]);
     if (activeBtn) activeBtn.classList.add('active');
 
@@ -875,6 +879,11 @@ const AdminCRM = {
     const webPayLink = `${origin}/pay?inv=${encodeURIComponent(inv.id)}&am=${cleanAmount}&client=${encodeURIComponent(inv.client)}&desc=${encodeURIComponent(inv.service || '')}`;
     this.currentReminderWebPayLink = webPayLink;
 
+    if (type === 'custom') {
+      if (inv.customMessage) return inv.customMessage;
+      return `Namaste *${inv.client}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\nPlease find the update regarding *${inv.service || 'your compliance filing'}*:\n\n[Type your message here...]\n\nBest regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | +91 75066 47791`;
+    }
+
     if (type === 'due') {
       return `*URGENT COMPLIANCE NOTICE: Fee Payment Pending*\n\nDear *${inv.client}*,\n\nWe hope this reaches you well. Regarding your ongoing statutory compliance and filings (*${inv.service}*):\n\n📄 *Invoice Ref:* ${inv.id}${voucherRef}\n💼 *Compliance / Filing:* ${inv.service}\n💰 *Pending Fees:* ₹${formattedAmount}\n📅 *Billing Date:* ${dateStr}\n⚠️ *Status:* Due for Immediate Settlement\n\nTo ensure uninterrupted filing of your statutory returns (GST / TDS / Tax Audit) before the upcoming cut-off dates, kindly clear this invoice today.\n\n⚡ *1-Click Pay Online (GPay / PhonePe / Paytm / Any UPI):*\n👉 *Pay Link:* ${webPayLink}\n👉 *UPI ID:* 7506647791@hdfcbank\n\n*Or Direct Bank Transfer (NEFT/RTGS):*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nA/C Name: Kiran K. Shinde & Co.\n\nPlease share the payment UTR / screenshot once completed so we can update your ledger in Tally.\n\nWith warm regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants • Pune / Palghar\nDirect Office: +91 75066 47791`;
     }
@@ -885,6 +894,145 @@ const AdminCRM = {
 
     // Default: gentle
     return `Namaste *${inv.client}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\nHope you are doing well. This is a gentle reminder regarding our professional fee invoice:\n\n📄 *Invoice No:* ${inv.id}${voucherRef}\n💼 *Service:* ${inv.service}\n💰 *Amount Due:* ₹${formattedAmount}\n📅 *Invoice Date:* ${dateStr}\n\nKindly clear the balance at your convenience via instant 1-click link or UPI:\n👉 *1-Click Pay Link:* ${webPayLink}\n👉 *UPI ID:* 7506647791@hdfcbank\n\n*Bank NEFT / RTGS Details:*\nBank: HDFC Bank Ltd\nA/C No: 50200067891234\nIFSC: HDFC0000123\nName: Kiran K. Shinde & Co.\n\nPlease share the payment screenshot / UTR once done. Thank you for your continued association!\n\nBest regards,\n*CA Kiran K. Shinde & Co.*\nChartered Accountants | Mob: +91 75066 47791`;
+  },
+
+  openCustomWhatsAppComposer(clientName, phone, customMessage, serviceTitle) {
+    const cleanPhone = String(phone || '').replace(/[^0-9]/g, '');
+    const customInv = {
+      id: `MSG-${Date.now().toString().slice(-4)}`,
+      client: clientName || 'Client',
+      service: serviceTitle || 'Client Communication / Document Update',
+      rawAmount: 0,
+      amount: '0',
+      customMessage: customMessage || `Namaste *${clientName || 'Client'}* Ji,\n\nGreetings from *CA Kiran K. Shinde & Co.* 🙏\n\n[Type your message here...]\n\nBest regards,\n*CA Kiran K. Shinde & Co.* | +91 75066 47791`
+    };
+    this.currentReminderInv = customInv;
+
+    const clientNameEl = document.getElementById('reminderClientName');
+    if (clientNameEl) clientNameEl.textContent = customInv.client;
+    const clientEntityEl = document.getElementById('reminderClientEntity');
+    if (clientEntityEl) clientEntityEl.textContent = 'Direct WhatsApp Message Mode';
+    const invRefEl = document.getElementById('reminderInvoiceRef');
+    if (invRefEl) invRefEl.textContent = customInv.id;
+    const serviceTitleEl = document.getElementById('reminderServiceTitle');
+    if (serviceTitleEl) serviceTitleEl.textContent = customInv.service;
+    const amtDisplayEl = document.getElementById('reminderAmountDisplay');
+    if (amtDisplayEl) amtDisplayEl.textContent = 'Custom Msg';
+
+    const phoneInput = document.getElementById('reminderPhoneInput');
+    const badge = document.getElementById('reminderPhoneStatusBadge');
+    if (phoneInput) phoneInput.value = cleanPhone;
+    if (badge) {
+      badge.textContent = cleanPhone ? 'Matched from CRM' : 'Enter mobile number';
+      badge.style.background = cleanPhone ? '#dcfce7' : '#fef3c7';
+      badge.style.color = cleanPhone ? '#15803d' : '#b45309';
+    }
+
+    const banner = document.getElementById('reminderQueueStatusBanner');
+    if (banner) banner.style.display = 'none';
+
+    this.switchReminderTemplate('custom');
+    const modal = document.getElementById('paymentReminderModal');
+    if (modal) modal.classList.add('active');
+  },
+
+  async queueWhatsAppBotDispatch() {
+    const phoneInput = document.getElementById('reminderPhoneInput');
+    const msgText = document.getElementById('reminderMessageText');
+    const btn = document.getElementById('btnAutoSendWhatsAppBot');
+    const banner = document.getElementById('reminderQueueStatusBanner');
+    if (!phoneInput || !msgText) return;
+
+    let phone = String(phoneInput.value || '').replace(/[^0-9]/g, '');
+    if (!phone || phone.length < 10) {
+      alert('Please enter a valid 10-digit mobile number.');
+      phoneInput.focus();
+      return;
+    }
+    if (phone.length === 10) phone = '91' + phone;
+
+    const message = msgText.value.trim();
+    if (!message) {
+      alert('Message body cannot be empty.');
+      msgText.focus();
+      return;
+    }
+
+    const showBanner = (bg, color, border, html) => {
+      if (!banner) return;
+      banner.style.display = 'flex';
+      banner.style.background = bg;
+      banner.style.color = color;
+      banner.style.border = `1px solid ${border}`;
+      banner.innerHTML = html;
+    };
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Queuing to Office PC...';
+    }
+    showBanner('#eff6ff', '#1d4ed8', '#bfdbfe', '<i class="fa-solid fa-spinner fa-spin"></i> Sending framed message to Office PC WhatsApp Bot...');
+
+    try {
+      const token = await this.adminToken?.();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const inv = this.currentReminderInv || {};
+      const cleanAmount = Number(inv.rawAmount || String(inv.amount || 0).replace(/[^0-9.]/g, '')) || 0;
+
+      const res = await fetch('/api/tally/whatsapp', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          phone,
+          message,
+          clientName: inv.client || 'Client',
+          invoiceId: inv.id || `WA-${Date.now()}`,
+          amount: cleanAmount,
+          payLink: this.currentReminderWebPayLink || ''
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to queue WhatsApp dispatch');
+      }
+
+      const queuedId = data.queued && data.queued.id;
+      showBanner('#f0fdf4', '#166534', '#86efac', `<i class="fa-solid fa-clock"></i> Queued for <strong>+${phone}</strong>! Office PC Python Bot will send automatically in ~4s...`);
+
+      // Poll delivery status for up to 36s
+      if (queuedId) {
+        let attempts = 0;
+        const pollTimer = setInterval(async () => {
+          attempts++;
+          if (attempts > 12) {
+            clearInterval(pollTimer);
+            return;
+          }
+          try {
+            const checkRes = await fetch('/api/tally/whatsapp', { headers });
+            const checkData = await checkRes.json().catch(() => ({}));
+            const row = (checkData.queue || []).find(item => item.id === queuedId);
+            if (row && row.status === 'WA_SENT') {
+              clearInterval(pollTimer);
+              showBanner('#dcfce7', '#14532d', '#4ade80', `<i class="fa-solid fa-check-double"></i> <strong>DELIVERED!</strong> Office WhatsApp Bot sent this message to +${phone}.`);
+            } else if (row && row.status === 'WA_FAILED') {
+              clearInterval(pollTimer);
+              showBanner('#fef2f2', '#991b1b', '#fecaca', `<i class="fa-solid fa-triangle-exclamation"></i> Bot reported error: ${row.errorMessage || 'Check WhatsApp login on Office PC'}`);
+            }
+          } catch (_) {}
+        }, 3000);
+      }
+    } catch (err) {
+      showBanner('#fef2f2', '#991b1b', '#fecaca', `<i class="fa-solid fa-circle-xmark"></i> Dispatch Queue Error: ${err.message}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Auto-Send via Tally PC Bot';
+      }
+    }
   },
 
   sendWhatsAppPaymentReminderNow() {

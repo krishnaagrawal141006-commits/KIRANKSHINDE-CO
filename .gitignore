@@ -7,3 +7,7 @@ admin/cloudinary-config.js
 integrations/erpnext/
 storage/
 /supabase-config.js
+tally-connector/.venv/
+tally-connector/wa_session_profile/
+__pycache__/
+*.pyc

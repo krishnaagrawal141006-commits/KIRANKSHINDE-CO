@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0tally-connector"
-title CA Kiran K. Shinde & Co. - WhatsApp Python Auto-Dispatcher
+title CA Kiran K. Shinde ^& Co. - WhatsApp Python Auto-Dispatcher
 color 0a
 
 echo ==============================================================================
@@ -16,11 +16,11 @@ if not exist ".venv\Scripts\python.exe" (
 
 if not exist ".venv\Lib\site-packages\playwright" (
     echo [2/3] Installing Playwright browser automation package...
-    .venv\Scripts\pip.exe install playwright
+    ".venv\Scripts\pip.exe" install playwright
 )
 
 echo [3/3] Starting WhatsApp Web Auto-Dispatcher...
 echo (Keep the Chrome WhatsApp window open/minimized - QR scan is 1-time only!)
 echo.
-.venv\Scripts\python.exe whatsapp_dispatcher.py
+".venv\Scripts\python.exe" whatsapp_dispatcher.py %*
 pause

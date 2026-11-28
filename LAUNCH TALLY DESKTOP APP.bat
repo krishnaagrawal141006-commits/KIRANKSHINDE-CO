@@ -1,11 +1,11 @@
 @echo off
 cd /d "%~dp0tally-desktop-app"
-title CA Kiran K. Shinde & Co. - Tally Desktop Bridge (Live Dev)
+title CA Kiran K. Shinde ^& Co. - Tally Desktop Bridge (Live Dev)
 color 0b
 
 echo ==============================================================================
-echo   CA KIRAN K. SHINDE & CO. - TALLYPRIME DESKTOP APP (v1.3 LIVE)
-echo   With WhatsApp Web Auto-Dispatcher & 1-Click Invoice PDF Desk
+echo   CA KIRAN K. SHINDE ^& CO. - TALLYPRIME DESKTOP APP (v1.3 LIVE)
+echo   With WhatsApp Web Auto-Dispatcher ^& 1-Click Invoice PDF Desk
 echo ==============================================================================
 echo.
 echo [1/2] Closing any old background or tray instances...

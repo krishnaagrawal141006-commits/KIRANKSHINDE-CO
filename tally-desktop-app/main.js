@@ -377,12 +377,19 @@ ipcMain.handle('whatsapp-launch-python-bot', async () => {
     if (!batPath) {
       return { ok: false, error: 'START WHATSAPP BOT.bat not found in workspace folder.' };
     }
-    const child = spawn('cmd.exe', ['/c', 'start', '""', batPath], {
-      detached: true,
-      stdio: 'ignore',
-      cwd: path.dirname(batPath)
-    });
-    child.unref();
+    // Use shell.openPath (ShellExecuteW) so spaces and '&' in 'kiran k shinde & co' never break cmd.exe!
+    const openErr = await shell.openPath(batPath);
+    if (openErr) {
+      const batDir = path.dirname(batPath);
+      const batFile = path.basename(batPath);
+      const child = spawn('cmd.exe', ['/s', '/c', `start "Kiran WhatsApp Bot" "${batFile}"`], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: batDir,
+        windowsVerbatimArguments: true
+      });
+      child.unref();
+    }
     engine.log('success', '🐍 Launched Python WhatsApp Auto-Dispatcher Bot!');
     return { ok: true, batPath };
   } catch (err) {

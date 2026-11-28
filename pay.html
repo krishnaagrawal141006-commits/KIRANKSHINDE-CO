@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pay Professional Fees | CA Kiran K. Shinde & Co.</title>
-  <meta name="description" content="Official 1-Click UPI Payment Portal for CA Kiran K. Shinde & Co., Chartered Accountants. Pay securely via GPay, PhonePe, Paytm, or Net Banking.">
+  <meta name="description"
+    content="Official 1-Click UPI Payment Portal for CA Kiran K. Shinde & Co., Chartered Accountants. Pay securely via GPay, PhonePe, Paytm, or Net Banking.">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --primary: #0f172a;
@@ -22,12 +25,14 @@
       --text: #0f172a;
       --muted: #64748b;
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
+
     body {
       background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
       color: var(--text);
@@ -38,6 +43,7 @@
       justify-content: center;
       padding: 20px 14px;
     }
+
     .pay-card {
       background: var(--surface);
       width: 100%;
@@ -48,10 +54,19 @@
       overflow: hidden;
       animation: fadeIn 0.3s ease-out;
     }
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+
     .pay-header {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: #ffffff;
@@ -59,6 +74,7 @@
       text-align: center;
       position: relative;
     }
+
     .verified-seal {
       display: inline-flex;
       align-items: center;
@@ -74,19 +90,23 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
     .pay-header h1 {
       font-size: 1.28rem;
       font-weight: 800;
       letter-spacing: -0.3px;
       margin-bottom: 4px;
     }
+
     .pay-header p {
       font-size: 0.8rem;
       color: #94a3b8;
     }
+
     .pay-body {
       padding: 24px;
     }
+
     .bill-summary {
       background: #f8fafc;
       border: 1px solid var(--border);
@@ -94,6 +114,7 @@
       padding: 16px;
       margin-bottom: 20px;
     }
+
     .bill-row {
       display: flex;
       justify-content: space-between;
@@ -101,20 +122,24 @@
       margin-bottom: 8px;
       font-size: 0.84rem;
     }
+
     .bill-row:last-child {
       margin-bottom: 0;
       padding-top: 10px;
       border-top: 1px dashed #cbd5e1;
     }
+
     .bill-label {
       color: var(--muted);
       font-weight: 500;
     }
+
     .bill-val {
       font-weight: 700;
       color: var(--text);
       text-align: right;
     }
+
     .bill-total-val {
       font-size: 1.45rem;
       font-weight: 800;
@@ -142,7 +167,9 @@
       border: none;
       cursor: pointer;
     }
-    .btn-pay-now:hover, .btn-pay-now:active {
+
+    .btn-pay-now:hover,
+    .btn-pay-now:active {
       transform: translateY(-2px);
       box-shadow: 0 14px 24px -6px rgba(16, 185, 129, 0.5);
     }
@@ -153,6 +180,7 @@
       gap: 8px;
       margin-bottom: 22px;
     }
+
     .app-btn {
       display: flex;
       flex-direction: column;
@@ -169,11 +197,13 @@
       font-weight: 700;
       transition: all 0.2s;
     }
+
     .app-btn:hover {
       border-color: #2563eb;
       background: #f8fafc;
       transform: translateY(-1px);
     }
+
     .app-btn i {
       font-size: 1.15rem;
     }
@@ -187,6 +217,7 @@
       text-align: center;
       margin-bottom: 20px;
     }
+
     .qr-container img {
       width: 200px;
       height: 200px;
@@ -194,368 +225,175 @@
       display: block;
       margin: 0 auto 10px;
     }
+
     .qr-hint {
       font-size: 0.76rem;
       color: var(--muted);
-      margin-bottom: 8px;
-    }
 
-    /* Bank Details Card */
-    .bank-box {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 20px;
-      font-size: 0.8rem;
-    }
-    .bank-box h4 {
-      font-size: 0.84rem;
-      color: var(--text);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .bank-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .bank-row span {
-      color: var(--muted);
-    }
-    .bank-row strong {
-      color: var(--text);
-      font-family: monospace;
-      font-size: 0.84rem;
-    }
 
-    .btn-wa-confirm {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      background: #ffffff;
-      color: #15803d;
-      border: 1.5px solid #86efac;
-      padding: 12px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 0.86rem;
-      font-weight: 700;
-      transition: all 0.2s;
-    }
-    .btn-wa-confirm:hover {
-      background: #f0fdf4;
-    }
+      <span class="bill-label" style="font-size:1rem; font-weight:700;">Total Payable: </span> <span class="bill-total-val" id="dispAmount" >₹ 0</span> </div> </div> < !-- View / Download PDF Button --> <button type="button" class="btn-invoice-pdf" onclick="openInvoicePdfModal()" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background:#f8fafc; color:#0f172a; border:1.5px solid #cbd5e1; padding:11px 16px; border-radius:10px; font-weight:700; font-size:0.86rem; cursor:pointer; margin-bottom:14px; transition:all 0.2s;" > <i class="fa-solid fa-file-invoice" style="color:#2563eb;" ></i> <span>📄 View &amp;
+      Download Official Tax Invoice (PDF)</span></button>< !-- Prominent 1-Click Pay Button (Mobile Optimized) --><a href="#" id="mainUpiBtn" class="btn-pay-now"><i class="fa-solid fa-bolt"></i><span>Pay <span id="btnPayAmount">₹ 0</span>via Any UPI App</span></a>< !-- Quick UPI Apps Grid --><div class="app-buttons-grid"><a href="#" id="gpayBtn" class="app-btn"><i class="fa-brands fa-google-pay" style="color:#4285f4; font-size:1.4rem;"></i><span>Google Pay</span></a><a href="#" id="phonepeBtn" class="app-btn"><i class="fa-solid fa-mobile-screen" style="color:#5f259f;"></i><span>PhonePe</span></a><a href="#" id="paytmBtn" class="app-btn"><i class="fa-solid fa-wallet" style="color:#00b9f5;"></i><span>Paytm / BHIM</span></a></div>< !-- QR Code Container --><div class="qr-container"><p class="qr-hint">Scan with any UPI Scanner (Google Pay, PhonePe, Paytm, Cred, BHIM)</p><img id="upiQrImg" src="" alt="Dynamic UPI QR Code"><div style="font-size:0.78rem; font-weight:700; color:#334155;">UPI ID: <span style="font-family:monospace; color:#0f172a;" >7506647791@hdfcbank</span> <button type="button" class="copy-pill" onclick="copyUpiId()" ><i class="fa-regular fa-copy" ></i> Copy</button> </div> </div> < !-- Bank NEFT / RTGS Details --> <div class="bank-box" > <h4><i class="fa-solid fa-building-columns" style="color:#2563eb;" ></i> Direct Bank Transfer (NEFT / RTGS / IMPS)</h4> <div class="bank-row" > <span>Bank Name:</span> <strong>HDFC Bank Ltd</strong> </div> <div class="bank-row" > <span>Account Name:</span> <strong>Kiran K. Shinde & Co.</strong> </div> <div class="bank-row" > <span>Account Number:</span> <div> <strong>50200067891234</strong> <button type="button" class="copy-pill" onclick="copyText('50200067891234', 'A/C Number')" >Copy</button> </div> </div> <div class="bank-row" > <span>IFSC Code:</span> <div> <strong>HDFC0000123</strong> <button type="button" class="copy-pill" onclick="copyText('HDFC0000123', 'IFSC Code')" >Copy</button> </div> </div> </div> < !-- WhatsApp Confirmation Share --> <a href="#" id="waConfirmBtn" target="_blank" class="btn-wa-confirm" > <i class="fa-brands fa-whatsapp" style="font-size:1.15rem; color:#25d366;" ></i> <span>Share Payment Confirmation / UTR on WhatsApp</span> </a> <div class="footer-note" > Direct settlement to CA Kiran K. Shinde & Co. • Synchronized with TallyPrime (Port 9000)<br> For fee queries, call or WhatsApp: <strong>+91 75066 47791</strong> </div> </div> </div> < !--=================INVOICE PDF MODAL=================--> <div id="invoicePdfModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;" > <div style="background:#fff; border-radius:16px; width:100%; max-width:820px; max-height:92vh; overflow-y:auto; padding:20px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);" > <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;" > <h3 style="margin:0; font-size:1.1rem; color:#0f172a; display:flex; align-items:center; gap:8px;" > <i class="fa-solid fa-file-pdf" style="color:#ef4444;" ></i> Authentic TallyPrime Tax Invoice </h3> <div style="display:flex; gap:8px;" > <button type="button" onclick="printInvoicePdf()" style="background:#0f172a; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; gap:6px;" > <i class="fa-solid fa-print" ></i> Print / Save as PDF </button> <button type="button" onclick="closeInvoicePdfModal()" style="background:#f1f5f9; color:#475569; border:none; padding:8px 14px; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer;" > Close </button> </div> </div> <div id="invoicePdfContent" > < !-- Injected via JS --> </div> </div> </div> <script> // Extract query parameters
+        const params=new URLSearchParams(window.location.search);
+      const invoiceId=params.get('inv') || params.get('id') || 'INV-FEE';
+      const clientName=params.get('client') || params.get('name') || 'Valued Client';
+      const rawAmt=params.get('am') || params.get('amount') || '0';
+      const cleanAmount=Number(String(rawAmt).replace(/[^0-9.]/g, '')) || 0;
+      const formattedAmount=cleanAmount.toLocaleString('en-IN');
+      const serviceName=params.get('desc') || params.get('service') || 'Statutory Compliance, Professional CA Fees & Consultancy';
+      const voucherRef=params.get('vch') || invoiceId.replace(/[^0-9]/g, '') || '529';
+      const invoiceDate=params.get('date') || new Date().toLocaleDateString('en-IN');
 
-    .footer-note {
-      text-align: center;
-      font-size: 0.72rem;
-      color: #94a3b8;
-      margin-top: 16px;
-      line-height: 1.4;
-    }
-    .copy-pill {
-      background: #e2e8f0;
-      border: none;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: #334155;
-      cursor: pointer;
-      margin-left: 6px;
-    }
-  </style>
-</head>
-<body>
+      // Populate DOM elements
+      document.getElementById('dispClient').textContent=clientName;
+      document.getElementById('dispInvoice').textContent=invoiceId;
+      document.getElementById('dispService').textContent=serviceName;
 
-  <div class="pay-card">
-    <div class="pay-header">
-      <div class="verified-seal">
-        <i class="fa-solid fa-shield-halved"></i> Official Verified Payment Desk
-      </div>
-      <h1>CA Kiran K. Shinde & Co.</h1>
-      <p>Chartered Accountants • FRN: 147829W</p>
-    </div>
-
-    <div class="pay-body">
-      <!-- Bill Summary Card -->
-      <div class="bill-summary">
-        <div class="bill-row">
-          <span class="bill-label">Billed To (Client):</span>
-          <span class="bill-val" id="dispClient">Valued Client</span>
-        </div>
-        <div class="bill-row">
-          <span class="bill-label">Invoice Ref:</span>
-          <span class="bill-val" id="dispInvoice">INV-OFFICIAL</span>
-        </div>
-        <div class="bill-row">
-          <span class="bill-label">Particulars:</span>
-          <span class="bill-val" id="dispService" style="max-width:240px; font-size:0.8rem;">Statutory Compliance & CA Consultancy</span>
-        </div>
-        <div class="bill-row">
-          <span class="bill-label" style="font-size:1rem; font-weight:700;">Total Payable:</span>
-          <span class="bill-total-val" id="dispAmount">₹ 0</span>
-        </div>
-      </div>
-
-      <!-- View / Download PDF Button -->
-      <button type="button" class="btn-invoice-pdf" onclick="openInvoicePdfModal()" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background:#f8fafc; color:#0f172a; border:1.5px solid #cbd5e1; padding:11px 16px; border-radius:10px; font-weight:700; font-size:0.86rem; cursor:pointer; margin-bottom:14px; transition:all 0.2s;">
-        <i class="fa-solid fa-file-invoice" style="color:#2563eb;"></i>
-        <span>📄 View &amp; Download Official Tax Invoice (PDF)</span>
-      </button>
-
-      <!-- Prominent 1-Click Pay Button (Mobile Optimized) -->
-      <a href="#" id="mainUpiBtn" class="btn-pay-now">
-        <i class="fa-solid fa-bolt"></i>
-        <span>Pay <span id="btnPayAmount">₹ 0</span> via Any UPI App</span>
-      </a>
-
-      <!-- Quick UPI Apps Grid -->
-      <div class="app-buttons-grid">
-        <a href="#" id="gpayBtn" class="app-btn">
-          <i class="fa-brands fa-google-pay" style="color:#4285f4; font-size:1.4rem;"></i>
-          <span>Google Pay</span>
-        </a>
-        <a href="#" id="phonepeBtn" class="app-btn">
-          <i class="fa-solid fa-mobile-screen" style="color:#5f259f;"></i>
-          <span>PhonePe</span>
-        </a>
-        <a href="#" id="paytmBtn" class="app-btn">
-          <i class="fa-solid fa-wallet" style="color:#00b9f5;"></i>
-          <span>Paytm / BHIM</span>
-        </a>
-      </div>
-
-      <!-- QR Code Container -->
-      <div class="qr-container">
-        <p class="qr-hint">Scan with any UPI Scanner (Google Pay, PhonePe, Paytm, Cred, BHIM)</p>
-        <img id="upiQrImg" src="" alt="Dynamic UPI QR Code">
-        <div style="font-size:0.78rem; font-weight:700; color:#334155;">
-          UPI ID: <span style="font-family:monospace; color:#0f172a;">7506647791@hdfcbank</span>
-          <button type="button" class="copy-pill" onclick="copyUpiId()"><i class="fa-regular fa-copy"></i> Copy</button>
-        </div>
-      </div>
-
-      <!-- Bank NEFT / RTGS Details -->
-      <div class="bank-box">
-        <h4><i class="fa-solid fa-building-columns" style="color:#2563eb;"></i> Direct Bank Transfer (NEFT / RTGS / IMPS)</h4>
-        <div class="bank-row">
-          <span>Bank Name:</span>
-          <strong>HDFC Bank Ltd</strong>
-        </div>
-        <div class="bank-row">
-          <span>Account Name:</span>
-          <strong>Kiran K. Shinde & Co.</strong>
-        </div>
-        <div class="bank-row">
-          <span>Account Number:</span>
-          <div>
-            <strong>50200067891234</strong>
-            <button type="button" class="copy-pill" onclick="copyText('50200067891234', 'A/C Number')">Copy</button>
-          </div>
-        </div>
-        <div class="bank-row">
-          <span>IFSC Code:</span>
-          <div>
-            <strong>HDFC0000123</strong>
-            <button type="button" class="copy-pill" onclick="copyText('HDFC0000123', 'IFSC Code')">Copy</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- WhatsApp Confirmation Share -->
-      <a href="#" id="waConfirmBtn" target="_blank" class="btn-wa-confirm">
-        <i class="fa-brands fa-whatsapp" style="font-size:1.15rem; color:#25d366;"></i>
-        <span>Share Payment Confirmation / UTR on WhatsApp</span>
-      </a>
-
-      <div class="footer-note">
-        Direct settlement to CA Kiran K. Shinde & Co. • Synchronized with TallyPrime (Port 9000)<br>
-        For fee queries, call or WhatsApp: <strong>+91 75066 47791</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= INVOICE PDF MODAL ================= -->
-  <div id="invoicePdfModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
-    <div style="background:#fff; border-radius:16px; width:100%; max-width:820px; max-height:92vh; overflow-y:auto; padding:20px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
-        <h3 style="margin:0; font-size:1.1rem; color:#0f172a; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Authentic TallyPrime Tax Invoice
-        </h3>
-        <div style="display:flex; gap:8px;">
-          <button type="button" onclick="printInvoicePdf()" style="background:#0f172a; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-print"></i> Print / Save as PDF
-          </button>
-          <button type="button" onclick="closeInvoicePdfModal()" style="background:#f1f5f9; color:#475569; border:none; padding:8px 14px; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer;">
-            Close
-          </button>
-        </div>
-      </div>
-      <div id="invoicePdfContent">
-        <!-- Injected via JS -->
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Extract query parameters
-    const params = new URLSearchParams(window.location.search);
-    const invoiceId = params.get('inv') || params.get('id') || 'INV-FEE';
-    const clientName = params.get('client') || params.get('name') || 'Valued Client';
-    const rawAmt = params.get('am') || params.get('amount') || '0';
-    const cleanAmount = Number(String(rawAmt).replace(/[^0-9.]/g, '')) || 0;
-    const formattedAmount = cleanAmount.toLocaleString('en-IN');
-    const serviceName = params.get('desc') || params.get('service') || 'Statutory Compliance, Professional CA Fees & Consultancy';
-    const voucherRef = params.get('vch') || invoiceId.replace(/[^0-9]/g, '') || '529';
-    const invoiceDate = params.get('date') || new Date().toLocaleDateString('en-IN');
-
-    // Populate DOM elements
-    document.getElementById('dispClient').textContent = clientName;
-    document.getElementById('dispInvoice').textContent = invoiceId;
-    document.getElementById('dispService').textContent = serviceName;
-    document.getElementById('dispAmount').textContent = `₹ ${formattedAmount}`;
-    document.getElementById('btnPayAmount').textContent = `₹ ${formattedAmount}`;
-
-    // Generate UPI URI
-    const upiNote = encodeURIComponent(`Fee Inv ${invoiceId}`);
-    const upiUrl = `upi://pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${upiNote}`;
-
-    // Set buttons
-    const mainBtn = document.getElementById('mainUpiBtn');
-    mainBtn.href = upiUrl;
-
-    document.getElementById('gpayBtn').href = upiUrl;
-    document.getElementById('phonepeBtn').href = upiUrl;
-    document.getElementById('paytmBtn').href = upiUrl;
-
-    // Set QR image
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(upiUrl)}`;
-    document.getElementById('upiQrImg').src = qrUrl;
-
-    // Set WhatsApp confirmation button
-    const waMsg = `Hello CA Kiran K. Shinde & Co.,\n\nI have completed the payment of ₹${formattedAmount} for Invoice ${invoiceId} (${clientName}).\n\nTransaction UTR / Ref No: [Please enter UTR here]\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nKindly update our ledger in TallyPrime. Thank you!`;
-    document.getElementById('waConfirmBtn').href = `https://wa.me/917506647791?text=${encodeURIComponent(waMsg)}`;
-
-    function copyUpiId() {
-      navigator.clipboard.writeText('7506647791@hdfcbank').then(() => {
-        alert('✅ UPI ID (7506647791@hdfcbank) copied to clipboard!');
-      }).catch(() => alert('UPI ID: 7506647791@hdfcbank'));
-    }
-
-    function copyText(val, label) {
-      navigator.clipboard.writeText(val).then(() => {
-        alert(`✅ ${label} (${val}) copied to clipboard!`);
-      }).catch(() => alert(`${label}: ${val}`));
-    }
-
-    // Authentic Tally Invoice HTML Builder
-    function renderAuthenticTallyInvoice() {
-      return `
-        <div style="background:#fff; border:2px solid #000; color:#000; font-family:'Segoe UI', Arial, sans-serif; font-size:12px; line-height:1.35; width:100%; box-sizing:border-box;">
-          <div style="text-align:center; font-weight:800; font-size:15px; letter-spacing:1px; padding:6px 0; border-bottom:1px solid #000; text-transform:uppercase;">
-            INVOICE
-          </div>
-          <div style="display:flex; border-bottom:1px solid #000;">
-            <div style="width:52%; border-right:1px solid #000; padding:8px 10px;">
-              <strong style="font-size:13px; text-transform:uppercase;">CA KIRAN K. SHINDE &amp; CO.</strong><br>
-              <span style="font-size:11px;">Chartered Accountants &bull; FRN: 147829W</span><br>
-              <span style="font-size:11px;">Office: Pune / Palghar, Maharashtra &bull; Code: 27</span><br><br>
-              <span style="font-size:10px; color:#555;">Buyer (Bill to):</span><br>
-              <strong style="font-size:12px;">${clientName}</strong><br>
-              <span style="font-size:11px;">State Name: Maharashtra, Code: 27</span>
-            </div>
-            <div style="width:48%;">
-              <div style="display:flex; border-bottom:1px solid #000;">
-                <div style="width:50%; border-right:1px solid #000; padding:6px 8px;">
-                  <span style="font-size:10px; color:#555;">Invoice No.</span><br>
-                  <strong>${voucherRef}</strong>
-                </div>
-                <div style="width:50%; padding:6px 8px;">
-                  <span style="font-size:10px; color:#555;">Dated</span><br>
-                  <strong>${invoiceDate}</strong>
-                </div>
-              </div>
-              <div style="padding:6px 8px; border-bottom:1px solid #000;">
-                <span style="font-size:10px; color:#555;">Reference No. &amp; Date</span><br>
-                <strong>${invoiceId} dt. ${invoiceDate}</strong>
-              </div>
-              <div style="padding:6px 8px;">
-                <span style="font-size:10px; color:#555;">Mode/Terms of Payment</span><br>
-                <strong>Immediate / Instant UPI</strong>
-              </div>
-            </div>
-          </div>
-          <table style="width:100%; border-collapse:collapse;">
-            <thead>
-              <tr style="border-bottom:1px solid #000; background:#fafafa; font-weight:700;">
-                <th style="width:35px; border-right:1px solid #000; padding:6px 8px; text-align:left;">Sl</th>
-                <th style="border-right:1px solid #000; padding:6px 8px; text-align:left;">Description of Services</th>
-                <th style="width:70px; border-right:1px solid #000; padding:6px 8px; text-align:left;">SAC</th>
-                <th style="width:110px; padding:6px 8px; text-align:right;">Amount (INR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="height:140px; vertical-align:top;">
-                <td style="border-right:1px solid #000; padding:6px 8px;">1</td>
-                <td style="border-right:1px solid #000; padding:6px 8px;">
-                  <strong>Professional Fees Account</strong><br>
-                  <span style="color:#333;">${serviceName}</span>
-                </td>
-                <td style="border-right:1px solid #000; padding:6px 8px;">998231</td>
-                <td style="padding:6px 8px; text-align:right;"><strong>₹ ${formattedAmount}</strong></td>
-              </tr>
-              <tr style="border-top:1px solid #000; font-weight:700;">
-                <td colspan="3" style="border-right:1px solid #000; text-align:right; padding:6px 8px;">Total Amount Due:</td>
-                <td style="padding:6px 8px; text-align:right; color:#059669; font-size:13px;">₹ ${formattedAmount}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div style="padding:8px 10px; border-top:1px solid #000; border-bottom:1px solid #000; font-size:10px; color:#444;">
-            <strong>Declaration:</strong> We declare that this invoice shows the actual price of the professional services described and that all particulars are true and correct.
-          </div>
-          <div style="display:flex; justify-content:space-between; padding:12px 10px 8px;">
-            <div style="font-size:10px;">
-              <strong>Bank Details:</strong> HDFC Bank Ltd | A/C: 50200067891234 | IFSC: HDFC0000123<br>
-              <strong>UPI ID:</strong> 7506647791@hdfcbank
-            </div>
-            <div style="text-align:right; font-size:11px;">
-              For <strong>CA KIRAN K. SHINDE &amp; CO.</strong><br><br>
-              <span style="font-size:10px; color:#555;">Authorised Signatory</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function openInvoicePdfModal() {
-      const modal = document.getElementById('invoicePdfModal');
-      const content = document.getElementById('invoicePdfContent');
-      if (modal && content) {
-        content.innerHTML = renderAuthenticTallyInvoice();
-        modal.style.display = 'flex';
+      document.getElementById('dispAmount').textContent=`₹ $ {
+        formattedAmount
       }
-    }
 
-    function closeInvoicePdfModal() {
-      const modal = document.getElementById('invoicePdfModal');
-      if (modal) modal.style.display = 'none';
-    }
+      `;
 
-    function printInvoicePdf() {
-      window.print();
-    }
+      document.getElementById('btnPayAmount').textContent=`₹ $ {
+        formattedAmount
+      }
 
-    // Auto-open PDF if requested via ?pdf=1
-    if (params.get('pdf') === '1') {
-      openInvoicePdfModal();
-    }
-  </script>
-</body>
-</html>
+      `;
 
+      // Generate UPI URI
+      const upiNote=encodeURIComponent(`Fee Inv $ {
+          invoiceId
+        }
+
+        `);
+      const upiUrl=`upi: //pay?pa=7506647791@hdfcbank&pn=CA%20Kiran%20K%20Shinde%20and%20Co&am=${cleanAmount}&cu=INR&tn=${upiNote}`;
+
+      // Set buttons
+      const mainBtn=document.getElementById('mainUpiBtn');
+      mainBtn.href=upiUrl;
+
+      document.getElementById('gpayBtn').href=upiUrl;
+      document.getElementById('phonepeBtn').href=upiUrl;
+      document.getElementById('paytmBtn').href=upiUrl;
+
+      // Set QR image
+      const qrUrl=`https: //api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(upiUrl)}`;
+      document.getElementById('upiQrImg').src=qrUrl;
+
+      // Set WhatsApp confirmation button
+      const waMsg=`Hello CA Kiran K. Shinde & Co.,
+      \n\nI have completed the payment of ₹$ {
+        formattedAmount
+      }
+
+      for Invoice $ {
+        invoiceId
+      }
+
+      ($ {
+          clientName
+
+        }).\n\nTransaction UTR / Ref No: [Please enter UTR here]\nDate: $ {
+        new Date().toLocaleDateString('en-IN')
+      }
+
+      \n\nKindly update our ledger in TallyPrime. Thank you !`;
+      document.getElementById('waConfirmBtn').href=`https: //wa.me/917506647791?text=${encodeURIComponent(waMsg)}`;
+
+      function copyUpiId() {
+        navigator.clipboard.writeText('7506647791@hdfcbank').then(()=> {
+            alert('✅ UPI ID (7506647791@hdfcbank) copied to clipboard!');
+          }).catch(()=> alert('UPI ID: 7506647791@hdfcbank'));
+      }
+
+      function copyText(val, label) {
+        navigator.clipboard.writeText(val).then(()=> {
+            alert(`✅ $ {
+                label
+              }
+
+              ($ {
+                  val
+                }) copied to clipboard !`);
+
+          }).catch(()=> alert(`$ {
+              label
+            }
+
+            : $ {
+              val
+            }
+
+            `));
+      }
+
+      // Authentic Tally Invoice HTML Builder
+      function renderAuthenticTallyInvoice() {
+        return ` <div style="background:#fff; border:2px solid #000; color:#000; font-family:'Segoe UI', Arial, sans-serif; font-size:12px; line-height:1.35; width:100%; box-sizing:border-box;"><div style="text-align:center; font-weight:800; font-size:15px; letter-spacing:1px; padding:6px 0; border-bottom:1px solid #000; text-transform:uppercase;">INVOICE </div><div style="display:flex; border-bottom:1px solid #000;"><div style="width:52%; border-right:1px solid #000; padding:8px 10px;"><strong style="font-size:13px; text-transform:uppercase;">CA KIRAN K. SHINDE &amp;
+        CO.</strong><br><span style="font-size:11px;">Chartered Accountants &bull;
+        FRN: 147829W</span><br> <span style="font-size:11px;" >Office: Pune / Palghar, Maharashtra &bull;
+
+        Code: 27</span><br><br> <span style="font-size:10px; color:#555;" >Buyer (Bill to):</span><br> <strong style="font-size:12px;" >$ {
+          clientName
+        }
+
+        </strong><br><span style="font-size:11px;">State Name: Maharashtra,
+        Code: 27</span></div><div style="width:48%;"><div style="display:flex; border-bottom:1px solid #000;"><div style="width:50%; border-right:1px solid #000; padding:6px 8px;"><span style="font-size:10px; color:#555;">Invoice No.</span><br><strong>$ {
+          voucherRef
+        }
+
+        </strong></div><div style="width:50%; padding:6px 8px;"><span style="font-size:10px; color:#555;">Dated</span><br><strong>$ {
+          invoiceDate
+        }
+
+        </strong></div></div><div style="padding:6px 8px; border-bottom:1px solid #000;"><span style="font-size:10px; color:#555;">Reference No. &amp;
+
+        Date</span><br><strong>$ {
+          invoiceId
+        }
+
+        dt. $ {
+          invoiceDate
+        }
+
+        </strong></div><div style="padding:6px 8px;"><span style="font-size:10px; color:#555;">Mode/Terms of Payment</span><br><strong>Immediate / Instant UPI</strong></div></div></div><table style="width:100%; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #000; background:#fafafa; font-weight:700;"><th style="width:35px; border-right:1px solid #000; padding:6px 8px; text-align:left;">Sl</th><th style="border-right:1px solid #000; padding:6px 8px; text-align:left;">Description of Services</th><th style="width:70px; border-right:1px solid #000; padding:6px 8px; text-align:left;">SAC</th><th style="width:110px; padding:6px 8px; text-align:right;">Amount (INR)</th></tr></thead><tbody><tr style="height:140px; vertical-align:top;"><td style="border-right:1px solid #000; padding:6px 8px;">1</td><td style="border-right:1px solid #000; padding:6px 8px;"><strong>Professional Fees Account</strong><br><span style="color:#333;">$ {
+          serviceName
+        }
+
+        </span></td><td style="border-right:1px solid #000; padding:6px 8px;">998231</td><td style="padding:6px 8px; text-align:right;"><strong>₹ $ {
+          formattedAmount
+        }
+
+        </strong></td></tr><tr style="border-top:1px solid #000; font-weight:700;"><td colspan="3" style="border-right:1px solid #000; text-align:right; padding:6px 8px;">Total Amount Due:</td><td style="padding:6px 8px; text-align:right; color:#059669; font-size:13px;">₹ $ {
+          formattedAmount
+        }
+
+        </td></tr></tbody></table><div style="padding:8px 10px; border-top:1px solid #000; border-bottom:1px solid #000; font-size:10px; color:#444;"><strong>Declaration:</strong>We declare that this invoice shows the actual price of the professional services described and that all particulars are true and correct. </div><div style="display:flex; justify-content:space-between; padding:12px 10px 8px;"><div style="font-size:10px;"><strong>Bank Details:</strong>HDFC Bank Ltd | A/C: 50200067891234 | IFSC: HDFC0000123<br><strong>UPI ID:</strong>7506647791@hdfcbank </div><div style="text-align:right; font-size:11px;">For <strong>CA KIRAN K. SHINDE &amp;
+        CO.</strong><br><br><span style="font-size:10px; color:#555;">Authorised Signatory</span></div></div></div>`;
+      }
+
+      function openInvoicePdfModal() {
+        const modal=document.getElementById('invoicePdfModal');
+        const content=document.getElementById('invoicePdfContent');
+
+        if (modal && content) {
+          content.innerHTML=renderAuthenticTallyInvoice();
+          modal.style.display='flex';
+        }
+      }
+
+      function closeInvoicePdfModal() {
+        const modal=document.getElementById('invoicePdfModal');
+        if (modal) modal.style.display='none';
+      }
+
+      function printInvoicePdf() {
+        window.print();
+      }
+
+      // Auto-open PDF if requested via ?pdf=1
+      if (params.get('pdf')==='1') {
+        openInvoicePdfModal();
+      }
+
+      </script></body></html>

@@ -2,7 +2,7 @@
 CA Kiran K. Shinde & Co. — WhatsApp Web Auto-Dispatcher (Python Bot)
 Connects the Cloud Admin Panel (/api/tally/whatsapp) directly to your
 logged-in Office WhatsApp Web so every framed message AND authentic
-1:1 Tally Tax Invoice PDF is delivered automatically without manual clicking.
+1:1 Tally Tax Invoice PDF is delivered automatically with ZERO page reloads.
 """
 
 import argparse
@@ -280,47 +280,69 @@ def build_tally_invoice_html(item: dict) -> str:
 </html>"""
 
 
-def generate_tally_invoice_pdf(context, item: dict) -> str:
-    os.makedirs(INVOICES_DIR, exist_ok=True)
-    invoice_id = str(item.get("invoiceId") or item.get("sourceId") or "INV").strip()
-    client_name = str(item.get("clientName") or "Client").strip()
-    safe_inv = re.sub(r"[^a-zA-Z0-9_-]", "_", invoice_id)
-    safe_client = re.sub(r"[^a-zA-Z0-9_-]", "_", client_name)[:24]
-    pdf_path = os.path.join(INVOICES_DIR, f"Invoice_{safe_inv}_{safe_client}.pdf")
+class HeadlessPdfRenderer:
+    """Keeps a lightweight invisible headless Chrome open solely for instant PDF printing,
+    so no extra tabs ever flash inside the visible WhatsApp Web browser window."""
 
-    html_doc = build_tally_invoice_html(item)
-    pdf_page = context.new_page()
-    try:
-        pdf_page.set_content(html_doc, wait_until="load")
-        cdp = context.new_cdp_session(pdf_page)
-        res = cdp.send(
-            "Page.printToPDF",
-            {
-                "printBackground": True,
-                "paperWidth": 8.27,
-                "paperHeight": 11.69,
-                "marginTop": 0.35,
-                "marginBottom": 0.35,
-                "marginLeft": 0.35,
-                "marginRight": 0.35,
-            },
-        )
-        pdf_bytes = base64.b64decode(res["data"])
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
-        log("PDF", f"Generated 1:1 Tally Bill PDF ({len(pdf_bytes):,} bytes): {os.path.basename(pdf_path)}")
-        return pdf_path
-    finally:
+    def __init__(self, pw):
+        self._pw = pw
+        self._browser = None
+
+    def _ensure_browser(self):
+        if self._browser and self._browser.is_connected():
+            return self._browser
+        for channel in ("chrome", "msedge", None):
+            try:
+                kwargs = {"headless": True}
+                if channel:
+                    kwargs["channel"] = channel
+                self._browser = self._pw.chromium.launch(**kwargs)
+                return self._browser
+            except Exception:
+                pass
+        raise RuntimeError("No headless browser available for PDF rendering.")
+
+    def render_invoice_pdf(self, item: dict) -> str:
+        os.makedirs(INVOICES_DIR, exist_ok=True)
+        invoice_id = str(item.get("invoiceId") or item.get("sourceId") or "INV").strip()
+        client_name = str(item.get("clientName") or "Client").strip()
+        safe_inv = re.sub(r"[^a-zA-Z0-9_-]", "_", invoice_id)
+        safe_client = re.sub(r"[^a-zA-Z0-9_-]", "_", client_name)[:24]
+        pdf_path = os.path.join(INVOICES_DIR, f"Invoice_{safe_inv}_{safe_client}.pdf")
+
+        html_doc = build_tally_invoice_html(item)
+        browser = self._ensure_browser()
+        pdf_page = browser.new_page()
         try:
-            pdf_page.close()
-        except Exception:
-            pass
+            pdf_page.set_content(html_doc, wait_until="load")
+            pdf_bytes = pdf_page.pdf(
+                format="A4",
+                print_background=True,
+                margin={"top": "10mm", "bottom": "10mm", "left": "10mm", "right": "10mm"},
+            )
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_bytes)
+            log("PDF", f"Generated 1:1 Tally Bill PDF ({len(pdf_bytes):,} bytes): {os.path.basename(pdf_path)}")
+            return pdf_path
+        finally:
+            try:
+                pdf_page.close()
+            except Exception:
+                pass
+
+    def close(self):
+        if self._browser:
+            try:
+                self._browser.close()
+            except Exception:
+                pass
+            self._browser = None
 
 
 def api_request(url: str, method: str = "GET", payload: dict | None = None, token: str = "") -> dict:
     headers = {
         "x-bridge-token": token,
-        "User-Agent": "KiranShinde-WhatsApp-Dispatcher/1.1",
+        "User-Agent": "KiranShinde-WhatsApp-Dispatcher/1.2",
         "Accept": "application/json",
     }
     data_bytes = None
@@ -358,6 +380,16 @@ def launch_whatsapp_browser(playwright):
     raise RuntimeError("No compatible Chromium/Chrome/Edge browser found.")
 
 
+def is_whatsapp_ready(page) -> bool:
+    for sel in ("#pane-side", 'div[aria-label="Chat list"]', '[data-testid="chat-list"]'):
+        try:
+            if page.locator(sel).first.is_visible(timeout=250):
+                return True
+        except Exception:
+            pass
+    return False
+
+
 def ensure_logged_in(page, timeout_sec: int = 300) -> bool:
     if "web.whatsapp.com" not in page.url:
         page.goto("https://web.whatsapp.com", wait_until="domcontentloaded")
@@ -365,16 +397,11 @@ def ensure_logged_in(page, timeout_sec: int = 300) -> bool:
     log("INFO", "Checking WhatsApp Web login session...")
     qr_prompted = False
     deadline = time.time() + timeout_sec
-    chat_selectors = ["#pane-side", 'div[aria-label="Chat list"]', '[data-testid="chat-list"]']
 
     while time.time() < deadline:
-        for sel in chat_selectors:
-            try:
-                if page.locator(sel).first.is_visible(timeout=400):
-                    log("OK", "Office WhatsApp Web is logged in and ready!")
-                    return True
-            except Exception:
-                pass
+        if is_whatsapp_ready(page):
+            log("OK", "Office WhatsApp Web is logged in and ready!")
+            return True
 
         if not qr_prompted:
             try:
@@ -388,6 +415,160 @@ def ensure_logged_in(page, timeout_sec: int = 300) -> bool:
     return False
 
 
+def paste_text_into_composer(page, composer_loc, message: str) -> None:
+    composer_loc.click()
+    time.sleep(0.2)
+    # Try instant synthetic ClipboardEvent paste (works even if Chrome window is backgrounded/minimized)
+    pasted = False
+    try:
+        pasted = page.evaluate(
+            """(msg) => {
+                const box = document.querySelector('#main footer div[contenteditable="true"]')
+                         || document.querySelector('footer div[contenteditable="true"]');
+                if (!box) return false;
+                box.focus();
+                const sel = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(box);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                const dt = new DataTransfer();
+                dt.setData('text/plain', msg);
+                const ev = new ClipboardEvent('paste', {
+                    clipboardData: dt,
+                    bubbles: true,
+                    cancelable: true
+                });
+                box.dispatchEvent(ev);
+                return (box.innerText || '').trim().length > 0;
+            }""",
+            message,
+        )
+    except Exception:
+        pasted = False
+
+    if not pasted:
+        lines = message.split("\n")
+        for idx, line in enumerate(lines):
+            if idx > 0:
+                page.keyboard.press("Shift+Enter")
+            if line:
+                page.keyboard.insert_text(line)
+
+
+def open_chat_in_app_without_reload(page, phone: str) -> tuple[bool, str | None]:
+    """Switches to +phone inside the already-loaded WhatsApp Web tab using New Chat search,
+    avoiding page.goto() reloads so WhatsApp Web stays open continuously."""
+    if not is_whatsapp_ready(page):
+        return False, "WhatsApp Web sidebar not loaded yet"
+
+    # Reset any open sub-drawer smoothly
+    for _ in range(2):
+        back_btn = page.locator('button[aria-label="Back"], span[data-icon="back"]').first
+        try:
+            if back_btn.is_visible(timeout=200):
+                back_btn.click()
+                time.sleep(0.25)
+        except Exception:
+            break
+
+    new_chat_selectors = [
+        'button[aria-label="New chat"]',
+        'div[aria-label="New chat"]',
+        'button[title="New chat"]',
+        'span[data-icon="new-chat-outline"]',
+        'span[data-icon="chat"]',
+    ]
+    opened_drawer = False
+    for sel in new_chat_selectors:
+        try:
+            btn = page.locator(sel).first
+            if btn.is_visible(timeout=600):
+                btn.click()
+                opened_drawer = True
+                break
+        except Exception:
+            pass
+
+    if not opened_drawer:
+        return False, "New chat button not found"
+
+    time.sleep(0.45)
+
+    # Search input inside New Chat drawer
+    search_selectors = [
+        'div[contenteditable="true"][aria-label*="Search"]',
+        'div[aria-label="Search name or number"]',
+        'div[contenteditable="true"][data-tab="3"]',
+    ]
+    search_box = None
+    for ssel in search_selectors:
+        try:
+            loc = page.locator(ssel).first
+            if loc.is_visible(timeout=1000):
+                search_box = loc
+                break
+        except Exception:
+            pass
+
+    if not search_box:
+        return False, "New chat search box not visible"
+
+    search_box.click()
+    page.keyboard.press("Control+a")
+    page.keyboard.press("Backspace")
+    query_phone = f"+{phone}"
+    page.keyboard.insert_text(query_phone)
+
+    last_digits = phone[-8:]
+    deadline = time.time() + 10.0
+
+    while time.time() < deadline:
+        try:
+            status = page.evaluate(
+                """(tail) => {
+                    const text = document.body ? document.body.innerText : '';
+                    if (text.includes('No results found for')) {
+                        return { state: 'NOT_FOUND' };
+                    }
+                    const items = Array.from(document.querySelectorAll('[role="listitem"], [role="button"]'));
+                    for (const el of items) {
+                        if (el.closest('#main')) continue;
+                        const t = (el.innerText || '').trim();
+                        if (!t) continue;
+                        const lower = t.toLowerCase();
+                        if (lower.startsWith('new group') || lower.startsWith('new contact') || lower.startsWith('new community')) continue;
+                        const onlyDigits = t.replace(/\\D/g, '');
+                        if (onlyDigits.includes(tail) || lower.includes('not in your contacts')) {
+                            el.click();
+                            return { state: 'CLICKED_MATCH', label: t.slice(0, 40) };
+                        }
+                    }
+                    return { state: 'WAITING' };
+                }""",
+                last_digits,
+            )
+            st = status.get("state")
+            if st == "NOT_FOUND":
+                page.keyboard.press("Escape")
+                time.sleep(0.2)
+                page.keyboard.press("Escape")
+                return False, f"Phone +{phone} is not registered on WhatsApp"
+            if st == "CLICKED_MATCH":
+                time.sleep(0.6)
+                comp = page.locator('#main footer div[contenteditable="true"], footer div[contenteditable="true"]').last
+                if comp.is_visible(timeout=4000):
+                    return True, None
+        except Exception:
+            pass
+        time.sleep(0.45)
+
+    # Dismiss drawer before fallback
+    page.keyboard.press("Escape")
+    time.sleep(0.2)
+    return False, "No direct match in New Chat drawer"
+
+
 def attach_and_send_pdf(page, pdf_path: str) -> tuple[bool, str | None]:
     send_selectors = [
         'button[aria-label="Send"]',
@@ -396,6 +577,7 @@ def attach_and_send_pdf(page, pdf_path: str) -> tuple[bool, str | None]:
         'span[data-icon="send"]',
     ]
     attach_selectors = [
+        '#main footer button[aria-label="Attach"]',
         'footer button[aria-label="Attach"]',
         'button[aria-label="Attach"]',
         'div[aria-label="Attach"]',
@@ -421,7 +603,6 @@ def attach_and_send_pdf(page, pdf_path: str) -> tuple[bool, str | None]:
 
     time.sleep(0.8)
 
-    # Prefer hidden Document <input type="file" accept="*"> to bypass Windows native File Dialog
     attached = False
     try:
         doc_input = page.locator('input[type="file"][accept="*"]').first
@@ -456,7 +637,6 @@ def attach_and_send_pdf(page, pdf_path: str) -> tuple[bool, str | None]:
         except Exception as exc:
             return False, f"Document upload selector failed: {exc}"
 
-    # Wait for PDF preview screen & Send button
     deadline = time.time() + 18
     while time.time() < deadline:
         for ssel in send_selectors:
@@ -480,23 +660,64 @@ def send_whatsapp_message(page, raw_phone: str, message: str, attach_pdf: str | 
     if len(phone) < 11:
         return False, f"Invalid phone number: '{raw_phone}'"
 
-    encoded_msg = urllib.parse.quote(message)
-    send_url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_msg}"
-
-    log("INFO", f"Opening chat for +{phone}...")
-    page.goto(send_url, wait_until="domcontentloaded")
-
     send_selectors = [
         'button[aria-label="Send"]',
         'div[aria-label="Send"]',
         'span[data-icon="wds-ic-send-filled"]',
         'span[data-icon="send"]',
     ]
+
+    # Step 1: Try ZERO-RELOAD in-app chat opening first!
+    log("INFO", f"Switching in-app to +{phone} (no page reload)...")
+    in_app_ok, in_app_err = open_chat_in_app_without_reload(page, phone)
+
+    if in_app_ok:
+        composer = page.locator('#main footer div[contenteditable="true"], footer div[contenteditable="true"]').last
+        paste_text_into_composer(page, composer, message)
+        time.sleep(0.9)
+
+        sent_clicked = False
+        for ssel in send_selectors:
+            try:
+                btn = page.locator(ssel).last
+                if btn.is_visible(timeout=600):
+                    btn.click()
+                    sent_clicked = True
+                    break
+            except Exception:
+                pass
+        if not sent_clicked:
+            composer.focus()
+            page.keyboard.press("Enter")
+
+        time.sleep(2.0)
+
+        if attach_pdf and os.path.exists(attach_pdf):
+            pdf_ok, pdf_err = attach_and_send_pdf(page, attach_pdf)
+            if not pdf_ok:
+                log("WARN", f"Retrying PDF attach once ({pdf_err})...")
+                time.sleep(1.0)
+                pdf_ok, pdf_err = attach_and_send_pdf(page, attach_pdf)
+            if not pdf_ok:
+                return False, f"Text sent, but Bill PDF attachment failed: {pdf_err}"
+
+        time.sleep(1.2)
+        return True, None
+
+    if in_app_err and "not registered on WhatsApp" in in_app_err:
+        return False, in_app_err
+
+    # Step 2: URL navigation fallback only if New Chat UI wasn't matched
+    log("INFO", f"New Chat lookup note ({in_app_err}); opening chat via URL fallback...")
+    encoded_msg = urllib.parse.quote(message)
+    send_url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_msg}"
+    page.goto(send_url, wait_until="domcontentloaded")
+
     composer_selectors = [
+        '#main footer div[contenteditable="true"]',
         'div[contenteditable="true"][data-tab="10"]',
         'footer div[contenteditable="true"]',
     ]
-
     deadline = time.time() + 45
     composer_el = None
 
@@ -516,10 +737,9 @@ def send_whatsapp_message(page, raw_phone: str, message: str, attach_pdf: str | 
         for sel in composer_selectors:
             try:
                 loc = page.locator(sel).last
-                if loc.is_visible(timeout=300):
-                    if loc.inner_text(timeout=300).strip():
-                        composer_el = loc
-                        break
+                if loc.is_visible(timeout=300) and loc.inner_text(timeout=300).strip():
+                    composer_el = loc
+                    break
             except Exception:
                 pass
 
@@ -551,7 +771,7 @@ def send_whatsapp_message(page, raw_phone: str, message: str, attach_pdf: str | 
                 if not pdf_ok:
                     return False, f"Text sent, but Bill PDF attachment failed: {pdf_err}"
 
-            time.sleep(1.5)
+            time.sleep(1.2)
             return True, None
 
         time.sleep(0.6)
@@ -572,22 +792,26 @@ def run_daemon(config: dict, login_only: bool = False) -> None:
 
     with sync_playwright() as pw:
         context = launch_whatsapp_browser(pw)
+        pdf_renderer = HeadlessPdfRenderer(pw)
         page = context.pages[0] if context.pages else context.new_page()
 
         if not ensure_logged_in(page):
             log("ERR", "WhatsApp login timed out. Please try again.")
+            pdf_renderer.close()
             context.close()
             return
 
         if login_only:
             log("OK", "Login verified and saved! Closing login check.")
+            pdf_renderer.close()
             context.close()
             return
 
         queue_url = f"{site_url}/api/tally/whatsapp?status=pending"
         patch_url = f"{site_url}/api/tally/whatsapp"
+        seen_ids = set()
 
-        log("INFO", f"Polling {queue_url} every {poll_sec}s (Text + 1:1 Bill PDF enabled).")
+        log("INFO", f"Polling {queue_url} every {poll_sec}s (Zero-Reload SPA + Headless 1:1 PDF).")
 
         try:
             while True:
@@ -597,6 +821,10 @@ def run_daemon(config: dict, login_only: bool = False) -> None:
 
                     for item in items:
                         item_id = item.get("id")
+                        if item_id in seen_ids:
+                            continue
+                        seen_ids.add(item_id)
+
                         phone = item.get("phone", "")
                         client = item.get("clientName", "Client")
                         message = item.get("message", "")
@@ -612,17 +840,17 @@ def run_daemon(config: dict, login_only: bool = False) -> None:
                                 payload={
                                     "id": item_id,
                                     "status": "WA_PROCESSING",
-                                    "sentBy": "Python WhatsApp Bot (Generating PDF & Sending...)",
+                                    "sentBy": "Python WhatsApp Bot (Sending...)",
                                 },
                                 token=token,
                             )
-                        except Exception:
-                            pass
+                        except Exception as claim_exc:
+                            log("WARN", f"Could not claim {item_id}: {claim_exc}")
 
                         pdf_path = None
                         if should_attach_pdf:
                             try:
-                                pdf_path = generate_tally_invoice_pdf(context, item)
+                                pdf_path = pdf_renderer.render_invoice_pdf(item)
                             except Exception as pdf_exc:
                                 log("WARN", f"PDF generation warning: {pdf_exc}")
 
@@ -650,6 +878,7 @@ def run_daemon(config: dict, login_only: bool = False) -> None:
         except KeyboardInterrupt:
             log("INFO", "Stopping WhatsApp Auto-Dispatcher...")
         finally:
+            pdf_renderer.close()
             context.close()
 
 
@@ -685,9 +914,9 @@ def run_test_pdf() -> None:
         "voucherNo": "529",
     }
     with sync_playwright() as pw:
-        context = launch_whatsapp_browser(pw)
-        pdf_path = generate_tally_invoice_pdf(context, sample_item)
-        context.close()
+        renderer = HeadlessPdfRenderer(pw)
+        pdf_path = renderer.render_invoice_pdf(sample_item)
+        renderer.close()
         log("OK", f"Test PDF created cleanly at: {pdf_path}")
 
 

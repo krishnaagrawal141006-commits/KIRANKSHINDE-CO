@@ -941,6 +941,7 @@ const AdminCRM = {
   },
 
   async queueWhatsAppBotDispatch() {
+    if (this._isQueuingWa) return;
     const phoneInput = document.getElementById('reminderPhoneInput');
     const msgText = document.getElementById('reminderMessageText');
     const btn = document.getElementById('btnAutoSendWhatsAppBot');
@@ -961,6 +962,13 @@ const AdminCRM = {
       msgText.focus();
       return;
     }
+
+    const sig = `${phone}|${message.slice(0, 80)}`;
+    if (this._lastQueuedWaSig === sig && (Date.now() - (this._lastQueuedWaTime || 0)) < 12000) {
+      alert('This exact message was just queued a few seconds ago! Wait for the Python Bot to finish delivering it.');
+      return;
+    }
+    this._isQueuingWa = true;
 
     const showBanner = (bg, color, border, html) => {
       if (!banner) return;
@@ -1009,17 +1017,20 @@ const AdminCRM = {
         throw new Error(data.error || 'Failed to queue WhatsApp dispatch');
       }
 
+      this._lastQueuedWaSig = sig;
+      this._lastQueuedWaTime = Date.now();
       const queuedId = data.queued && data.queued.id;
       const pdfLabel = attachPdf ? ' (with 1:1 Bill PDF)' : '';
       showBanner('#f0fdf4', '#166534', '#86efac', `<i class="fa-solid fa-clock"></i> Queued${pdfLabel} for <strong>+${phone}</strong>! Office PC Python Bot will send automatically in ~4s...`);
 
       // Poll delivery status for up to 36s
+      if (this._waStatusPollTimer) clearInterval(this._waStatusPollTimer);
       if (queuedId) {
         let attempts = 0;
-        const pollTimer = setInterval(async () => {
+        this._waStatusPollTimer = setInterval(async () => {
           attempts++;
-          if (attempts > 12) {
-            clearInterval(pollTimer);
+          if (attempts > 15) {
+            clearInterval(this._waStatusPollTimer);
             return;
           }
           try {
@@ -1027,10 +1038,10 @@ const AdminCRM = {
             const checkData = await checkRes.json().catch(() => ({}));
             const row = (checkData.queue || []).find(item => item.id === queuedId);
             if (row && row.status === 'WA_SENT') {
-              clearInterval(pollTimer);
+              clearInterval(this._waStatusPollTimer);
               showBanner('#dcfce7', '#14532d', '#4ade80', `<i class="fa-solid fa-check-double"></i> <strong>DELIVERED!</strong> Office WhatsApp Bot sent this message to +${phone}.`);
             } else if (row && row.status === 'WA_FAILED') {
-              clearInterval(pollTimer);
+              clearInterval(this._waStatusPollTimer);
               showBanner('#fef2f2', '#991b1b', '#fecaca', `<i class="fa-solid fa-triangle-exclamation"></i> Bot reported error: ${row.errorMessage || 'Check WhatsApp login on Office PC'}`);
             }
           } catch (_) {}
@@ -1039,6 +1050,7 @@ const AdminCRM = {
     } catch (err) {
       showBanner('#fef2f2', '#991b1b', '#fecaca', `<i class="fa-solid fa-circle-xmark"></i> Dispatch Queue Error: ${err.message}`);
     } finally {
+      this._isQueuingWa = false;
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Auto-Send via Tally PC Bot';

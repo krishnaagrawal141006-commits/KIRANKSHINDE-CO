@@ -1,3 +1,4 @@
+
 // UI Controller for Kiran Tally Bridge Desktop App (v1.3)
 
 const btnMinimize = document.getElementById('btnMinimize');
@@ -643,4 +644,8 @@ window.api?.onWhatsAppVoucherReady((data) => {
     });
   }
 });
+
+
+
+
 

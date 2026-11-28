@@ -12,6 +12,7 @@ import io
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.error
@@ -779,12 +780,35 @@ def send_whatsapp_message(page, raw_phone: str, message: str, attach_pdf: str | 
     return False, "Timed out waiting for WhatsApp Web chat composer to load"
 
 
+def acquire_singleton_lock(port: int = 49751):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    try:
+        sock.bind(("127.0.0.1", port))
+        sock.listen(5)
+        return sock
+    except OSError:
+        try:
+            sock.close()
+        except Exception:
+            pass
+        return None
+
+
 def run_daemon(config: dict, login_only: bool = False) -> None:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         log("ERR", "Playwright not installed! Run START WHATSAPP BOT.bat to auto-install.")
         sys.exit(1)
+
+    lock_sock = None
+    if not login_only:
+        lock_sock = acquire_singleton_lock(49751)
+        if lock_sock is None:
+            log("INFO", "WhatsApp Auto-Dispatcher is already active on this PC (port 49751). Keeping existing bot running.")
+            return
 
     site_url = config["siteUrl"].rstrip("/")
     token = config["bridgeToken"]
@@ -880,6 +904,11 @@ def run_daemon(config: dict, login_only: bool = False) -> None:
         finally:
             pdf_renderer.close()
             context.close()
+            if lock_sock:
+                try:
+                    lock_sock.close()
+                except Exception:
+                    pass
 
 
 def run_single_send(phone: str, message: str, pdf_path: str | None) -> None:

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, shell, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 const { spawn } = require('child_process');
 const TallySyncEngine = require('./sync-engine');
 const BankStatementConverter = require('./bank-converter');
@@ -365,8 +366,32 @@ ipcMain.on('whatsapp-open-web', () => {
   getOrCreateWhatsAppWindow();
 });
 
-ipcMain.handle('whatsapp-launch-python-bot', async () => {
+function isPythonWaBotRunning(port = 49751) {
+  return new Promise((resolve) => {
+    const sock = new net.Socket();
+    let done = false;
+    const finish = (val) => {
+      if (!done) {
+        done = true;
+        try { sock.destroy(); } catch (e) {}
+        resolve(val);
+      }
+    };
+    sock.setTimeout(600);
+    sock.once('connect', () => finish(true));
+    sock.once('timeout', () => finish(false));
+    sock.once('error', () => finish(false));
+    sock.connect(port, '127.0.0.1');
+  });
+}
+
+async function launchPythonWaBotIfNotRunning() {
   try {
+    const alreadyActive = await isPythonWaBotRunning(49751);
+    if (alreadyActive) {
+      return { ok: true, alreadyRunning: true };
+    }
+
     const candidates = [
       path.resolve(__dirname, '..', 'START WHATSAPP BOT.bat'),
       path.resolve(__dirname, '..', '..', 'START WHATSAPP BOT.bat'),
@@ -377,24 +402,31 @@ ipcMain.handle('whatsapp-launch-python-bot', async () => {
     if (!batPath) {
       return { ok: false, error: 'START WHATSAPP BOT.bat not found in workspace folder.' };
     }
-    // Use shell.openPath (ShellExecuteW) so spaces and '&' in 'kiran k shinde & co' never break cmd.exe!
+
     const openErr = await shell.openPath(batPath);
     if (openErr) {
+      const cleanEnv = { ...process.env };
+      delete cleanEnv.ELECTRON_RUN_AS_NODE;
       const batDir = path.dirname(batPath);
       const batFile = path.basename(batPath);
       const child = spawn('cmd.exe', ['/s', '/c', `start "Kiran WhatsApp Bot" "${batFile}"`], {
         detached: true,
         stdio: 'ignore',
         cwd: batDir,
+        env: cleanEnv,
         windowsVerbatimArguments: true
       });
       child.unref();
     }
-    engine.log('success', '🐍 Launched Python WhatsApp Auto-Dispatcher Bot!');
-    return { ok: true, batPath };
+    engine.log('success', '🐍 Python WhatsApp Auto-Dispatcher Bot active!');
+    return { ok: true, alreadyRunning: false, batPath };
   } catch (err) {
     return { ok: false, error: err.message };
   }
+}
+
+ipcMain.handle('whatsapp-launch-python-bot', async () => {
+  return launchPythonWaBotIfNotRunning();
 });
 
 ipcMain.handle('whatsapp-fetch-cloud-queue', async () => {
@@ -613,6 +645,11 @@ if (!gotTheLock) {
 
     // 3. Create Tray
     createTray();
+
+    // 4. Auto-start Python WhatsApp Auto-Dispatcher if not already listening
+    setTimeout(() => {
+      launchPythonWaBotIfNotRunning().catch(() => {});
+    }, 1500);
   });
 }
 

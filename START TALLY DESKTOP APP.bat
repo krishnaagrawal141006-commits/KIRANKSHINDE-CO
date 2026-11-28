@@ -1,4 +1,5 @@
 @echo off
+set "ELECTRON_RUN_AS_NODE="
 cd /d "%~dp0"
 title CA Kiran K. Shinde ^& Co. - Tally Bridge Desktop Launcher
 color 0b
@@ -11,7 +12,7 @@ echo.
 echo [1/2] Closing any old background or tray instances...
 taskkill /F /IM "Kiran Tally Bridge.exe" /IM "electron.exe" >nul 2>&1
 
-echo [2/2] Launching fresh Kiran Tally Bridge Desktop App...
+echo [2/2] Launching fresh Kiran Tally Bridge Desktop App + WhatsApp Bot...
 start "" "%~dp0tally-desktop-app\dist\win-unpacked\Kiran Tally Bridge.exe"
 
 echo App started! You can close this command window.

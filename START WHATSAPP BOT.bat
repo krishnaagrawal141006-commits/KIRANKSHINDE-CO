@@ -2,6 +2,7 @@
 
 
 @echo off
+set "ELECTRON_RUN_AS_NODE="
 cd /d "%~dp0tally-connector"
 title CA Kiran K. Shinde ^& Co. - WhatsApp Python Auto-Dispatcher
 color 0a

@@ -542,7 +542,9 @@ btnLaunchPythonWaBot?.addEventListener('click', async () => {
   try {
     const res = await window.api?.launchPythonWaBot();
     if (res && res.ok) {
-      btnLaunchPythonWaBot.innerHTML = '<i class="fa-solid fa-check"></i> Python Bot Running!';
+      btnLaunchPythonWaBot.innerHTML = res.alreadyRunning
+        ? '<i class="fa-solid fa-check-double"></i> Python Bot Already Active!'
+        : '<i class="fa-solid fa-check"></i> Python Bot Running!';
     } else {
       alert('Could not launch Python Bot: ' + (res?.error || 'Unknown error'));
     }

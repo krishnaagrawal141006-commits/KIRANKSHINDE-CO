@@ -14,6 +14,7 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let whatsappWindow = null;
+let waBotProcess = null;
 
 function getOrCreateWhatsAppWindow() {
   if (whatsappWindow && !whatsappWindow.isDestroyed()) {
@@ -377,7 +378,7 @@ function isPythonWaBotRunning(port = 49751) {
         resolve(val);
       }
     };
-    sock.setTimeout(600);
+    sock.setTimeout(300);
     sock.once('connect', () => finish(true));
     sock.once('timeout', () => finish(false));
     sock.once('error', () => finish(false));
@@ -385,42 +386,72 @@ function isPythonWaBotRunning(port = 49751) {
   });
 }
 
+function resolvePythonBotPaths() {
+  const roots = [
+    path.resolve(__dirname, '..'),
+    path.resolve(__dirname, '..', '..'),
+    path.resolve(process.resourcesPath || '', '..', '..', '..'),
+    'E:\\kiran k shinde & co'
+  ];
+  for (const root of roots) {
+    const venvPy = path.join(root, 'tally-connector', '.venv', 'Scripts', 'python.exe');
+    const script = path.join(root, 'tally-connector', 'whatsapp_dispatcher.py');
+    if (fs.existsSync(script)) {
+      return {
+        pythonExe: fs.existsSync(venvPy) ? venvPy : 'python',
+        scriptPath: script,
+        cwd: path.join(root, 'tally-connector')
+      };
+    }
+  }
+  return null;
+}
+
 async function launchPythonWaBotIfNotRunning() {
   try {
+    if (waBotProcess && waBotProcess.exitCode === null && !waBotProcess.killed) {
+      return { ok: true, alreadyRunning: true };
+    }
     const alreadyActive = await isPythonWaBotRunning(49751);
     if (alreadyActive) {
       return { ok: true, alreadyRunning: true };
     }
 
-    const candidates = [
-      path.resolve(__dirname, '..', 'START WHATSAPP BOT.bat'),
-      path.resolve(__dirname, '..', '..', 'START WHATSAPP BOT.bat'),
-      path.resolve(process.resourcesPath || '', '..', '..', '..', 'START WHATSAPP BOT.bat'),
-      'E:\\kiran k shinde & co\\START WHATSAPP BOT.bat'
-    ];
-    const batPath = candidates.find(p => p && fs.existsSync(p));
-    if (!batPath) {
-      return { ok: false, error: 'START WHATSAPP BOT.bat not found in workspace folder.' };
+    const paths = resolvePythonBotPaths();
+    if (!paths) {
+      return { ok: false, error: 'whatsapp_dispatcher.py not found in tally-connector folder.' };
     }
 
-    const openErr = await shell.openPath(batPath);
-    if (openErr) {
-      const cleanEnv = { ...process.env };
-      delete cleanEnv.ELECTRON_RUN_AS_NODE;
-      const batDir = path.dirname(batPath);
-      const batFile = path.basename(batPath);
-      const child = spawn('cmd.exe', ['/s', '/c', `start "Kiran WhatsApp Bot" "${batFile}"`], {
-        detached: true,
-        stdio: 'ignore',
-        cwd: batDir,
-        env: cleanEnv,
-        windowsVerbatimArguments: true
-      });
-      child.unref();
-    }
-    engine.log('success', '🐍 Python WhatsApp Auto-Dispatcher Bot active!');
-    return { ok: true, alreadyRunning: false, batPath };
+    const cleanEnv = { ...process.env };
+    delete cleanEnv.ELECTRON_RUN_AS_NODE;
+
+    // Spawn Python directly (bypasses shell.openPath .bat blockers) and stream logs into Dashboard
+    waBotProcess = spawn(paths.pythonExe, ['-u', paths.scriptPath], {
+      cwd: paths.cwd,
+      env: cleanEnv,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    const emitLines = (chunk, levelOverride) => {
+      const lines = String(chunk || '').split(/\r?\n/).filter(l => l.trim());
+      for (const line of lines) {
+        const lvl = levelOverride || (line.includes('[ERR]') || line.includes('[FAIL]') ? 'error' : (line.includes('[OK]') || line.includes('[SUCCESS]') ? 'success' : 'info'));
+        engine.log(lvl, `[WA-BOT] ${line}`);
+      }
+    };
+
+    waBotProcess.stdout?.on('data', (d) => emitLines(d, null));
+    waBotProcess.stderr?.on('data', (d) => emitLines(d, 'warn'));
+    waBotProcess.on('close', (code) => {
+      engine.log('warn', `[WA-BOT] Python WhatsApp Bot stopped (code ${code}).`);
+      waBotProcess = null;
+    });
+
+    engine.log('success', '🐍 Python WhatsApp Auto-Dispatcher Bot started directly!');
+    return { ok: true, alreadyRunning: false, scriptPath: paths.scriptPath };
   } catch (err) {
+    engine.log('error', `[WA-BOT] Launch error: ${err.message}`);
     return { ok: false, error: err.message };
   }
 }
@@ -656,6 +687,9 @@ if (!gotTheLock) {
 app.on('before-quit', () => {
   isQuitting = true;
   engine.stop();
+  if (waBotProcess && waBotProcess.exitCode === null) {
+    try { waBotProcess.kill(); } catch (e) {}
+  }
 });
 
 app.on('window-all-closed', (e) => {

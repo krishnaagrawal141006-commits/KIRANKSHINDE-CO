@@ -31,11 +31,18 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 PROFILE_DIR = os.path.join(BASE_DIR, "wa_session_profile")
 INVOICES_DIR = os.path.join(BASE_DIR, "generated_invoices")
+LOG_PATH = os.path.join(BASE_DIR, "wa_bot_live.log")
 
 
 def log(level: str, msg: str) -> None:
     now = datetime.now().strftime("%H:%M:%S")
-    print(f"[{now}] [{level}] {msg}", flush=True)
+    line = f"[{now}] [{level}] {msg}"
+    print(line, flush=True)
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8", errors="replace") as lf:
+            lf.write(line + "\n")
+    except Exception:
+        pass
 
 
 def load_config() -> dict:
@@ -809,6 +816,11 @@ def run_daemon(config: dict, login_only: bool = False) -> None:
         if lock_sock is None:
             log("INFO", "WhatsApp Auto-Dispatcher is already active on this PC (port 49751). Keeping existing bot running.")
             return
+        try:
+            with open(LOG_PATH, "w", encoding="utf-8") as lf:
+                lf.write(f"=== Session Started {datetime.now().isoformat()} ===\n")
+        except Exception:
+            pass
 
     site_url = config["siteUrl"].rstrip("/")
     token = config["bridgeToken"]

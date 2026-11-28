@@ -10,5 +10,6 @@ storage/
 tally-connector/.venv/
 tally-connector/wa_session_profile/
 tally-connector/generated_invoices/
+tally-connector/wa_bot_live.log
 __pycache__/
 *.pyc
